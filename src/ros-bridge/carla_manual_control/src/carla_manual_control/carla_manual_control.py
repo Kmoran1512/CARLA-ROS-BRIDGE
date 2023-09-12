@@ -576,7 +576,7 @@ class JoystickControl(object):
         feedback_msg = ForceFeedback()
         print("here")
         print(data)
-        if not data:
+        if not data or not self._autopilot_enabled:
             feedback_msg.position = 0.0
             feedback_msg.torque = 0.5
         else:
