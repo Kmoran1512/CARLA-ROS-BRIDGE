@@ -464,7 +464,6 @@ class JoystickControl(object):
             self.hud.notification(
                 "Autopilot %s" % ("On" if self._autopilot_enabled else "Off")
             )
-            print("key input")
 
         if not self._autopilot_enabled and self.vehicle_control_manual_override:
             self._parse_vehicle_keys(pygame.key.get_pressed(), clock.get_time())
@@ -574,8 +573,6 @@ class JoystickControl(object):
 
     def _adjust_force_feedback(self, data=None):
         feedback_msg = ForceFeedback()
-        print("here")
-        print(data)
         if not data or not self._autopilot_enabled:
             feedback_msg.position = 0.0
             feedback_msg.torque = 0.5
@@ -599,8 +596,11 @@ class JoystickControl(object):
             or keys[K_a]
             or keys[K_RIGHT]
             or keys[K_d]
-            or (abs(jsInputs[self._steer_idx]) - abs(self._feedback_center) > 0.1)
+            or ((abs(jsInputs[self._steer_idx] - self._feedback_center)) > 0.2)
         )
+
+        print(abs(jsInputs[self._steer_idx]))
+        print(abs(self._feedback_center))
 
         is_accelerating = (
             keys[K_UP] or keys[K_w] or jsInputs[self._throttle_idx] < (1 - 0.01)
