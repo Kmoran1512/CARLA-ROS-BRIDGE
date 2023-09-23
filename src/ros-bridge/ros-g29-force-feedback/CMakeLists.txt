@@ -28,6 +28,7 @@ set(dependencies
 # Generate project targer with msg
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ForceFeedback.msg"
+  "msg/ForceControl.msg"
   DEPENDENCIES rosidl_default_generators std_msgs)
 
 # Add executable

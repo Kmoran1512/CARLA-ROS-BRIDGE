@@ -7,12 +7,14 @@
 #include <math.h>
 
 #include "ros_g29_force_feedback/msg/force_feedback.hpp"
+#include "ros_g29_force_feedback/msg/force_control.hpp"
 // #include "ros_g29_force_feedback/msg/force_feedback.hpp"
 
 class G29ForceFeedback : public rclcpp::Node {
 
 private:
     rclcpp::Subscription<ros_g29_force_feedback::msg::ForceFeedback>::SharedPtr sub_target;
+    rclcpp::Publisher<ros_g29_force_feedback::msg::ForceControl>::SharedPtr force_publisher;
     rclcpp::TimerBase::SharedPtr timer;
     // device info
     int m_device_handle;
@@ -53,6 +55,8 @@ private:
     void calcRotateForce(double &torque, double &attack_length, const ros_g29_force_feedback::msg::ForceFeedback &target, const double &current_position);
     void calcCenteringForce(double &torque, const ros_g29_force_feedback::msg::ForceFeedback &target, const double &current_position);
     void uploadForce(const double &position, const double &force, const double &attack_length);
+
+    ros_g29_force_feedback::msg::ForceControl buildMessage(bool is_centering, double torque);
 };
 
 
@@ -63,7 +67,11 @@ G29ForceFeedback::G29ForceFeedback()
         "/ff_target", 
         rclcpp::SystemDefaultsQoS(), 
         std::bind(&G29ForceFeedback::targetCallback, this, std::placeholders::_1));
-    
+
+    force_publisher = this->create_publisher<ros_g29_force_feedback::msg::ForceControl>(
+        "/force_control", 
+        rclcpp::SystemDefaultsQoS());
+
     declare_parameter("device_name", m_device_name);
     declare_parameter("loop_rate", m_loop_rate);
     declare_parameter("max_torque", m_max_torque);
@@ -125,6 +133,8 @@ void G29ForceFeedback::loop() {
     } else {
         calcRotateForce(m_torque, m_attack_length, m_target, m_position);
         m_is_target_updated = false;
+
+        force_publisher->publish(buildMessage(false, m_torque));
     }
 
     uploadForce(m_target.position, m_torque, m_attack_length);
@@ -171,6 +181,8 @@ void G29ForceFeedback::calcCenteringForce(double &torque,
         double buf_torque = power * torque_range + m_min_torque;
         torque = std::min(buf_torque, m_auto_centering_max_torque) * direction;
     }
+
+    force_publisher->publish(buildMessage(true, torque));
 }
 
 
@@ -305,6 +317,14 @@ void G29ForceFeedback::initDevice() {
 int G29ForceFeedback::testBit(int bit, unsigned char *array) {
 
     return ((array[bit / (sizeof(unsigned char) * 8)] >> (bit % (sizeof(unsigned char) * 8))) & 1);
+}
+
+ros_g29_force_feedback::msg::ForceControl G29ForceFeedback::buildMessage(bool is_centering, double torque) {
+    auto message = ros_g29_force_feedback::msg::ForceControl();
+    message.is_centering = is_centering;
+    message.torque = torque;
+
+    return message;
 }
 
 
