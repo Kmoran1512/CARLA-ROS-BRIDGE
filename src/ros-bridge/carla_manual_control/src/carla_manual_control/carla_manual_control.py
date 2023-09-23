@@ -73,6 +73,7 @@ from carla_msgs.msg import CarlaEgoVehicleControl
 from carla_msgs.msg import CarlaLaneInvasionEvent
 from carla_msgs.msg import CarlaCollisionEvent
 from ros_g29_force_feedback.msg import ForceFeedback
+from ros_g29_force_feedback.msg import ForceControl
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import NavSatFix
@@ -381,11 +382,14 @@ class JoystickControl(object):
             self._adjust_force_feedback,
             qos_profile=10,
         )
-        self.force_feedback_publisher = self.node.new_publisher(
-            ForceFeedback,
-            "/ff_target",
-            qos_profile=fast_qos,
+        self.carla_steer_control_subscriber = self.node.new_subscription(
+            ForceControl, "/force_control", self._is_manual_steering, qos_profile=10
         )
+        self.force_feedback_publisher = self.node.new_publisher(
+            ForceFeedback, "/ff_target", qos_profile=fast_qos
+        )
+
+        self._is_steering_override = False
 
         self.set_autopilot(self._autopilot_enabled)
 
@@ -459,6 +463,7 @@ class JoystickControl(object):
             and self._autopilot_enabled
             and self._is_manual_override(pygame.key.get_pressed())
         ):
+            self._is_steering_override = False
             self._autopilot_enabled = False
             self.set_autopilot(self._autopilot_enabled)
             self.hud.notification(
@@ -596,11 +601,8 @@ class JoystickControl(object):
             or keys[K_a]
             or keys[K_RIGHT]
             or keys[K_d]
-            or ((abs(jsInputs[self._steer_idx] - self._feedback_center)) > 0.2)
+            or self._is_steering_override
         )
-
-        print(abs(jsInputs[self._steer_idx]))
-        print(abs(self._feedback_center))
 
         is_accelerating = (
             keys[K_UP] or keys[K_w] or jsInputs[self._throttle_idx] < (1 - 0.01)
@@ -615,6 +617,21 @@ class JoystickControl(object):
         )
 
         return is_accelerating or is_steering or is_braking
+
+    def _is_manual_steering(self, data):
+        if not (
+            self._autopilot_enabled
+            and self.vehicle_control_manual_override
+            and data.is_centering
+            and abs(data.torque) >= 0.3
+        ):
+            self._steering_cache = 0
+            return
+
+        self._steering_cache += 1
+
+        if self._steering_cache > 50:
+            self._is_steering_override = True
 
 
 # ==============================================================================
