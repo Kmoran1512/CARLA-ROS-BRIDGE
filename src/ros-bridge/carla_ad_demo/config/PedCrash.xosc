@@ -38,6 +38,46 @@
         </Properties>
       </Pedestrian>
     </ScenarioObject>
+
+    <!-- Standing Group -->
+    <ScenarioObject name="stander_0">
+      <Pedestrian model="walker.pedestrian.0001" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+        <ParameterDeclarations/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.5" height="1.8"/>
+        </BoundingBox>
+        <Properties>
+          <Property name="type" value="simulation"/>
+        </Properties>
+      </Pedestrian>
+    </ScenarioObject>
+    <ScenarioObject name="stander_1">
+      <Pedestrian model="walker.pedestrian.0002" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+        <ParameterDeclarations/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.5" height="1.8"/>
+        </BoundingBox>
+        <Properties>
+          <Property name="type" value="simulation"/>
+        </Properties>
+      </Pedestrian>
+    </ScenarioObject>
+        <ScenarioObject name="stander_2">
+      <Pedestrian model="walker.pedestrian.0003" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+        <ParameterDeclarations/>
+        <BoundingBox>
+          <Center x="1.5" y="0.0" z="0.9"/>
+          <Dimensions width="2.1" length="4.5" height="1.8"/>
+        </BoundingBox>
+        <Properties>
+          <Property name="type" value="simulation"/>
+        </Properties>
+      </Pedestrian>
+    </ScenarioObject>
+    <!-- End Standing Group -->
+
   </Entities>
   <Storyboard>
     <Init>
@@ -94,6 +134,37 @@
             </TeleportAction>
           </PrivateAction>
         </Private>
+
+        <!-- Standing Group -->
+        <Private entityRef="stander_0">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="390" y="222" z="0.3" h="3"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+        </Private>
+        <Private entityRef="stander_1">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="392" y="223" z="0.3" h="3"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+        </Private>
+        <Private entityRef="stander_2">
+          <PrivateAction>
+            <TeleportAction>
+              <Position>
+                <WorldPosition x="390" y="221" z="0.3" h="3"/>
+              </Position>
+            </TeleportAction>
+          </PrivateAction>
+        </Private>
+        <!-- End Standing Group -->
+
       </Actions>
     </Init>
     <Story name="MyStory">
@@ -155,7 +226,7 @@
                   <EntityRef entityRef="ego_vehicle"/>
                 </TriggeringEntities>
                 <EntityCondition>
-                  <TraveledDistanceCondition value="200.0"/>
+                  <TraveledDistanceCondition value="300.0"/>
                 </EntityCondition>
               </ByEntityCondition>
             </Condition>
