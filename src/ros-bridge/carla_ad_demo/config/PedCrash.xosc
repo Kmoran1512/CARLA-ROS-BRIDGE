@@ -38,46 +38,42 @@
         </Properties>
       </Pedestrian>
     </ScenarioObject>
-
-    <!-- Standing Group -->
-    <ScenarioObject name="stander_0">
-      <Pedestrian model="walker.pedestrian.0001" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+    <ScenarioObject name="pedestrian1">
+      <Pedestrian mass="100" model="walker.pedestrian.0001" name="Pedestrian1" pedestrianCategory="pedestrian">
         <ParameterDeclarations/>
         <BoundingBox>
-          <Center x="1.5" y="0.0" z="0.9"/>
-          <Dimensions width="2.1" length="4.5" height="1.8"/>
+          <Center x="0.5" y="0.5" z="0.9"/>
+          <Dimensions width="1.0" length="1.0" height="1.8"/>
         </BoundingBox>
         <Properties>
           <Property name="type" value="simulation"/>
         </Properties>
       </Pedestrian>
     </ScenarioObject>
-    <ScenarioObject name="stander_1">
-      <Pedestrian model="walker.pedestrian.0002" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+    <ScenarioObject name="pedestrian2">
+      <Pedestrian mass="100" model="walker.pedestrian.0002" name="Pedestrian2" pedestrianCategory="pedestrian">
         <ParameterDeclarations/>
         <BoundingBox>
-          <Center x="1.5" y="0.0" z="0.9"/>
-          <Dimensions width="2.1" length="4.5" height="1.8"/>
+          <Center x="0.5" y="0.5" z="0.9"/>
+          <Dimensions width="1.0" length="1.0" height="1.8"/>
         </BoundingBox>
         <Properties>
           <Property name="type" value="simulation"/>
         </Properties>
       </Pedestrian>
     </ScenarioObject>
-        <ScenarioObject name="stander_2">
-      <Pedestrian model="walker.pedestrian.0003" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+    <ScenarioObject name="pedestrian3">
+      <Pedestrian mass="100" model="walker.pedestrian.0003" name="Pedestrian3" pedestrianCategory="pedestrian">
         <ParameterDeclarations/>
         <BoundingBox>
-          <Center x="1.5" y="0.0" z="0.9"/>
-          <Dimensions width="2.1" length="4.5" height="1.8"/>
+          <Center x="0.5" y="0.5" z="0.9"/>
+          <Dimensions width="1.0" length="1.0" height="1.8"/>
         </BoundingBox>
         <Properties>
           <Property name="type" value="simulation"/>
         </Properties>
       </Pedestrian>
-    </ScenarioObject>
-    <!-- End Standing Group -->
-
+    </ScenarioObject>    
   </Entities>
   <Storyboard>
     <Init>
@@ -134,37 +130,33 @@
             </TeleportAction>
           </PrivateAction>
         </Private>
-
-        <!-- Standing Group -->
-        <Private entityRef="stander_0">
+        <Private entityRef="pedestrian1">
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="390" y="222" z="0.3" h="3"/>
+                <WorldPosition x="392" y="280" z="0.3" h="3"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
         </Private>
-        <Private entityRef="stander_1">
+        <Private entityRef="pedestrian2">
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="392" y="223" z="0.3" h="3"/>
+                <WorldPosition x="392" y="250" z="0.3" h="3"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
         </Private>
-        <Private entityRef="stander_2">
+        <Private entityRef="pedestrian3">
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="390" y="221" z="0.3" h="3"/>
+                <WorldPosition x="392" y="220" z="0.3" h="3"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
         </Private>
-        <!-- End Standing Group -->
-
       </Actions>
     </Init>
     <Story name="MyStory">
@@ -234,44 +226,6 @@
         </StopTrigger>
       </Act>
     </Story>
-    <StopTrigger>
-      <ConditionGroup>
-        <Condition name="criteria_RunningStopTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-        <Condition name="criteria_RunningRedLightTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-        <Condition name="criteria_WrongLaneTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-        <Condition name="criteria_OnSidewalkTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-        <Condition name="criteria_KeepLaneTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-        <Condition name="criteria_CollisionTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-        <Condition name="criteria_DrivenDistanceTest" delay="0" conditionEdge="rising">
-          <ByValueCondition>
-            <ParameterCondition parameterRef="distance_success" value="100" rule="lessThan"/>
-          </ByValueCondition>
-        </Condition>
-      </ConditionGroup>
-    </StopTrigger>
+    <StopTrigger />
   </Storyboard>
 </OpenSCENARIO>
