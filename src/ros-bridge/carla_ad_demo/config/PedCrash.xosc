@@ -125,7 +125,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="400" y="225" z="0.3" h="3"/>
+                <WorldPosition x="400" y="205" z="0.3" h="3"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
@@ -134,7 +134,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="392" y="280" z="0.3" h="3"/>
+                <WorldPosition x="392" y="229" z="0.3" h="2.4"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
@@ -143,7 +143,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="392" y="250" z="0.3" h="3"/>
+                <WorldPosition x="391" y="230" z="0.3" h="0"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
@@ -152,7 +152,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="392" y="220" z="0.3" h="3"/>
+                <WorldPosition x="392" y="231" z="0.3" h="5.24"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
