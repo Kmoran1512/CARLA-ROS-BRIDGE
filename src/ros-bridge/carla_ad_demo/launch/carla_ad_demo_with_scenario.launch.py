@@ -5,8 +5,8 @@ import launch_ros.actions
 from ament_index_python.packages import get_package_share_directory
 
 # string with message to publish on topic /carla/available/scenarios
-ros_topic_msg_string = "{{ 'scenarios': [{{ 'name': 'FollowLeadingVehicle', 'scenario_file': '{}'}}] }}".format(
-    os.path.join(get_package_share_directory('carla_ad_demo'), 'config/FollowLeadingVehicle.xosc'))
+ros_topic_msg_string = "{{ 'scenarios': [{{ 'name': 'PedCrash', 'scenario_file': '{}'}}] }}".format(
+    os.path.join(get_package_share_directory('carla_ad_demo'), 'config/PedCrash.xosc'))
 
 
 def generate_launch_description():
