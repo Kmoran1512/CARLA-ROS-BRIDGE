@@ -7,7 +7,8 @@ import datetime
 import rclpy
 from rclpy.node import Node
 
-from carla_msgs.msg import Gazedata
+from record_node.gaze_publisher import GazePublisher
+
 from carla_msgs.msg import CarlaEgoVehicleStatus
 from carla_msgs.msg import CarlaCollisionEvent
 from derived_object_msgs.msg import ObjectArray
@@ -17,15 +18,16 @@ class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 
-        # Vehile recorder
         self.vehicle_recorder = VehicleWriter(self)
-        # Pedestrain recorder
-        # Gaze recorder
+        #self.gaze_recorder = GazeWriter(self)
+        self.ped_recorder = PedestrianWriter(self)
 
         self.create_timer(0.1, self.write)
 
     def write(self):
+        #self.gaze_recorder.write_row()
         self.vehicle_recorder.write_row()
+        self.ped_recorder.write_row()
 
 
 class BaseWriter:
@@ -55,15 +57,28 @@ class BaseWriter:
 
 
 class GazeWriter(BaseWriter):
-    def __init__(self):
+    gaze_data = []
+
+    def __init__(self, node):
         super().__init__("gaze_recording", ["timestamp", "x", "y", "v", "d"])
+        self.node = node
 
-        self.carla_gaze_subscriber = self.node.new_subscription(
-            Gazedata, "/gaze_publisher", self.record_row, qos_profile=10
-        )
+        self.gaze_publisher = GazePublisher()
+        self.node.create_timer(0.1, self.get_gaze)
 
-    def record_row(self, data):
-        self.write_row([data.pog_x, data.pog_y, data.pog_v, data.pog_d])
+
+    def get_gaze(self):
+        gaze_data = self.gaze_publisher.get_gaze()
+        if gaze_data:
+            self.gaze_data = gaze_data
+
+    def write_row(self):
+        if not self.gaze_data: return
+
+        self.row = [time.time(), *self.gaze_data]
+
+        super().write_row()
+
 
 
 class VehicleWriter(BaseWriter):
@@ -149,6 +164,73 @@ class VehicleWriter(BaseWriter):
     def _record_collision(self, data):
         i = data.normal_impulse
         self.data["collision"] = (i.x * i.x + i.y * i.y + i.z * i.z) ** 0.5
+
+
+class PedestrianWriter(BaseWriter):
+    data = {}
+
+    def __init__(self, node):
+        super().__init__(
+            "ped_recording",
+            [
+                "timestamp",
+                "pwx",
+                "pwy",
+                "pwz",
+                "p1x",
+                "p1y",
+                "p1z",
+                "p2x",
+                "p2y",
+                "p2z",
+                "p3x",
+                "p3y",
+                "p3z",
+            ],
+        )
+        self.node = node
+
+        self.carla_object_subscriber = self.node.create_subscription(
+            ObjectArray, "/carla/objects", self._record_object_status, qos_profile=10
+        )
+
+    def write_row(self):
+        self.row = [
+            time.time(),
+            self.data["pwx"],
+            self.data["pwy"],
+            self.data["pwz"],
+            self.data["p1x"],
+            self.data["p1y"],
+            self.data["p1z"],
+            self.data["p2x"],
+            self.data["p2y"],
+            self.data["p2z"],
+            self.data["p3x"],
+            self.data["p3y"],
+            self.data["p3z"],
+        ]
+
+        super().write_row()
+
+    def _record_object_status(self, data):
+        for obj in data.objects:
+            if not obj.classification == 4:
+                continue
+
+            ped_id = 'pw'
+            if obj.id == 955 : ped_id = 'p1'
+            elif obj.id == 956 : ped_id = 'p2'
+            elif obj.id == 957 : ped_id = 'p3'
+
+
+
+
+            self.data[ped_id + "x"] = obj.pose.position.x
+            self.data[ped_id + "y"] = obj.pose.position.y
+            self.data[ped_id + "z"] = obj.pose.position.z
+
+
 
 
 def main(args=None):
