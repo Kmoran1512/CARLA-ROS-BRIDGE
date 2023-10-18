@@ -375,7 +375,6 @@ class JoystickControl(object):
             CarlaStatus, "/carla/status", self._on_new_carla_frame, qos_profile=10
         )
 
-        # TODO: Find topic for steering angle subscribe and publish to foce feedback
         self.carla_vehicle_status_subscriber = self.node.new_subscription(
             CarlaEgoVehicleStatus,
             "/carla/{}/vehicle_status".format(self.role_name),
