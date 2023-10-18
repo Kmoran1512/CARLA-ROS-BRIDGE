@@ -8,7 +8,7 @@ IP_ADDRESS = "192.168.56.30"
 TARGET_PORT = 4242
 
 
-class GazePublisher():
+class GazePublisher:
     def __init__(self):
         self._server_connection()
         self.data = []
@@ -20,14 +20,11 @@ class GazePublisher():
 
         self._receive_gaze_data()
 
-        print('here')
-
-
         if len(self.data) < 5:
             return
 
         return separate_data(self.data)
-    
+
     def _request_gaze_data(self):
         self._server.send(str.encode('<SET ID="ENABLE_SEND_BLINK" STATE="1" />\r\n'))
         self._server.send(str.encode('<SET ID="ENABLE_SEND_POG_FIX" STATE="1" />\r\n'))

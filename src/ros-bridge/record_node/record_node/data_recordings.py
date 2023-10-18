@@ -19,13 +19,13 @@ class RecordingOrchestrator(Node):
         super().__init__("recording_orchestrator")
 
         self.vehicle_recorder = VehicleWriter(self)
-        #self.gaze_recorder = GazeWriter(self)
+        # self.gaze_recorder = GazeWriter(self)
         self.ped_recorder = PedestrianWriter(self)
 
         self.create_timer(0.1, self.write)
 
     def write(self):
-        #self.gaze_recorder.write_row()
+        # self.gaze_recorder.write_row()
         self.vehicle_recorder.write_row()
         self.ped_recorder.write_row()
 
@@ -66,19 +66,18 @@ class GazeWriter(BaseWriter):
         self.gaze_publisher = GazePublisher()
         self.node.create_timer(0.1, self.get_gaze)
 
-
     def get_gaze(self):
         gaze_data = self.gaze_publisher.get_gaze()
         if gaze_data:
             self.gaze_data = gaze_data
 
     def write_row(self):
-        if not self.gaze_data: return
+        if not self.gaze_data:
+            return
 
         self.row = [time.time(), *self.gaze_data]
 
         super().write_row()
-
 
 
 class VehicleWriter(BaseWriter):
@@ -218,19 +217,17 @@ class PedestrianWriter(BaseWriter):
             if not obj.classification == 4:
                 continue
 
-            ped_id = 'pw'
-            if obj.id == 955 : ped_id = 'p1'
-            elif obj.id == 956 : ped_id = 'p2'
-            elif obj.id == 957 : ped_id = 'p3'
-
-
-
+            ped_id = "pw"
+            if obj.id == 955:
+                ped_id = "p1"
+            elif obj.id == 956:
+                ped_id = "p2"
+            elif obj.id == 957:
+                ped_id = "p3"
 
             self.data[ped_id + "x"] = obj.pose.position.x
             self.data[ped_id + "y"] = obj.pose.position.y
             self.data[ped_id + "z"] = obj.pose.position.z
-
-
 
 
 def main(args=None):
