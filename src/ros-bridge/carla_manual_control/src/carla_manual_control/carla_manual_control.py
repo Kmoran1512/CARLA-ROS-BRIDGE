@@ -339,7 +339,6 @@ class JoystickControl(object):
         self.hud = hud
         self.node = node
 
-        self._autopilot_enabled = False
         self._control = CarlaEgoVehicleControl()
         self._steer_cache = 0.0
         self._key_cache = False
@@ -352,19 +351,13 @@ class JoystickControl(object):
         pygame.joystick.init()
         self._set_joystick_dimensions()
 
-        self.vehicle_control_manual_override_publisher = self.node.new_publisher(
+        self.manual_override_publisher = self.node.new_publisher(
             Bool,
             "/carla/{}/vehicle_control_manual_override".format(self.role_name),
             qos_profile=fast_latched_qos,
         )
 
-        self.vehicle_control_manual_override = False
-
-        self.auto_pilot_enable_publisher = self.node.new_publisher(
-            Bool,
-            "/carla/{}/enable_autopilot".format(self.role_name),
-            qos_profile=fast_qos,
-        )
+        self.manual_override = False
 
         self.vehicle_control_publisher = self.node.new_publisher(
             CarlaEgoVehicleControl,
@@ -376,41 +369,27 @@ class JoystickControl(object):
             CarlaStatus, "/carla/status", self._on_new_carla_frame, qos_profile=10
         )
 
-        self.carla_vehicle_status_subscriber = self.node.new_subscription(
-            CarlaEgoVehicleStatus,
-            "/carla/{}/vehicle_status".format(self.role_name),
-            self._adjust_force_feedback,
-            qos_profile=10,
-        )
         self.carla_steer_control_subscriber = self.node.new_subscription(
-            ForceControl, "/force_control", self._is_manual_steering, qos_profile=10
+            ForceFeedback, "/ff_target_adas", self._ADAS_steering, qos_profile=10
         )
         self.force_feedback_publisher = self.node.new_publisher(
             ForceFeedback, "/ff_target", qos_profile=fast_qos
         )
 
-        self._is_steering_override = False
+        self.set_manual_override(self.manual_override) 
 
-        self.set_autopilot(self._autopilot_enabled)
-
-        self.set_vehicle_control_manual_override(
-            self.vehicle_control_manual_override
-        )  # disable manual override
-
-    def set_vehicle_control_manual_override(self, enable):
+    def set_manual_override(self, enable):
         """
         Set the manual control override
         """
-        self.hud.notification(
-            "Set vehicle control manual override to: {}".format(enable)
-        )
-        self.vehicle_control_manual_override_publisher.publish((Bool(data=enable)))
+        if enable:
+            self._control.reverse = False
+            self._adjust_force_feedback()
 
-    def set_autopilot(self, enable):
-        """
-        enable/disable the autopilot
-        """
-        self.auto_pilot_enable_publisher.publish(Bool(data=enable))
+        self.hud.notification(
+            "Set ADAS to: {}".format(not enable)
+        )
+        self.manual_override_publisher.publish((Bool(data=enable)))
 
     # pylint: disable=too-many-branches
     def parse_events(self, clock):
@@ -431,59 +410,33 @@ class JoystickControl(object):
                 ):
                     self.hud.help.toggle()
                 elif event.key == K_b:
-                    self.vehicle_control_manual_override = (
-                        not self.vehicle_control_manual_override
-                    )
-                    self.set_vehicle_control_manual_override(
-                        self.vehicle_control_manual_override
-                    )
+                    self.manual_override = not self.manual_override
+                    self.set_manual_override(self.manual_override)
                 if event.key == K_q:
                     self._control.gear = 1 if self._control.reverse else -1
-                elif event.key == K_m:
-                    self._control.manual_gear_shift = (
-                        not self._control.manual_gear_shift
-                    )
-                    self.hud.notification(
-                        "%s Transmission"
-                        % ("Manual" if self._control.manual_gear_shift else "Automatic")
-                    )
-                elif event.key == K_p:
-                    self._autopilot_enabled = not self._autopilot_enabled
-                    self.set_autopilot(self._autopilot_enabled)
-                    self.hud.notification(
-                        "Autopilot %s" % ("On" if self._autopilot_enabled else "Off")
-                    )
         
         if not self._key_cache and self._joystick.get_button(self._manual_control):
             self._key_cache = True
-            self.vehicle_control_manual_override = (
-                not self.vehicle_control_manual_override
-            )
-            self.set_vehicle_control_manual_override(
-                self.vehicle_control_manual_override
-            )
+
+            self.manual_override = not self.manual_override
+            self.set_manual_override(self.manual_override)
         elif not self._key_cache and self._joystick.get_button(self._reverse_idx):
             self._key_cache = True
+
             self._control.gear = 1 if self._control.reverse else -1
-        elif self._key_cache and not (self._joystick.get_button(self._reverse_idx) or self._joystick.get_button(self._manual_control)):
+        elif self._key_cache and not (
+            self._joystick.get_button(self._reverse_idx) or 
+            self._joystick.get_button(self._manual_control)
+        ):
             self._key_cache = False
 
-        if (
-            self.vehicle_control_manual_override
-            and self._autopilot_enabled
-            and self._is_manual_override(pygame.key.get_pressed())
-        ):
-            self._is_steering_override = False
-            self._autopilot_enabled = False
-            self.set_autopilot(self._autopilot_enabled)
-            self.hud.notification(
-                "Autopilot %s" % ("On" if self._autopilot_enabled else "Off")
-            )
+        # TODO-KM
+        if not self.manual_override and self._is_manual_override(pygame.key.get_pressed()):
+            self.manual_override = True
+            self.set_manual_override(self.manual_override)
 
-        if not self._autopilot_enabled and self.vehicle_control_manual_override:
-            self._parse_vehicle_wheel()
-            self._adjust_force_feedback()
-            self._control.reverse = self._control.gear < 0
+        self._parse_vehicle_wheel()
+        self._control.reverse = self._control.gear < 0
 
     def _on_new_carla_frame(self, data):
         """
@@ -492,7 +445,7 @@ class JoystickControl(object):
         As CARLA only processes one vehicle control command per tick,
         send the current from within here (once per frame)
         """
-        if not self._autopilot_enabled and self.vehicle_control_manual_override:
+        if self.manual_override:
             try:
                 self.vehicle_control_publisher.publish(self._control)
             except Exception as error:
@@ -566,18 +519,16 @@ class JoystickControl(object):
 
         self._control.hand_brake = bool(jsButtons[self._handbrake_idx])
 
-    def _adjust_force_feedback(self, data=None):
+    def _adjust_force_feedback(self, position=0.0):
         feedback_msg = ForceFeedback()
-        if not data or not self._autopilot_enabled:
-            feedback_msg.position = 0.0
-            feedback_msg.torque = 0.5
-        else:
-            feedback_msg.position = data.control.steer
-            feedback_msg.torque = 0.5
+
+        feedback_msg.position = position
+        feedback_msg.torque = 0.5
 
         self._feedback_center = feedback_msg.position
         self.force_feedback_publisher.publish(feedback_msg)
 
+    #TODO
     def _is_manual_override(self, keys):
         numAxes = self._joystick.get_numaxes()
         jsInputs = [float(self._joystick.get_axis(i)) for i in range(numAxes)]
@@ -586,43 +537,28 @@ class JoystickControl(object):
             for i in range(self._joystick.get_numbuttons())
         ]
 
-        is_steering = (
-            keys[K_LEFT]
-            or keys[K_a]
-            or keys[K_RIGHT]
-            or keys[K_d]
-            or self._is_steering_override
-        )
+        is_steering = False
 
-        is_accelerating = (
-            keys[K_UP] or keys[K_w] or jsInputs[self._throttle_idx] < (1 - 0.01)
-        )
+        is_accelerating = jsInputs[self._throttle_idx] < 0.99
 
         is_braking = (
-            bool(keys[K_SPACE])
-            or keys[K_DOWN]
-            or keys[K_s]
-            or jsInputs[self._brake_idx] < (1 - 0.01)
+            jsInputs[self._brake_idx] < (1 - 0.01)
             or bool(jsButtons[self._handbrake_idx])
         )
 
         return is_accelerating or is_steering or is_braking
 
-    def _is_manual_steering(self, data):
-        if not (
-            self._autopilot_enabled
-            and self.vehicle_control_manual_override
-            and data.is_centering
-            and abs(data.torque) >= 0.3
-        ):
-            self._steering_cache = 0
-            return
+    def _ADAS_steering(self, data):
+        if not self.manual_override:
 
-        self._steering_cache += 1
+            print("\n")
+            if (abs(self._joystick.get_axis(0) - data.position) > 0.1):
+                print('turning')
+            else :
+                print('noooooooo')
+            print("\n")
 
-        if self._steering_cache > 50:
-            self._is_steering_override = True
-
+            self.force_feedback_publisher.publish(data)
 
 # ==============================================================================
 # -- HUD -----------------------------------------------------------------------

@@ -22,6 +22,7 @@ from carla_ad_agent.vehicle_pid_controller import VehiclePIDController
 from carla_ad_agent.misc import distance_vehicle
 
 from carla_msgs.msg import CarlaEgoVehicleControl  # pylint: disable=import-error
+from ros_g29_force_feedback.msg import ForceFeedback
 from nav_msgs.msg import Odometry, Path
 from std_msgs.msg import Float64
 from visualization_msgs.msg import Marker
@@ -93,6 +94,9 @@ class LocalPlanner(CompatibleNode):
             CarlaEgoVehicleControl,
             "/carla/{}/vehicle_control_cmd".format(role_name),
             qos_profile=10)
+        self._force_feedback_publisher = self.new_publisher(
+            ForceFeedback, "/ff_target_adas", qos_profile=10
+        )
 
         # initializing controller
         self._vehicle_controller = VehiclePIDController(
@@ -156,7 +160,7 @@ class LocalPlanner(CompatibleNode):
             self._target_pose_publisher.publish(self.pose_to_marker_msg(target_pose))
 
             # move using PID controllers
-            control_msg = self._vehicle_controller.run_step(
+            control_msg, feedback_msg = self._vehicle_controller.run_step(
                 self._target_speed, self._current_speed, self._current_pose, target_pose)
 
             # purge the queue of obsolete waypoints
@@ -173,15 +177,23 @@ class LocalPlanner(CompatibleNode):
                     self._waypoint_buffer.popleft()
 
             self._control_cmd_publisher.publish(control_msg)
+            self._force_feedback_publisher.publish(feedback_msg)
 
     def emergency_stop(self):
         control_msg = CarlaEgoVehicleControl()
+        feedback_msg = ForceFeedback()
+
         control_msg.steer = 0.0
         control_msg.throttle = 0.0
         control_msg.brake = 1.0
         control_msg.hand_brake = False
         control_msg.manual_gear_shift = False
         self._control_cmd_publisher.publish(control_msg)
+
+        feedback_msg.position = 0.0
+        feedback_msg.torque = 0.5
+
+        self._force_feedback_publisher.publish(feedback_msg)
 
 
 def main(args=None):
