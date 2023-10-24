@@ -342,6 +342,7 @@ class JoystickControl(object):
         self._autopilot_enabled = False
         self._control = CarlaEgoVehicleControl()
         self._steer_cache = 0.0
+        self._key_cache = False
 
         fast_qos = QoSProfile(depth=10)
         fast_latched_qos = QoSProfile(
@@ -446,16 +447,28 @@ class JoystickControl(object):
                         "%s Transmission"
                         % ("Manual" if self._control.manual_gear_shift else "Automatic")
                     )
-                elif self._control.manual_gear_shift and event.key == K_COMMA:
-                    self._control.gear = max(-1, self._control.gear - 1)
-                elif self._control.manual_gear_shift and event.key == K_PERIOD:
-                    self._control.gear = self._control.gear + 1
                 elif event.key == K_p:
                     self._autopilot_enabled = not self._autopilot_enabled
                     self.set_autopilot(self._autopilot_enabled)
                     self.hud.notification(
                         "Autopilot %s" % ("On" if self._autopilot_enabled else "Off")
                     )
+        
+        if not self._key_cache and self._joystick.get_button(self._manual_control):
+            self._key_cache = True
+            self.vehicle_control_manual_override = (
+                not self.vehicle_control_manual_override
+            )
+            self.set_vehicle_control_manual_override(
+                self.vehicle_control_manual_override
+            )
+        elif not self._key_cache and self._joystick.get_button(self._reverse_idx):
+            self._key_cache = True
+            self._control.gear = 1 if self._control.reverse else -1
+        elif self._key_cache and not (self._joystick.get_button(self._reverse_idx) or self._joystick.get_button(self._manual_control)):
+            self._key_cache = False
+
+        print(self._key_cache)
 
         if (
             self.vehicle_control_manual_override
@@ -470,7 +483,6 @@ class JoystickControl(object):
             )
 
         if not self._autopilot_enabled and self.vehicle_control_manual_override:
-            self._parse_vehicle_keys(pygame.key.get_pressed(), clock.get_time())
             self._parse_vehicle_wheel()
             self._adjust_force_feedback()
             self._control.reverse = self._control.gear < 0
@@ -487,23 +499,6 @@ class JoystickControl(object):
                 self.vehicle_control_publisher.publish(self._control)
             except Exception as error:
                 self.node.logwarn("Could not send vehicle control: {}".format(error))
-
-    def _parse_vehicle_keys(self, keys, milliseconds):
-        """
-        parse key events
-        """
-        self._control.throttle = 1.0 if keys[K_UP] or keys[K_w] else 0.0
-        steer_increment = 5e-4 * milliseconds
-        if keys[K_LEFT] or keys[K_a]:
-            self._steer_cache -= steer_increment
-        elif keys[K_RIGHT] or keys[K_d]:
-            self._steer_cache += steer_increment
-        else:
-            self._steer_cache = 0.0
-        self._steer_cache = min(0.7, max(-0.7, self._steer_cache))
-        self._control.steer = round(self._steer_cache, 1)
-        self._control.brake = 1.0 if keys[K_DOWN] or keys[K_s] else 0.0
-        self._control.hand_brake = bool(keys[K_SPACE])
 
     @staticmethod
     def _is_quit_shortcut(key):
@@ -532,6 +527,7 @@ class JoystickControl(object):
         self._brake_idx = 3
         self._reverse_idx = 5
         self._handbrake_idx = 4
+        self._manual_control = 3
 
     def _parse_vehicle_wheel(self):
         numAxes = self._joystick.get_numaxes()
@@ -570,8 +566,6 @@ class JoystickControl(object):
         self._control.steer = float(steerCmd)
         self._control.brake = float(brakeCmd)
         self._control.throttle = float(throttleCmd)
-
-        # toggle = jsButtons[self._reverse_idx]
 
         self._control.hand_brake = bool(jsButtons[self._handbrake_idx])
 
