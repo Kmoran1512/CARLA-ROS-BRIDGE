@@ -468,8 +468,6 @@ class JoystickControl(object):
         elif self._key_cache and not (self._joystick.get_button(self._reverse_idx) or self._joystick.get_button(self._manual_control)):
             self._key_cache = False
 
-        print(self._key_cache)
-
         if (
             self.vehicle_control_manual_override
             and self._autopilot_enabled
@@ -532,7 +530,6 @@ class JoystickControl(object):
     def _parse_vehicle_wheel(self):
         numAxes = self._joystick.get_numaxes()
         jsInputs = [float(self._joystick.get_axis(i)) for i in range(numAxes)]
-        # print (jsInputs)
         jsButtons = [
             float(self._joystick.get_button(i))
             for i in range(self._joystick.get_numbuttons())
