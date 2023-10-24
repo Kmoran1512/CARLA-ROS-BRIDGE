@@ -56,6 +56,10 @@
     args="pub /carla/available_scenarios carla_ros_scenario_runner_types/CarlaScenarioList '{ 'scenarios':  
       [
         {
+          'name': 'FollowLeadingVehicle',
+          'scenario_file': '$(find carla_ad_demo)/config/FollowLeadingVehicle.xosc'
+        },
+        {
           'name': 'PedCrash',
           'scenario_file': '$(find carla_ad_demo)/config/PedCrash.xosc'
         },
