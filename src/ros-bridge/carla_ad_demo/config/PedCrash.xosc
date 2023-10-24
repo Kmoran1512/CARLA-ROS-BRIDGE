@@ -120,6 +120,16 @@
                 </OverrideControllerValueAction>
             </ControllerAction>
           </PrivateAction>
+          <PrivateAction>
+              <LongitudinalAction>
+                  <SpeedAction>
+                      <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="distance"/>
+                      <SpeedActionTarget>
+                          <AbsoluteTargetSpeed value="8.33"/>
+                      </SpeedActionTarget>
+                  </SpeedAction>
+              </LongitudinalAction>
+          </PrivateAction>
         </Private>
         <Private entityRef="adversary">
           <PrivateAction>
@@ -173,7 +183,7 @@
                     <SpeedAction>
                       <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                        <AbsoluteTargetSpeed value="10.0"/>
+                        <AbsoluteTargetSpeed value="5.0"/>
                       </SpeedActionTarget>
                     </SpeedAction>
                   </LongitudinalAction>
@@ -187,7 +197,7 @@
                         <EntityRef entityRef="ego_vehicle"/>
                       </TriggeringEntities>
                       <EntityCondition>
-                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="22.0" freespace="false" rule="lessThan"/>
+                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="12.0" freespace="false" rule="lessThan"/>
                       </EntityCondition>
                     </ByEntityCondition>
                   </Condition>
