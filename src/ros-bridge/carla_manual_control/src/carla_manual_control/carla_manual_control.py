@@ -415,7 +415,7 @@ class JoystickControl(object):
                 if event.key == K_q:
                     self._control.gear = 1 if self._control.reverse else -1
         
-        if not self._key_cache and self._joystick.get_button(self._manual_control):
+        if not self._key_cache and (self._joystick.get_button(self._manual_control_1) or self._joystick.get_button(self._manual_control_2)):
             self._key_cache = True
 
             self.manual_override = not self.manual_override
@@ -426,7 +426,8 @@ class JoystickControl(object):
             self._control.gear = 1 if self._control.reverse else -1
         elif self._key_cache and not (
             self._joystick.get_button(self._reverse_idx) or 
-            self._joystick.get_button(self._manual_control)
+            self._joystick.get_button(self._manual_control_1) or
+            self._joystick.get_button(self._manual_control_2)
         ):
             self._key_cache = False
 
@@ -476,9 +477,10 @@ class JoystickControl(object):
         self._steer_idx = 0
         self._throttle_idx = 2
         self._brake_idx = 3
-        self._reverse_idx = 5
-        self._handbrake_idx = 4
-        self._manual_control = 3
+        self._reverse_idx = 3
+        self._handbrake_idx = 2
+        self._manual_control_1 = 4
+        self._manual_control_2 = 5
 
     def _parse_vehicle_wheel(self):
         numAxes = self._joystick.get_numaxes()
@@ -549,15 +551,6 @@ class JoystickControl(object):
         return is_accelerating or is_steering or is_braking
 
     def _ADAS_steering(self, data):
-        if not self.manual_override:
-
-            print("\n")
-            if (abs(self._joystick.get_axis(0) - data.position) > 0.1):
-                print('turning')
-            else :
-                print('noooooooo')
-            print("\n")
-
             self.force_feedback_publisher.publish(data)
 
 # ==============================================================================
