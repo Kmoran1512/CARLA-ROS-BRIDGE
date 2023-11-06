@@ -3,10 +3,10 @@ g29_force_feedback:
     device_name: "/dev/input/event18"
     loop_rate: 0.1
     max_torque: 1.0
-    min_torque: 0.1
+    min_torque: 0.0
     brake_torque: 0.2
-    brake_position: 0.1
-    auto_centering_max_torque: 0.3
-    auto_centering_max_position: 0.05
-    eps: 0.01
+    brake_position: 0.01
+    auto_centering_max_torque: 1.0
+    auto_centering_max_position: 0.2
+    eps: 0.05
     auto_centering: false
