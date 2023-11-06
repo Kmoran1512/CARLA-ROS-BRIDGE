@@ -44,7 +44,7 @@ private:
     double m_attack_length;
     double m_err = 0.0;
     double m_d_err = 0.0;
-    static double m_i_err = 0.0;
+    double m_i_err = 0.0;
 
 public:
     G29ForceFeedback();
@@ -57,7 +57,7 @@ private:
     void initDevice();
     void calcRotateForce(double &torque, double &attack_length, const ros_g29_force_feedback::msg::ForceFeedback &target, const double &current_position);
     void calcCenteringForce(double &torque, const ros_g29_force_feedback::msg::ForceFeedback &target, const double &current_position);
-    void uploadForce(const double &position, const double &force, const double &attack_length);
+    void uploadForce(const double &force, const double &attack_length);
 
     ros_g29_force_feedback::msg::ForceControl buildMessage(bool is_centering, double torque);
 };
@@ -121,7 +121,6 @@ G29ForceFeedback::~G29ForceFeedback() {
 void G29ForceFeedback::loop() {
 
     struct input_event event;
-    double last_position = m_position;
     // get current state
     while (read(m_device_handle, &event, sizeof(event)) == sizeof(event)) {
         if (event.type == EV_ABS && event.code == m_axis_code) {
@@ -140,7 +139,7 @@ void G29ForceFeedback::loop() {
         force_publisher->publish(buildMessage(false, m_torque));
     }
 
-    uploadForce(m_target.position, m_torque, m_attack_length);
+    uploadForce(m_torque, m_attack_length);
 }
 
 
@@ -186,8 +185,7 @@ void G29ForceFeedback::calcCenteringForce(double &torque,
 
 
 // update input event with writing information to the event file
-void G29ForceFeedback::uploadForce(const double &position,
-                                   const double &torque,
+void G29ForceFeedback::uploadForce(const double &torque,
                                    const double &attack_length) {
 
     // std::cout << torque << std::endl;
@@ -231,7 +229,6 @@ void G29ForceFeedback::targetCallback(const ros_g29_force_feedback::msg::ForceFe
 // initialize force feedback device
 void G29ForceFeedback::initDevice() {
     // setup device
-    unsigned char key_bits[1+KEY_MAX/8/sizeof(unsigned char)];
     unsigned char abs_bits[1+ABS_MAX/8/sizeof(unsigned char)];
     unsigned char ff_bits[1+FF_MAX/8/sizeof(unsigned char)];
     struct input_event event;
