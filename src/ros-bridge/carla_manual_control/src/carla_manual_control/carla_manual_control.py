@@ -339,43 +339,17 @@ class JoystickControl(object):
         self.hud = hud
         self.node = node
 
-        self._control = CarlaEgoVehicleControl()
+        self.m_ctrl = CarlaEgoVehicleControl()
+        self.a_ctrl = CarlaEgoVehicleControl()
         self._steer_cache = 0.0
         self._key_cache = False
-
-        fast_qos = QoSProfile(depth=10)
-        fast_latched_qos = QoSProfile(
-            depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
-        )
 
         pygame.joystick.init()
         self._set_joystick_dimensions()
 
-        self.manual_override_publisher = self.node.new_publisher(
-            Bool,
-            "/carla/{}/vehicle_control_manual_override".format(self.role_name),
-            qos_profile=fast_latched_qos,
-        )
+        self.pubsub = PubSub(self.node, self)
 
         self.manual_override = False
-
-        self.vehicle_control_publisher = self.node.new_publisher(
-            CarlaEgoVehicleControl,
-            "/carla/{}/vehicle_control_cmd_manual".format(self.role_name),
-            qos_profile=fast_qos,
-        )
-
-        self.carla_status_subscriber = self.node.new_subscription(
-            CarlaStatus, "/carla/status", self._on_new_carla_frame, qos_profile=10
-        )
-
-        self.carla_steer_control_subscriber = self.node.new_subscription(
-            ForceFeedback, "/ff_target_adas", self._ADAS_steering, qos_profile=10
-        )
-        self.force_feedback_publisher = self.node.new_publisher(
-            ForceFeedback, "/ff_target", qos_profile=fast_qos
-        )
-
         self.set_manual_override(self.manual_override) 
 
     def set_manual_override(self, enable):
@@ -383,16 +357,15 @@ class JoystickControl(object):
         Set the manual control override
         """
         if enable:
-            self._control.reverse = False
-            self._adjust_force_feedback()
+            self.m_ctrl.reverse = False
+            self._adjust_force_feedback(0.0, 0.0)
 
         self.hud.notification(
             "Set ADAS to: {}".format(not enable)
         )
-        self.manual_override_publisher.publish((Bool(data=enable)))
+        self.pubsub.manual_override_publisher.publish((Bool(data=enable)))
 
-    # pylint: disable=too-many-branches
-    def parse_events(self, clock):
+    def parse_events(self, _):
         """
         parse an input event
         """
@@ -401,79 +374,27 @@ class JoystickControl(object):
             if event.type == pygame.QUIT:
                 return True
             elif event.type == pygame.KEYUP:
-                if self._is_quit_shortcut(event.key):
-                    return True
-                elif event.key == K_F1:
-                    self.hud.toggle_info()
-                elif event.key == K_h or (
-                    event.key == K_SLASH and pygame.key.get_mods() & KMOD_SHIFT
-                ):
-                    self.hud.help.toggle()
-                elif event.key == K_b:
+                if event.key == K_b:
                     self.manual_override = not self.manual_override
                     self.set_manual_override(self.manual_override)
-                if event.key == K_q:
-                    self._control.gear = 1 if self._control.reverse else -1
         
-        if not self._key_cache and (self._joystick.get_button(self._manual_control_1) or self._joystick.get_button(self._manual_control_2)):
-            self._key_cache = True
+        self._handle_joystick_buttons()
 
-            self.manual_override = not self.manual_override
-            self.set_manual_override(self.manual_override)
-        elif not self._key_cache and self._joystick.get_button(self._reverse_idx):
-            self._key_cache = True
+        self._parse_joystick_control()
 
-            self._control.gear = 1 if self._control.reverse else -1
-        elif self._key_cache and not (
-            self._joystick.get_button(self._reverse_idx) or 
-            self._joystick.get_button(self._manual_control_1) or
-            self._joystick.get_button(self._manual_control_2)
-        ):
-            self._key_cache = False
-
-        # TODO-KM
-        if not self.manual_override and self._is_manual_override(pygame.key.get_pressed()):
-            self.manual_override = True
-            self.set_manual_override(self.manual_override)
-
-        self._parse_vehicle_wheel()
-        self._control.reverse = self._control.gear < 0
-
-    def _on_new_carla_frame(self, data):
+    def on_new_carla_frame(self, _):
         """
         callback on new frame
 
         As CARLA only processes one vehicle control command per tick,
         send the current from within here (once per frame)
         """
-        if self.manual_override:
-            try:
-                self.vehicle_control_publisher.publish(self._control)
-            except Exception as error:
-                self.node.logwarn("Could not send vehicle control: {}".format(error))
-
-    @staticmethod
-    def _is_quit_shortcut(key):
-        return (key == K_ESCAPE) or (key == K_q and pygame.key.get_mods() & KMOD_CTRL)
+        self._publish_control()
 
     def _set_joystick_dimensions(self):
-        joystick_count = pygame.joystick.get_count()
-        if joystick_count > 1:
-            raise ValueError("Please Connect Just One Joystick")
-
         self._joystick = pygame.joystick.Joystick(0)
         self._joystick.init()
 
-        # self._parser = ConfigParser()
-        # self._parser.read("wheel_config.ini")
-        # self._steer_idx = int(self._parser.get("G29 Racing Wheel", "steering_wheel"))
-        # self._throttle_idx = int(self._parser.get("G29 Racing Wheel", "throttle"))
-        # self._brake_idx = int(self._parser.get("G29 Racing Wheel", "brake"))
-        # self._reverse_idx = int(self._parser.get("G29 Racing Wheel", "reverse"))
-        # self._handbrake_idx = int(self._parser.get("G29 Racing Wheel", "handbrake"))
-
-        self._parser = ConfigParser()
-        self._parser.read("wheel_config.ini")
         self._steer_idx = 0
         self._throttle_idx = 2
         self._brake_idx = 3
@@ -482,76 +403,105 @@ class JoystickControl(object):
         self._manual_control_1 = 4
         self._manual_control_2 = 5
 
-    def _parse_vehicle_wheel(self):
-        numAxes = self._joystick.get_numaxes()
-        jsInputs = [float(self._joystick.get_axis(i)) for i in range(numAxes)]
-        jsButtons = [
-            float(self._joystick.get_button(i))
-            for i in range(self._joystick.get_numbuttons())
-        ]
+    def _handle_joystick_buttons(self):
+        if not self._key_cache:
+            if any(self._joystick.get_button(button) for button in (self._manual_control_1, self._manual_control_2)):
+                self._key_cache = True
+                self.manual_override = not self.manual_override
+                self.set_manual_override(self.manual_override)
+            elif self._joystick.get_button(self._reverse_idx):
+                self._key_cache = True
+                self.m_ctrl.gear = 1 if self.m_ctrl.reverse else -1
+                self.m_ctrl.reverse = self.m_ctrl.gear < 0
 
-        # Custom function to map range of inputs [1, -1] to outputs [0, 1] i.e 1 from inputs means nothing is pressed
-        # For the steering, it seems fine as it is
-        K1 = 1.0  # 0.55
-        steerCmd = K1 * math.tan(1.1 * jsInputs[self._steer_idx])
+        else:
+            if not any(self._joystick.get_button(button) for button in (self._reverse_idx, self._manual_control_1, self._manual_control_2)):
+                self._key_cache = False
 
-        K2 = 1.6  # 1.6
-        throttleCmd = (
-            K2
-            + (2.05 * math.log10(-0.7 * jsInputs[self._throttle_idx] + 1.4) - 1.2)
-            / 0.92
-        )
-        if throttleCmd <= 0:
-            throttleCmd = 0
-        elif throttleCmd > 1:
-            throttleCmd = 1
+    def _parse_joystick_control(self):
+        jsInputs = [float(self._joystick.get_axis(i)) for i in range(self._joystick.get_numaxes())]
+        jsButtons = [float(self._joystick.get_button(i)) for i in range(self._joystick.get_numbuttons())]
 
-        brakeCmd = (
-            1.6
-            + (2.05 * math.log10(-0.7 * jsInputs[self._brake_idx] + 1.4) - 1.2) / 0.92
-        )
-        if brakeCmd <= 0:
-            brakeCmd = 0
-        elif brakeCmd > 1:
-            brakeCmd = 1
+        self._steer_cache = 1.0 * math.tan(1.1 * jsInputs[self._steer_idx]) ## 1.0 -> 0.55
+        self.m_ctrl.throttle = max(0.0, min(1.0, 1.6 + (2.05 * math.log10(-0.7 * jsInputs[self._throttle_idx] + 1.4) - 1.2) / 0.92))
+        self.m_ctrl.brake = max(0.0, min(1.0, 1.6 + (2.05 * math.log10(-0.7 * jsInputs[self._brake_idx] + 1.4) - 1.2) / 0.92))
+        self.m_ctrl.hand_brake = bool(jsButtons[self._handbrake_idx])
 
-        self._control.steer = float(steerCmd)
-        self._control.brake = float(brakeCmd)
-        self._control.throttle = float(throttleCmd)
-
-        self._control.hand_brake = bool(jsButtons[self._handbrake_idx])
-
-    def _adjust_force_feedback(self, position=0.0):
+    def _adjust_force_feedback(self, position=0.0, torque=1.0):
         feedback_msg = ForceFeedback()
 
         feedback_msg.position = position
-        feedback_msg.torque = 0.5
+        feedback_msg.torque = torque
 
         self._feedback_center = feedback_msg.position
-        self.force_feedback_publisher.publish(feedback_msg)
+        self.pubsub.force_feedback_publisher.publish(feedback_msg)
 
-    #TODO
-    def _is_manual_override(self, keys):
-        numAxes = self._joystick.get_numaxes()
-        jsInputs = [float(self._joystick.get_axis(i)) for i in range(numAxes)]
-        jsButtons = [
-            float(self._joystick.get_button(i))
-            for i in range(self._joystick.get_numbuttons())
-        ]
+    # TODO: Create and Change subscriber
+    def auton_ctrl(self, data):
+        if (self.manual_override):
+            return
+        
+        self.a_ctrl = data
 
-        is_steering = False
+        self._adjust_force_feedback(data.steer)
 
-        is_accelerating = jsInputs[self._throttle_idx] < 0.99
+    def force_ctrl(self, data):
+        if not data.is_centering and data.torque == 1:
+            self.manual_override = True
+            self.set_manual_override(self.manual_override)
 
-        is_braking = (
-            jsInputs[self._brake_idx] < (1 - 0.01)
-            or bool(jsButtons[self._handbrake_idx])
+    def _publish_control(self):
+        if self.manual_override:
+            self.m_ctrl.steer = self._steer_cache
+            self.pubsub.m_vc.publish(self.m_ctrl)
+        else:
+            self.a_ctrl.steer = self._steer_cache
+            self.pubsub.a_vc.publish(self.a_ctrl) 
+
+
+class PubSub(object):
+    def __init__(self, node, parent: JoystickControl):
+        self.node = node
+
+        fast_qos = QoSProfile(depth=10)
+        fast_latched_qos = QoSProfile(
+            depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
         )
 
-        return is_accelerating or is_steering or is_braking
+        self.manual_override_publisher = self.node.new_publisher(
+            Bool,
+            "/carla/{}/vehicle_control_manual_override".format(parent.role_name),
+            qos_profile=fast_latched_qos,
+        )
 
-    def _ADAS_steering(self, data):
-            self.force_feedback_publisher.publish(data)
+        self.m_vc = self.node.new_publisher(
+            CarlaEgoVehicleControl,
+            "/carla/{}/vehicle_control_cmd_manual".format(parent.role_name),
+            qos_profile=fast_qos,
+        )
+
+        self.a_vc = self.node.new_publisher(
+            CarlaEgoVehicleControl,
+            "/carla/{}/vehicle_control_cmd".format(parent.role_name),
+            qos_profile=fast_qos,
+        )
+
+        self.force_feedback_publisher = self.node.new_publisher(
+            ForceFeedback, "/ff_target", qos_profile=fast_qos
+        )
+
+        self.carla_status_subscriber = self.node.new_subscription(
+            CarlaStatus, "/carla/status", parent.on_new_carla_frame, qos_profile=10
+        )
+
+        self.carla_steer_control_subscriber = self.node.new_subscription(
+            CarlaEgoVehicleControl, "/carla/{}/transfer_ctrl".format(parent.role_name), parent.auton_ctrl, qos_profile=10
+        )
+
+        self.force_sub = self.node.new_subscription(
+            ForceControl, "/force_control", parent.force_ctrl, 10
+        )
+
 
 # ==============================================================================
 # -- HUD -----------------------------------------------------------------------
