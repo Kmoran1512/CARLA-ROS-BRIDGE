@@ -42,6 +42,9 @@ private:
     double m_position;
     double m_torque;
     double m_attack_length;
+    double m_err = 0.0;
+    double m_d_err = 0.0;
+    static double m_i_err = 0.0;
 
 public:
     G29ForceFeedback();
@@ -126,7 +129,7 @@ void G29ForceFeedback::loop() {
         }
     }
 
-    if (m_is_brake_range || m_auto_centering) {
+    if (m_auto_centering) {
         calcCenteringForce(m_torque, m_target, m_position);
         m_attack_length = 0.0;
 
@@ -146,22 +149,18 @@ void G29ForceFeedback::calcRotateForce(double &torque,
                                        const ros_g29_force_feedback::msg::ForceFeedback &target,
                                        const double &current_position) {
 
-    double diff = target.position - current_position;
-    double direction = (diff > 0.0) ? 1.0 : -1.0;
+    double k_p = 8.0;
+    double k_d = 0.0;
+    double k_i = 0.0;
 
-    if (fabs(diff) < m_eps) {
-        torque = 0.0;
-        attack_length = 0.0;
+    double prev_err = m_err;
+    m_err = target.position - current_position;
+    m_d_err = m_err - prev_err;
+    m_i_err += m_err;
 
-    } else if (fabs(diff) < m_brake_position) {
-        m_is_brake_range = true;
-        torque = target.torque * m_brake_torque * -direction;
-        attack_length = m_loop_rate;
-
-    } else {
-        torque = target.torque * direction;
-        attack_length = m_loop_rate;
-    }
+    torque = k_p * m_err + k_d * m_d_err + k_i * m_i_err;
+    torque = std::min(m_max_torque, std::max(-m_max_torque, torque));
+    attack_length = m_loop_rate;
 }
 
 
@@ -215,9 +214,16 @@ void G29ForceFeedback::targetCallback(const ros_g29_force_feedback::msg::ForceFe
 
     } else {
         m_target = *in_msg;
+
+        if (m_target.torque == 0) {
+            m_auto_centering = true;
+            return;
+        }
+
         m_target.torque = fabs(m_target.torque);
         m_is_target_updated = true;
         m_is_brake_range = false;
+        m_auto_centering = false;
     }
 }
 
