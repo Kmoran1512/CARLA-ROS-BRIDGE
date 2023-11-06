@@ -56,7 +56,6 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
         :return: control signal (throttle and steering)
         """
         control = CarlaEgoVehicleControl()
-        feedback_msg = ForceFeedback()
 
         throttle = self._lon_controller.run_step(target_speed, current_speed)
         steering = self._lat_controller.run_step(current_pose, waypoint)
@@ -66,10 +65,7 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
         control.hand_brake = False
         control.manual_gear_shift = False
 
-        feedback_msg.position = control.steer
-        feedback_msg.torque = 0.5
-
-        return control, feedback_msg
+        return control
 
 
 class PIDLongitudinalController(object):  # pylint: disable=too-few-public-methods
