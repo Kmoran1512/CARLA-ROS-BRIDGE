@@ -66,7 +66,7 @@ def generate_launch_description():
         ),
         launch.actions.DeclareLaunchArgument(
             name='spawn_point',
-            default_value='127.4,-195.4,2,0,0,180'
+            default_value='339.0,-244.4,2.0,0,0,90'
         ),
         launch.actions.DeclareLaunchArgument(
             name='target_speed',
@@ -96,6 +96,16 @@ def generate_launch_description():
         ),
         launch.actions.OpaqueFunction(function=launch_carla_spawn_object),
         launch.actions.OpaqueFunction(function=launch_target_speed_publisher),
+        # launch.actions.IncludeLaunchDescription(
+        #     launch.launch_description_sources.PythonLaunchDescriptionSource(
+        #         os.path.join(get_package_share_directory(
+        #             'weather_control'), 'weather_control.launch.py')
+        #     ),
+        #     launch_arguments={
+        #         'sun_azimuth_angle': launch.substitutions.LaunchConfiguration(60.0),
+        #         'sun_altitude_angle': launch.substitutions.LaunchConfiguration(2.0)
+        #     }.items()
+        # ),
         launch.actions.IncludeLaunchDescription(
             launch.launch_description_sources.PythonLaunchDescriptionSource(
                 os.path.join(get_package_share_directory(

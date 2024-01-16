@@ -24,6 +24,7 @@
         {
             "type": "vehicle.tesla.model3",
             "id": "ego_vehicle",
+            "spawn_point": {"x":338.8, "y":-244.4, "z":2.0, "roll": 0.0, "pitch": 0.0, "yaw": 90.0},
             "sensors": 
             [
                 {
@@ -157,6 +158,28 @@
                     "id": "control"
                 }
             ]
+        },
+        {
+            "type": "walker.pedestrian.0001",
+            "id": "walker001",
+            "spawn_point": {"x":220.0, "y":-199.0, "z":2.0, "roll": 0.0, "pitch": 0.0, "yaw": 270.0},
+            "sensors":[
+                {
+                    "type": "sensor.pseudo.objects",
+                    "id": "objects"
+                }
+            ]        
+        },
+        {
+            "type": "walker.pedestrian.0003",
+            "id": "walker003",
+            "spawn_point": {"x":228.0, "y":-131.0, "z":2.0, "roll": 0.0, "pitch": 0.0, "yaw": 90.0},
+            "sensors":[
+                {
+                    "type": "sensor.pseudo.objects",
+                    "id": "objects"
+                }
+            ]        
         }
     ]
 }

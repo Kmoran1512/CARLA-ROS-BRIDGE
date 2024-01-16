@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <OpenSCENARIO>
   <FileHeader revMajor="1" revMinor="0" date="2019-06-25T00:00:00" description="CARLA:PedCrash" author=""/>
-  <ParameterDeclarations />
+  <ParameterDeclarations>
+    <ParameterDeclaration name="vehicleSpeed" parameterType="double" value="12.0"/>
+    <ParameterDeclaration name="stoppingDistance" parameterType="double" value="40.0"/>
+    <!-- 12 will stop just before the pedestrian -->
+    <ParameterDeclaration name="stoppingDistance2" parameterType="double" value="25.0"/>
+    <!-- 12 will stop just before the pedestrian -->
+    <ParameterDeclaration name="stoppingDistance3" parameterType="double" value="11.0"/>
+
+  </ParameterDeclarations>
   <CatalogLocations />
   <RoadNetwork>
     <LogicFile filepath="Town01"/>
@@ -81,9 +89,9 @@
         <GlobalAction>
           <EnvironmentAction>
             <Environment name="Environment1">
-              <TimeOfDay animation="false" dateTime="2019-06-25T12:00:00"/>
+              <TimeOfDay animation="false" dateTime="2019-06-25T00:00:00"/>
               <Weather cloudState="free">
-                <Sun intensity="1.0" azimuth="0.0" elevation="1.31"/>
+                <Sun intensity="0.7" azimuth="0.5" elevation="0.05"/>
                 <Fog visualRange="100000.0"/>
                 <Precipitation precipitationType="dry" intensity="0.0"/>
               </Weather>
@@ -125,7 +133,7 @@
                   <SpeedAction>
                       <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                          <AbsoluteTargetSpeed value="8.33"/>
+                          <AbsoluteTargetSpeed value="$vehicleSpeed"/>
                       </SpeedActionTarget>
                   </SpeedAction>
               </LongitudinalAction>
@@ -135,7 +143,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="222" y="191" z="0.3" h="2"/>
+                <WorldPosition x="222" y="195" z="0.3" h="2"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
@@ -173,17 +181,17 @@
       <Act name="Behavior">
         <ManeuverGroup maximumExecutionCount="1" name="ManeuverSequence">
           <Actors selectTriggeringEntities="false">
-            <EntityRef entityRef="adversary"/>
+            <EntityRef entityRef="ego_vehicle"/>
           </Actors>
-          <Maneuver name="PedestrianCrossingManeuver">
-            <Event name="PedestrianStartsWalking" priority="overwrite">
-              <Action name="PedestrianStartsWalking">
+          <Maneuver name="StoppingManeuver">
+            <Event name="VehicleBrakes" priority="overwrite">
+              <Action name="VehicleBrakes">
                 <PrivateAction>
                   <LongitudinalAction>
                     <SpeedAction>
-                      <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="distance"/>
+                      <SpeedActionDynamics dynamicsShape="linear" value="15" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                        <AbsoluteTargetSpeed value="5.0"/>
+                        <AbsoluteTargetSpeed value="8.0"/>
                       </SpeedActionTarget>
                     </SpeedAction>
                   </LongitudinalAction>
@@ -197,7 +205,7 @@
                         <EntityRef entityRef="ego_vehicle"/>
                       </TriggeringEntities>
                       <EntityCondition>
-                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="12.0" freespace="false" rule="lessThan"/>
+                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="$stoppingDistance" freespace="false" rule="lessThan"/>
                       </EntityCondition>
                     </ByEntityCondition>
                   </Condition>
@@ -206,6 +214,76 @@
             </Event>
           </Maneuver>
         </ManeuverGroup>
+        <ManeuverGroup maximumExecutionCount="1" name="ManeuverSequence2">
+          <Actors selectTriggeringEntities="false">
+            <EntityRef entityRef="ego_vehicle"/>
+          </Actors>
+          <Maneuver name="StoppingManeuver2">
+            <Event name="VehicleBrakes2" priority="overwrite">
+              <Action name="VehicleBrakes2">
+                <PrivateAction>
+                  <LongitudinalAction>
+                    <SpeedAction>
+                      <SpeedActionDynamics dynamicsShape="linear" value="25" dynamicsDimension="distance"/>
+                      <SpeedActionTarget>
+                        <AbsoluteTargetSpeed value="4.0"/>
+                      </SpeedActionTarget>
+                    </SpeedAction>
+                  </LongitudinalAction>
+                </PrivateAction>
+              </Action>
+              <StartTrigger>
+                <ConditionGroup>
+                  <Condition name="StartCondition" delay="0" conditionEdge="rising">
+                    <ByEntityCondition>
+                      <TriggeringEntities triggeringEntitiesRule="any">
+                        <EntityRef entityRef="ego_vehicle"/>
+                      </TriggeringEntities>
+                      <EntityCondition>
+                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="$stoppingDistance2" freespace="false" rule="lessThan"/>
+                      </EntityCondition>
+                    </ByEntityCondition>
+                  </Condition>
+                </ConditionGroup>
+              </StartTrigger>
+            </Event>
+          </Maneuver>
+        </ManeuverGroup>
+        <ManeuverGroup maximumExecutionCount="1" name="ManeuverSequence3">
+          <Actors selectTriggeringEntities="false">
+            <EntityRef entityRef="ego_vehicle"/>
+          </Actors>
+          <Maneuver name="StoppingManeuver3">
+            <Event name="VehicleBrakes3" priority="overwrite">
+              <Action name="VehicleBrakes3">
+                <PrivateAction>
+                  <LongitudinalAction>
+                    <SpeedAction>
+                      <SpeedActionDynamics dynamicsShape="linear" value="25" dynamicsDimension="distance"/>
+                      <SpeedActionTarget>
+                        <AbsoluteTargetSpeed value="0.0"/>
+                      </SpeedActionTarget>
+                    </SpeedAction>
+                  </LongitudinalAction>
+                </PrivateAction>
+              </Action>
+              <StartTrigger>
+                <ConditionGroup>
+                  <Condition name="StartCondition" delay="0" conditionEdge="rising">
+                    <ByEntityCondition>
+                      <TriggeringEntities triggeringEntitiesRule="any">
+                        <EntityRef entityRef="ego_vehicle"/>
+                      </TriggeringEntities>
+                      <EntityCondition>
+                        <RelativeDistanceCondition entityRef="adversary" relativeDistanceType="cartesianDistance" value="$stoppingDistance3" freespace="false" rule="lessThan"/>
+                      </EntityCondition>
+                    </ByEntityCondition>
+                  </Condition>
+                </ConditionGroup>
+              </StartTrigger>
+            </Event>
+          </Maneuver>
+        </ManeuverGroup>        
         <StartTrigger>
           <ConditionGroup>
             <Condition name="OverallStartCondition" delay="0" conditionEdge="rising">
@@ -214,9 +292,14 @@
                   <EntityRef entityRef="ego_vehicle"/>
                 </TriggeringEntities>
                 <EntityCondition>
-                  <TraveledDistanceCondition value="10"/>
+                  <TraveledDistanceCondition value="1.0"/>
                 </EntityCondition>
               </ByEntityCondition>
+            </Condition>
+            <Condition name="StartTime" delay="0" conditionEdge="rising">
+              <ByValueCondition>
+                <SimulationTimeCondition value="0" rule="equalTo"/>
+              </ByValueCondition>
             </Condition>
           </ConditionGroup>
         </StartTrigger>
@@ -228,7 +311,7 @@
                   <EntityRef entityRef="ego_vehicle"/>
                 </TriggeringEntities>
                 <EntityCondition>
-                  <TraveledDistanceCondition value="300.0"/>
+                  <TraveledDistanceCondition value="1000.0"/>
                 </EntityCondition>
               </ByEntityCondition>
             </Condition>
@@ -236,6 +319,44 @@
         </StopTrigger>
       </Act>
     </Story>
-    <StopTrigger />
+    <StopTrigger>
+      <ConditionGroup>
+        <Condition name="criteria_RunningStopTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+        <Condition name="criteria_RunningRedLightTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+        <Condition name="criteria_WrongLaneTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+        <Condition name="criteria_OnSidewalkTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+        <Condition name="criteria_KeepLaneTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+        <Condition name="criteria_CollisionTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="" value="" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+        <Condition name="criteria_DrivenDistanceTest" delay="0" conditionEdge="rising">
+          <ByValueCondition>
+            <ParameterCondition parameterRef="distance_success" value="1000" rule="lessThan"/>
+          </ByValueCondition>
+        </Condition>
+      </ConditionGroup>
+    </StopTrigger>
   </Storyboard>
 </OpenSCENARIO>

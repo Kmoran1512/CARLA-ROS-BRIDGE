@@ -434,7 +434,7 @@ class JoystickControl(object):
         feedback_msg.torque = torque
 
         self._feedback_center = feedback_msg.position
-        self.pubsub.force_feedback_publisher.publish(feedback_msg)
+        #self.pubsub.force_feedback_publisher.publish(feedback_msg)
 
     # TODO: Create and Change subscriber
     def auton_ctrl(self, data):
@@ -446,7 +446,7 @@ class JoystickControl(object):
         self._adjust_force_feedback(data.steer)
 
     def force_ctrl(self, data):
-        if not data.is_centering and data.torque == 1:
+        if not data.is_centering and data.torque == 9999:
             self.manual_override = True
             self.set_manual_override(self.manual_override)
 
@@ -455,7 +455,7 @@ class JoystickControl(object):
             self.m_ctrl.steer = self._steer_cache
             self.pubsub.m_vc.publish(self.m_ctrl)
         else:
-            self.a_ctrl.steer = self._steer_cache
+            #self.a_ctrl.steer = self._steer_cache
             self.pubsub.a_vc.publish(self.a_ctrl) 
 
 

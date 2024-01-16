@@ -35,6 +35,7 @@ class AgentState(enum.Enum):
     NAVIGATING = 1
     BLOCKED_BY_VEHICLE = 2
     BLOCKED_RED_LIGHT = 3
+    BLOCKED_BY_WALKER = 4
 
 
 class Agent(CompatibleNode):
@@ -43,6 +44,7 @@ class Agent(CompatibleNode):
     """
 
     OBJECT_VEHICLE_CLASSIFICATION = [
+        Object.CLASSIFICATION_PEDESTRIAN,
         Object.CLASSIFICATION_CAR,
         Object.CLASSIFICATION_BIKE,
         Object.CLASSIFICATION_MOTORCYCLE,
