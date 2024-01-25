@@ -29,8 +29,6 @@ from derived_object_msgs.msg import ObjectArray, Object
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64  # pylint: disable=import-error
 
-from carla_msgs.msg import CarlaWalkerControl
-
 class CarlaAdAgent(Agent):
     """
     A basic AD agent using CARLA waypoints
@@ -51,9 +49,8 @@ class CarlaAdAgent(Agent):
         self._objects = {}
         self._lights_status = {}
         self._lights_info = {}
-        self._target_speed = 0.0
+        self._target_speed = 0.
 
-        self._walking = False
 
         self.speed_command_publisher = self.new_publisher(
             Float64, "/carla/{}/speed_command".format(role_name),
@@ -92,11 +89,6 @@ class CarlaAdAgent(Agent):
                 "/carla/traffic_lights/info",
                 self.traffic_light_info_cb,
                 qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-            )
-            self.walker_publisher = self.new_publisher(
-                CarlaWalkerControl,
-                "/carla/walker003/walker_control_cmd",
-                qos_profile=1
             )
 
 
@@ -166,21 +158,7 @@ class CarlaAdAgent(Agent):
             # check possible obstacles
             vehicle_state, vehicle = self._is_vehicle_hazard(ego_vehicle_pose, objects)
 
-            if vehicle_state and objects.get(vehicle).classification == Object.CLASSIFICATION_PEDESTRIAN and objects.get(vehicle).pose.position.y > -150:
-                if not self._walking:
-                    control = CarlaWalkerControl()
-                    control.direction.x = 0.64
-                    control.direction.y = 0.77
-                    control.speed = 1.0
-                    self.walker_publisher.publish(control)
-
-                    self._walking = True
-            elif self._walking:
-                control = CarlaWalkerControl()
-                self.walker_publisher.publish(control)
-
-
-            if vehicle_state and not (objects.get(vehicle).classification == Object.CLASSIFICATION_PEDESTRIAN and objects.get(vehicle).pose.position.y < -150):
+            if vehicle_state:
                 self._state = AgentState.BLOCKED_BY_VEHICLE
                 hazard_detected = True
 
