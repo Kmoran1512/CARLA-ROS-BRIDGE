@@ -3,10 +3,10 @@
 ## Semantic configuration
 | Scenario Number | Collision (Y/N) | Side of the Road (L/R) | Pedestrian Number |
 |-----------------|-----------------|------------------------|-------------------|
-| 1               | Y               | R                      | 01                |
-| 2               | N               | R                      | 01                |
-| 3               | Y               | L                      | 01                |
-| 4               | N               | L                      | 01                |
+| 1               | N               | R                      | 01                |
+| 2               | Y               | R                      | 01                |
+| 3               | N               | L                      | 01                |
+| 4               | Y               | L                      | 01                |
 
 
 ## Variable configuraiton
