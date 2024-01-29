@@ -27,31 +27,31 @@ class TrainingScenario(Node):
     def spawn_walkers(self, n=1):
         walker_requests = []
 
-        for i in range(n):
+        for i in range(1, n + 1):
             walker_request = SpawnObject.Request()
 
             number = i % 44
 
-            walker_request.type = f"walker.pedestrian.00{number:02}"
-            walker_request.id = f"walker{i:02}"
+            walker_request.type = f"walker.pedestrian.{number:04}"
+            walker_request.id = f"walker{i:04}"
             walker_request.random_pose = True
 
             walker_requests.append(self.spawn_actors_service.call_async(walker_request))
 
-        for request in walker_requests:
+        for i, request in enumerate(walker_requests):
             future = request
             rclpy.spin_until_future_complete(self, future)
-            self.walkers.append(future.result().id)
+            if future.result().id > 0:
+                self.walkers.append(WalkerAgent(i + 1, future.result().id))
 
-        self.walkers = [walker for walker in self.walkers if walker > 0]
         self.get_logger().info(f"spawned {len(self.walkers)} walkers")
 
     def clean_up(self):
         responses = []
 
-        for id in self.walkers:
+        for walker in self.walkers:
             remove_req = DestroyObject.Request()
-            remove_req.id = id
+            remove_req.id = walker.id
             responses.append(self.destroy_object_service.call_async(remove_req))
 
         for response in responses:
@@ -64,15 +64,17 @@ class WalkerAgent(Node):
     MIN_DISTANCE = 0.5
 
     def __init__(self, number, id):
+        super().__init__(f"WalkerAgent{number:04}")
+
         self.id = id
         self.n = number
 
         self._waypoints = []
         self._pose = Vector3()
 
-        self.walker_publisher = self.new_publisher(
+        self.walker_publisher = self.create_publisher(
             CarlaWalkerControl,
-            "/carla/{}/walker_control_cmd".format(f"walker{self.n:02}"),
+            "/carla/{}/walker_control_cmd".format(f"walker{self.n:04}"),
             10,
         )
 
