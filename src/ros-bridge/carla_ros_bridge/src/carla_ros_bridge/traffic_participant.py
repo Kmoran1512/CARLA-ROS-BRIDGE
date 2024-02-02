@@ -42,11 +42,9 @@ class TrafficParticipant(Actor):
         :type carla_actor: carla.Actor
         """
         self.classification_age = 0
-        super(TrafficParticipant, self).__init__(uid=uid,
-                                                 name=name,
-                                                 parent=parent,
-                                                 node=node,
-                                                 carla_actor=carla_actor)
+        super(TrafficParticipant, self).__init__(
+            uid=uid, name=name, parent=parent, node=node, carla_actor=carla_actor
+        )
 
     def update(self, frame, timestamp):
         """
@@ -81,10 +79,13 @@ class TrafficParticipant(Actor):
         obj.accel = self.get_current_ros_accel()
         # Shape
         obj.shape.type = SolidPrimitive.BOX
-        obj.shape.dimensions.extend([
-            self.carla_actor.bounding_box.extent.x * 2.0,
-            self.carla_actor.bounding_box.extent.y * 2.0,
-            self.carla_actor.bounding_box.extent.z * 2.0])
+        obj.shape.dimensions.extend(
+            [
+                self.carla_actor.bounding_box.extent.x * 2.0,
+                self.carla_actor.bounding_box.extent.y * 2.0,
+                self.carla_actor.bounding_box.extent.z * 2.0,
+            ]
+        )
 
         # Classification if available in attributes
         if self.get_classification() != Object.CLASSIFICATION_UNKNOWN:
@@ -109,9 +110,9 @@ class TrafficParticipant(Actor):
         :rtpye : std_msgs.msg.ColorRGBA
         """
         color = ColorRGBA()
-        color.r = 0.
-        color.g = 0.
-        color.b = 255.
+        color.r = 0.0
+        color.g = 0.0
+        color.b = 255.0
         return color
 
     def get_marker_pose(self):

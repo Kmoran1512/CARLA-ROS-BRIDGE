@@ -49,14 +49,14 @@ class LocalPlanner(CompatibleNode):
         self.control_time_step = self.get_param("control_time_step", 0.05)
 
         args_lateral_dict = {}
-        args_lateral_dict['K_P'] = self.get_param("Kp_lateral", 0.9)
-        args_lateral_dict['K_I'] = self.get_param("Ki_lateral", 0.0)
-        args_lateral_dict['K_D'] = self.get_param("Kd_lateral", 0.0)
+        args_lateral_dict["K_P"] = self.get_param("Kp_lateral", 0.9)
+        args_lateral_dict["K_I"] = self.get_param("Ki_lateral", 0.0)
+        args_lateral_dict["K_D"] = self.get_param("Kd_lateral", 0.0)
 
         args_longitudinal_dict = {}
-        args_longitudinal_dict['K_P'] = self.get_param("Kp_longitudinal", 0.206)
-        args_longitudinal_dict['K_I'] = self.get_param("Ki_longitudinal", 0.0206)
-        args_longitudinal_dict['K_D'] = self.get_param("Kd_longitudinal", 0.515)
+        args_longitudinal_dict["K_P"] = self.get_param("Kp_longitudinal", 0.206)
+        args_longitudinal_dict["K_I"] = self.get_param("Ki_longitudinal", 0.0206)
+        args_longitudinal_dict["K_D"] = self.get_param("Kd_longitudinal", 0.515)
 
         self.data_lock = threading.Lock()
 
@@ -73,38 +73,49 @@ class LocalPlanner(CompatibleNode):
             Odometry,
             "/carla/{}/odometry".format(self.role_name),
             self.odometry_cb,
-            qos_profile=10)
+            qos_profile=10,
+        )
         self._path_subscriber = self.new_subscription(
             Path,
             "/carla/{}/waypoints".format(self.role_name),
             self.path_cb,
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
         self._target_speed_subscriber = self.new_subscription(
             Float64,
             "/carla/{}/speed_command".format(self.role_name),
             self.target_speed_cb,
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
 
         # publishers
         self._target_pose_publisher = self.new_publisher(
-            Marker,
-            "/carla/{}/next_target".format(self.role_name),
-            qos_profile=10)
+            Marker, "/carla/{}/next_target".format(self.role_name), qos_profile=10
+        )
         self._control_cmd_publisher = self.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/{}/transfer_ctrl".format(self.role_name),
-            qos_profile=10)
+            qos_profile=10,
+        )
 
         # initializing controller
         self._vehicle_controller = VehiclePIDController(
-            self, args_lateral=args_lateral_dict, args_longitudinal=args_longitudinal_dict)
+            self,
+            args_lateral=args_lateral_dict,
+            args_longitudinal=args_longitudinal_dict,
+        )
 
     def odometry_cb(self, odometry_msg):
         with self.data_lock:
             self._current_pose = odometry_msg.pose.pose
-            self._current_speed = math.sqrt(odometry_msg.twist.twist.linear.x ** 2 +
-                                            odometry_msg.twist.twist.linear.y ** 2 +
-                                            odometry_msg.twist.twist.linear.z ** 2) * 3.6
+            self._current_speed = (
+                math.sqrt(
+                    odometry_msg.twist.twist.linear.x**2
+                    + odometry_msg.twist.twist.linear.y**2
+                    + odometry_msg.twist.twist.linear.z**2
+                )
+                * 3.6
+            )
 
     def target_speed_cb(self, target_speed_msg):
         with self.data_lock:
@@ -158,16 +169,22 @@ class LocalPlanner(CompatibleNode):
 
             # move using PID controllers
             control_msg = self._vehicle_controller.run_step(
-                self._target_speed, self._current_speed, self._current_pose, target_pose)
+                self._target_speed, self._current_speed, self._current_pose, target_pose
+            )
 
             # purge the queue of obsolete waypoints
             max_index = -1
 
-            sampling_radius = self._target_speed * 1 / 3.6  # search radius for next waypoints in seconds
+            sampling_radius = (
+                self._target_speed * 1 / 3.6
+            )  # search radius for next waypoints in seconds
             min_distance = sampling_radius * self.MIN_DISTANCE_PERCENTAGE
 
             for i, route_point in enumerate(self._waypoint_buffer):
-                if distance_vehicle(route_point, self._current_pose.position) < min_distance:
+                if (
+                    distance_vehicle(route_point, self._current_pose.position)
+                    < min_distance
+                ):
                     max_index = i
             if max_index >= 0:
                 for i in range(max_index + 1):
@@ -177,7 +194,7 @@ class LocalPlanner(CompatibleNode):
 
     def emergency_stop(self):
         control_msg = CarlaEgoVehicleControl()
-        
+
         control_msg.steer = 0.0
         control_msg.throttle = 0.0
         control_msg.brake = 1.0
@@ -202,7 +219,9 @@ def main(args=None):
         roscomp.on_shutdown(local_planner.emergency_stop)
 
         update_timer = local_planner.new_timer(
-            local_planner.control_time_step, lambda timer_event=None: local_planner.run_step())
+            local_planner.control_time_step,
+            lambda timer_event=None: local_planner.run_step(),
+        )
 
         local_planner.spin()
 
@@ -210,8 +229,9 @@ def main(args=None):
         pass
 
     finally:
-        roscomp.loginfo('Local planner shutting down.')
+        roscomp.loginfo("Local planner shutting down.")
         roscomp.shutdown()
+
 
 if __name__ == "__main__":
     main()

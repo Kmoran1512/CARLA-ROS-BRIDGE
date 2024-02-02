@@ -24,7 +24,16 @@ class Lidar(Sensor):
     Actor implementation details for lidars
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -43,17 +52,19 @@ class Lidar(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(Lidar, self).__init__(uid=uid,
-                                    name=name,
-                                    parent=parent,
-                                    relative_spawn_pose=relative_spawn_pose,
-                                    node=node,
-                                    carla_actor=carla_actor,
-                                    synchronous_mode=synchronous_mode)
+        super(Lidar, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+        )
 
-        self.lidar_publisher = node.new_publisher(PointCloud2,
-                                                  self.get_topic_prefix(),
-                                                  qos_profile=10)
+        self.lidar_publisher = node.new_publisher(
+            PointCloud2, self.get_topic_prefix(), qos_profile=10
+        )
         self.listen()
 
     def destroy(self):
@@ -70,16 +81,18 @@ class Lidar(Sensor):
         """
         header = self.get_msg_header(timestamp=carla_lidar_measurement.timestamp)
         fields = [
-            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
-            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
-            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
-            PointField(name='intensity', offset=12, datatype=PointField.FLOAT32, count=1)
+            PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
+            PointField(
+                name="intensity", offset=12, datatype=PointField.FLOAT32, count=1
+            ),
         ]
 
         lidar_data = numpy.fromstring(
-            bytes(carla_lidar_measurement.raw_data), dtype=numpy.float32)
-        lidar_data = numpy.reshape(
-            lidar_data, (int(lidar_data.shape[0] / 4), 4))
+            bytes(carla_lidar_measurement.raw_data), dtype=numpy.float32
+        )
+        lidar_data = numpy.reshape(lidar_data, (int(lidar_data.shape[0] / 4), 4))
         # we take the opposite of y axis
         # (as lidar point are express in left handed coordinate system, and ros need right handed)
         lidar_data[:, 1] *= -1
@@ -93,7 +106,16 @@ class SemanticLidar(Sensor):
     Actor implementation details for semantic lidars
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -112,18 +134,19 @@ class SemanticLidar(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(SemanticLidar, self).__init__(uid=uid,
-                                            name=name,
-                                            parent=parent,
-                                            relative_spawn_pose=relative_spawn_pose,
-                                            node=node,
-                                            carla_actor=carla_actor,
-                                            synchronous_mode=synchronous_mode)
+        super(SemanticLidar, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+        )
 
         self.semantic_lidar_publisher = node.new_publisher(
-            PointCloud2,
-            self.get_topic_prefix(),
-            qos_profile=10)
+            PointCloud2, self.get_topic_prefix(), qos_profile=10
+        )
         self.listen()
 
     def destroy(self):
@@ -140,26 +163,32 @@ class SemanticLidar(Sensor):
         """
         header = self.get_msg_header(timestamp=carla_lidar_measurement.timestamp)
         fields = [
-            PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
-            PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
-            PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
-            PointField(name='CosAngle', offset=12, datatype=PointField.FLOAT32, count=1),
-            PointField(name='ObjIdx', offset=16, datatype=PointField.UINT32, count=1),
-            PointField(name='ObjTag', offset=20, datatype=PointField.UINT32, count=1)
+            PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
+            PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
+            PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
+            PointField(
+                name="CosAngle", offset=12, datatype=PointField.FLOAT32, count=1
+            ),
+            PointField(name="ObjIdx", offset=16, datatype=PointField.UINT32, count=1),
+            PointField(name="ObjTag", offset=20, datatype=PointField.UINT32, count=1),
         ]
 
-        lidar_data = numpy.fromstring(bytes(carla_lidar_measurement.raw_data),
-                                      dtype=numpy.dtype([
-                                          ('x', numpy.float32),
-                                          ('y', numpy.float32),
-                                          ('z', numpy.float32),
-                                          ('CosAngle', numpy.float32),
-                                          ('ObjIdx', numpy.uint32),
-                                          ('ObjTag', numpy.uint32)
-                                      ]))
+        lidar_data = numpy.fromstring(
+            bytes(carla_lidar_measurement.raw_data),
+            dtype=numpy.dtype(
+                [
+                    ("x", numpy.float32),
+                    ("y", numpy.float32),
+                    ("z", numpy.float32),
+                    ("CosAngle", numpy.float32),
+                    ("ObjIdx", numpy.uint32),
+                    ("ObjTag", numpy.uint32),
+                ]
+            ),
+        )
 
         # we take the oposite of y axis
         # (as lidar point are express in left handed coordinate system, and ros need right handed)
-        lidar_data['y'] *= -1
+        lidar_data["y"] *= -1
         point_cloud_msg = create_cloud(header, fields, lidar_data.tolist())
         self.semantic_lidar_publisher.publish(point_cloud_msg)

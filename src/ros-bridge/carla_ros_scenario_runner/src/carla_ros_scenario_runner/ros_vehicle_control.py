@@ -11,7 +11,9 @@ ROS Vehicle Control usable by scenario-runner
 
 import os
 
-from srunner.scenariomanager.actorcontrols.basic_control import BasicControl  # pylint: disable=import-error
+from srunner.scenariomanager.actorcontrols.basic_control import (
+    BasicControl,
+)  # pylint: disable=import-error
 
 import carla_common.transforms as trans
 import ros_compatibility as roscomp
@@ -28,7 +30,6 @@ ROS_VERSION = roscomp.get_ros_version()
 
 
 class RosVehicleControl(BasicControl):
-
     def __init__(self, actor, args=None):
         super(RosVehicleControl, self).__init__(actor)
 
@@ -43,7 +44,7 @@ class RosVehicleControl(BasicControl):
 
         roscomp.init("ros_agent_{}".format(self._role_name), args=None)
 
-        self.node = CompatibleNode('ros_agent_{}'.format(self._role_name))
+        self.node = CompatibleNode("ros_agent_{}".format(self._role_name))
 
         self._current_target_speed = None
         self._current_path = None
@@ -52,17 +53,24 @@ class RosVehicleControl(BasicControl):
         self._target_speed_publisher = self.node.new_publisher(
             Float64,
             "/carla/{}/target_speed".format(self._role_name),
-            QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
-        self.node.loginfo("Publishing target_speed on /carla/{}/target_speed".format(self._role_name))
+            QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
+        self.node.loginfo(
+            "Publishing target_speed on /carla/{}/target_speed".format(self._role_name)
+        )
 
         self._path_publisher = self.node.new_publisher(
             Path,
             "/carla/{}/{}".format(self._role_name, self._path_topic_name),
-            QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
-        self.node.loginfo("Publishing path on /carla/{}/{}".format(self._role_name, self._path_topic_name))
+            QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
+        self.node.loginfo(
+            "Publishing path on /carla/{}/{}".format(
+                self._role_name, self._path_topic_name
+            )
+        )
 
         if "launch" in args and "launch-package" in args:
-
             launch_file = args["launch"]
             launch_package = args["launch-package"]
 
@@ -71,29 +79,46 @@ class RosVehicleControl(BasicControl):
                 cli_args = [launch_package, launch_file]
             elif ROS_VERSION == 2:
                 executable = "ros2 launch"
-                cli_args = [launch_package, launch_file + '.py']
-            cli_args.append('role_name:={}'.format(self._role_name))
+                cli_args = [launch_package, launch_file + ".py"]
+            cli_args.append("role_name:={}".format(self._role_name))
 
             # add additional launch parameters
             launch_parameters = []
             for key, value in args.items():
-                if not key == "launch" and not key == "launch-package" and not key == "path_topic_name":
-                    launch_parameters.append('{}:={}'.format(key, value))
-                    cli_args.append('{}:={}'.format(key, value))
+                if (
+                    not key == "launch"
+                    and not key == "launch-package"
+                    and not key == "path_topic_name"
+                ):
+                    launch_parameters.append("{}:={}".format(key, value))
+                    cli_args.append("{}:={}".format(key, value))
 
-            self.node.loginfo("{}: Launching {} from package {} (parameters: {})...".format(
-                self._role_name, launch_file, launch_package, launch_parameters))
+            self.node.loginfo(
+                "{}: Launching {} from package {} (parameters: {})...".format(
+                    self._role_name, launch_file, launch_package, launch_parameters
+                )
+            )
 
             cmdline = [executable] + cli_args
             self.controller_launch = ApplicationRunner(
-                self.controller_runner_status_updated, self.controller_runner_log, 'RosVehicleControl: launching controller node')
-            self.controller_launch.execute(cmdline, env=os.environ,)
+                self.controller_runner_status_updated,
+                self.controller_runner_log,
+                "RosVehicleControl: launching controller node",
+            )
+            self.controller_launch.execute(
+                cmdline,
+                env=os.environ,
+            )
 
             self.node.loginfo(
-                "{}: Successfully started ros vehicle control".format(self._role_name))
+                "{}: Successfully started ros vehicle control".format(self._role_name)
+            )
         else:
             self.node.logwarn(
-                "{}: Missing value for 'launch' and/or 'launch-package'.".format(self._role_name))
+                "{}: Missing value for 'launch' and/or 'launch-package'.".format(
+                    self._role_name
+                )
+            )
 
     def controller_runner_log(self, log):  # pylint: disable=no-self-use
         """
@@ -109,14 +134,18 @@ class RosVehicleControl(BasicControl):
 
     def update_target_speed(self, speed):
         super(RosVehicleControl, self).update_target_speed(speed)
-        self.node.loginfo("{}: Target speed changed to {}".format(self._role_name, speed))
+        self.node.loginfo(
+            "{}: Target speed changed to {}".format(self._role_name, speed)
+        )
         self._target_speed_publisher.publish(Float64(data=speed))
 
     def update_waypoints(self, waypoints, start_time=None):
         super(RosVehicleControl, self).update_waypoints(waypoints, start_time)
         self.node.loginfo("{}: Waypoints changed.".format(self._role_name))
         path = Path()
-        path.header.stamp = roscomp.ros_timestamp(sec=self.node.get_time(), from_sec=True)
+        path.header.stamp = roscomp.ros_timestamp(
+            sec=self.node.get_time(), from_sec=True
+        )
         path.header.frame_id = "map"
         for wpt in waypoints:
             print(wpt)
@@ -125,7 +154,7 @@ class RosVehicleControl(BasicControl):
 
     def reset(self):
         # set target speed to zero before closing as the controller can take time to shutdown
-        self.update_target_speed(0.)
+        self.update_target_speed(0.0)
         if self.controller_launch and self.controller_launch.is_running():
             self.controller_launch.shutdown()
         if self._carla_actor and self._carla_actor.is_alive:

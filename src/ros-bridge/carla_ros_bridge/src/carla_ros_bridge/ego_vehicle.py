@@ -23,7 +23,7 @@ from carla_msgs.msg import (
     CarlaEgoVehicleInfo,
     CarlaEgoVehicleInfoWheel,
     CarlaEgoVehicleControl,
-    CarlaEgoVehicleStatus
+    CarlaEgoVehicleStatus,
 )
 from std_msgs.msg import Bool  # pylint: disable=import-error
 from std_msgs.msg import ColorRGBA  # pylint: disable=import-error
@@ -35,7 +35,9 @@ class EgoVehicle(Vehicle):
     Vehicle implementation details for the ego vehicle
     """
 
-    def __init__(self, uid, name, parent, node, carla_actor, vehicle_control_applied_callback):
+    def __init__(
+        self, uid, name, parent, node, carla_actor, vehicle_control_applied_callback
+    ):
         """
         Constructor
 
@@ -50,11 +52,9 @@ class EgoVehicle(Vehicle):
         :param carla_actor: carla actor object
         :type carla_actor: carla.Actor
         """
-        super(EgoVehicle, self).__init__(uid=uid,
-                                         name=name,
-                                         parent=parent,
-                                         node=node,
-                                         carla_actor=carla_actor)
+        super(EgoVehicle, self).__init__(
+            uid=uid, name=name, parent=parent, node=node, carla_actor=carla_actor
+        )
 
         self.vehicle_info_published = False
         self.vehicle_control_override = False
@@ -63,36 +63,45 @@ class EgoVehicle(Vehicle):
         self.vehicle_status_publisher = node.new_publisher(
             CarlaEgoVehicleStatus,
             self.get_topic_prefix() + "/vehicle_status",
-            qos_profile=10)
+            qos_profile=10,
+        )
         self.vehicle_info_publisher = node.new_publisher(
             CarlaEgoVehicleInfo,
-            self.get_topic_prefix() +
-            "/vehicle_info",
-            qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            self.get_topic_prefix() + "/vehicle_info",
+            qos_profile=QoSProfile(
+                depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
+        )
 
         self.control_subscriber = node.new_subscription(
             CarlaEgoVehicleControl,
             self.get_topic_prefix() + "/vehicle_control_cmd",
             lambda data: self.control_command_updated(data, manual_override=False),
-            qos_profile=10)
+            qos_profile=10,
+        )
 
         self.manual_control_subscriber = node.new_subscription(
             CarlaEgoVehicleControl,
             self.get_topic_prefix() + "/vehicle_control_cmd_manual",
             lambda data: self.control_command_updated(data, manual_override=True),
-            qos_profile=10)
+            qos_profile=10,
+        )
 
         self.control_override_subscriber = node.new_subscription(
             Bool,
             self.get_topic_prefix() + "/vehicle_control_manual_override",
             self.control_command_override,
-            qos_profile=QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            qos_profile=QoSProfile(
+                depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
+        )
 
         self.enable_autopilot_subscriber = node.new_subscription(
             Bool,
             self.get_topic_prefix() + "/enable_autopilot",
             self.enable_autopilot_updated,
-            qos_profile=10)
+            qos_profile=10,
+        )
 
     def get_marker_color(self):
         """
@@ -116,7 +125,8 @@ class EgoVehicle(Vehicle):
         :return:
         """
         vehicle_status = CarlaEgoVehicleStatus(
-            header=self.get_msg_header("map", timestamp=timestamp))
+            header=self.get_msg_header("map", timestamp=timestamp)
+        )
         vehicle_status.velocity = self.get_vehicle_speed_abs(self.carla_actor)
         vehicle_status.acceleration.linear = self.get_current_ros_accel().linear
         vehicle_status.orientation = self.get_current_ros_pose().orientation
@@ -126,7 +136,9 @@ class EgoVehicle(Vehicle):
         vehicle_status.control.hand_brake = self.carla_actor.get_control().hand_brake
         vehicle_status.control.reverse = self.carla_actor.get_control().reverse
         vehicle_status.control.gear = self.carla_actor.get_control().gear
-        vehicle_status.control.manual_gear_shift = self.carla_actor.get_control().manual_gear_shift
+        vehicle_status.control.manual_gear_shift = (
+            self.carla_actor.get_control().manual_gear_shift
+        )
         self.vehicle_status_publisher.publish(vehicle_status)
 
         # only send vehicle once (in latched-mode)
@@ -135,7 +147,7 @@ class EgoVehicle(Vehicle):
             vehicle_info = CarlaEgoVehicleInfo()
             vehicle_info.id = self.carla_actor.id
             vehicle_info.type = self.carla_actor.type_id
-            vehicle_info.rolename = self.carla_actor.attributes.get('role_name')
+            vehicle_info.rolename = self.carla_actor.attributes.get("role_name")
             vehicle_physics = self.carla_actor.get_physics_control()
 
             for wheel in vehicle_physics.wheels:
@@ -147,11 +159,17 @@ class EgoVehicle(Vehicle):
                 wheel_info.max_brake_torque = wheel.max_brake_torque
                 wheel_info.max_handbrake_torque = wheel.max_handbrake_torque
 
-                inv_T = numpy.array(self.carla_actor.get_transform().get_inverse_matrix(), dtype=float)
-                wheel_pos_in_map = numpy.array([wheel.position.x/100.0,
-                                        wheel.position.y/100.0,
-                                        wheel.position.z/100.0,
-                                        1.0])
+                inv_T = numpy.array(
+                    self.carla_actor.get_transform().get_inverse_matrix(), dtype=float
+                )
+                wheel_pos_in_map = numpy.array(
+                    [
+                        wheel.position.x / 100.0,
+                        wheel.position.y / 100.0,
+                        wheel.position.z / 100.0,
+                        1.0,
+                    ]
+                )
                 wheel_pos_in_ego_vehicle = numpy.matmul(inv_T, wheel_pos_in_map)
                 wheel_info.position.x = wheel_pos_in_ego_vehicle[0]
                 wheel_info.position.y = -wheel_pos_in_ego_vehicle[1]
@@ -161,11 +179,15 @@ class EgoVehicle(Vehicle):
             vehicle_info.max_rpm = vehicle_physics.max_rpm
             vehicle_info.max_rpm = vehicle_physics.max_rpm
             vehicle_info.moi = vehicle_physics.moi
-            vehicle_info.damping_rate_full_throttle = vehicle_physics.damping_rate_full_throttle
-            vehicle_info.damping_rate_zero_throttle_clutch_engaged = \
+            vehicle_info.damping_rate_full_throttle = (
+                vehicle_physics.damping_rate_full_throttle
+            )
+            vehicle_info.damping_rate_zero_throttle_clutch_engaged = (
                 vehicle_physics.damping_rate_zero_throttle_clutch_engaged
-            vehicle_info.damping_rate_zero_throttle_clutch_disengaged = \
+            )
+            vehicle_info.damping_rate_zero_throttle_clutch_disengaged = (
                 vehicle_physics.damping_rate_zero_throttle_clutch_disengaged
+            )
             vehicle_info.use_gear_autobox = vehicle_physics.use_gear_autobox
             vehicle_info.gear_switch_time = vehicle_physics.gear_switch_time
             vehicle_info.clutch_strength = vehicle_physics.clutch_strength
@@ -247,7 +269,9 @@ class EgoVehicle(Vehicle):
         :type enable_auto_pilot: std_msgs.Bool
         :return:
         """
-        self.node.logdebug("Ego vehicle: Set autopilot to {}".format(enable_auto_pilot.data))
+        self.node.logdebug(
+            "Ego vehicle: Set autopilot to {}".format(enable_auto_pilot.data)
+        )
         self.carla_actor.set_autopilot(enable_auto_pilot.data)
 
     @staticmethod
@@ -259,9 +283,11 @@ class EgoVehicle(Vehicle):
         :return: squared vector length
         :rtype: float64
         """
-        return carla_vector.x * carla_vector.x + \
-            carla_vector.y * carla_vector.y + \
-            carla_vector.z * carla_vector.z
+        return (
+            carla_vector.x * carla_vector.x
+            + carla_vector.y * carla_vector.y
+            + carla_vector.z * carla_vector.z
+        )
 
     @staticmethod
     def get_vehicle_speed_squared(carla_vehicle):

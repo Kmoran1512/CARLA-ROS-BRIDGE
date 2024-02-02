@@ -36,14 +36,13 @@ class OdometrySensor(PseudoActor):
         :type node: carla_ros_bridge.CarlaRosBridge
         """
 
-        super(OdometrySensor, self).__init__(uid=uid,
-                                             name=name,
-                                             parent=parent,
-                                             node=node)
+        super(OdometrySensor, self).__init__(
+            uid=uid, name=name, parent=parent, node=node
+        )
 
-        self.odometry_publisher = node.new_publisher(Odometry,
-                                                     self.get_topic_prefix(),
-                                                     qos_profile=10)
+        self.odometry_publisher = node.new_publisher(
+            Odometry, self.get_topic_prefix(), qos_profile=10
+        )
 
     def destroy(self):
         super(OdometrySensor, self).destroy()
@@ -61,7 +60,9 @@ class OdometrySensor(PseudoActor):
         """
         Function (override) to update this object.
         """
-        odometry = Odometry(header=self.parent.get_msg_header("map", timestamp=timestamp))
+        odometry = Odometry(
+            header=self.parent.get_msg_header("map", timestamp=timestamp)
+        )
         odometry.child_frame_id = self.parent.get_prefix()
         try:
             odometry.pose.pose = self.parent.get_current_ros_pose()
@@ -69,6 +70,9 @@ class OdometrySensor(PseudoActor):
         except AttributeError:
             # parent actor disappeared, do not send tf
             self.node.logwarn(
-                "OdometrySensor could not publish. parent actor {} not found".format(self.parent.uid))
+                "OdometrySensor could not publish. parent actor {} not found".format(
+                    self.parent.uid
+                )
+            )
             return
         self.odometry_publisher.publish(odometry)

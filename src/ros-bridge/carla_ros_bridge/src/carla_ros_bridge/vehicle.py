@@ -40,23 +40,21 @@ class Vehicle(TrafficParticipant):
         :type carla_actor: carla.Vehicle
         """
         self.classification = Object.CLASSIFICATION_CAR
-        if 'object_type' in carla_actor.attributes:
-            if carla_actor.attributes['object_type'] == 'car':
+        if "object_type" in carla_actor.attributes:
+            if carla_actor.attributes["object_type"] == "car":
                 self.classification = Object.CLASSIFICATION_CAR
-            elif carla_actor.attributes['object_type'] == 'bike':
+            elif carla_actor.attributes["object_type"] == "bike":
                 self.classification = Object.CLASSIFICATION_BIKE
-            elif carla_actor.attributes['object_type'] == 'motorcycle':
+            elif carla_actor.attributes["object_type"] == "motorcycle":
                 self.classification = Object.CLASSIFICATION_MOTORCYCLE
-            elif carla_actor.attributes['object_type'] == 'truck':
+            elif carla_actor.attributes["object_type"] == "truck":
                 self.classification = Object.CLASSIFICATION_TRUCK
-            elif carla_actor.attributes['object_type'] == 'other':
+            elif carla_actor.attributes["object_type"] == "other":
                 self.classification = Object.CLASSIFICATION_OTHER_VEHICLE
 
-        super(Vehicle, self).__init__(uid=uid,
-                                      name=name,
-                                      parent=parent,
-                                      node=node,
-                                      carla_actor=carla_actor)
+        super(Vehicle, self).__init__(
+            uid=uid, name=name, parent=parent, node=node, carla_actor=carla_actor
+        )
 
     def get_marker_color(self):  # pylint: disable=no-self-use
         """

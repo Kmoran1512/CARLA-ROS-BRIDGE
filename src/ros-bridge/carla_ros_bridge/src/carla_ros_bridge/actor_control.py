@@ -25,7 +25,7 @@ from geometry_msgs.msg import Pose, Twist
 class ActorControl(PseudoActor):
 
     """
-    provide functions to control actors 
+    provide functions to control actors
     """
 
     def __init__(self, uid, name, parent, node):
@@ -42,20 +42,21 @@ class ActorControl(PseudoActor):
         :type node: carla_ros_bridge.CarlaRosBridge
         """
 
-        super(ActorControl, self).__init__(uid=uid,
-                                           name=name,
-                                           parent=parent,
-                                           node=node)
+        super(ActorControl, self).__init__(uid=uid, name=name, parent=parent, node=node)
 
-        self.set_location_subscriber = self.node.new_subscription(Pose,
-                                                                  self.get_topic_prefix() + "/set_transform",
-                                                                  self.on_pose,
-                                                                  qos_profile=10)
+        self.set_location_subscriber = self.node.new_subscription(
+            Pose,
+            self.get_topic_prefix() + "/set_transform",
+            self.on_pose,
+            qos_profile=10,
+        )
 
-        self.twist_control_subscriber = self.node.new_subscription(Twist,
-                                                                   self.get_topic_prefix() + "/set_target_velocity",
-                                                                   self.on_twist,
-                                                                   qos_profile=10)
+        self.twist_control_subscriber = self.node.new_subscription(
+            Twist,
+            self.get_topic_prefix() + "/set_target_velocity",
+            self.on_twist,
+            qos_profile=10,
+        )
 
     def destroy(self):
         """
@@ -80,7 +81,9 @@ class ActorControl(PseudoActor):
 
     def on_pose(self, pose):
         if self.parent and self.parent.carla_actor.is_alive:
-            self.parent.carla_actor.set_transform(trans.ros_pose_to_carla_transform(pose))
+            self.parent.carla_actor.set_transform(
+                trans.ros_pose_to_carla_transform(pose)
+            )
             if isinstance(self.parent, Sensor):
                 self.parent.relative_spawn_pose = pose
 
@@ -93,15 +96,21 @@ class ActorControl(PseudoActor):
             angular_velocity.z = math.degrees(twist.angular.z)
 
             rotation_matrix = trans.carla_rotation_to_numpy_rotation_matrix(
-                self.parent.carla_actor.get_transform().rotation)
-            linear_vector = numpy.array([twist.linear.x, twist.linear.y, twist.linear.z])
+                self.parent.carla_actor.get_transform().rotation
+            )
+            linear_vector = numpy.array(
+                [twist.linear.x, twist.linear.y, twist.linear.z]
+            )
             rotated_linear_vector = rotation_matrix.dot(linear_vector)
             linear_velocity = Vector3D()
             linear_velocity.x = rotated_linear_vector[0]
             linear_velocity.y = -rotated_linear_vector[1]
             linear_velocity.z = rotated_linear_vector[2]
 
-            self.node.logdebug("Set velocity linear: {}, angular: {}".format(
-                linear_velocity, angular_velocity))
+            self.node.logdebug(
+                "Set velocity linear: {}, angular: {}".format(
+                    linear_velocity, angular_velocity
+                )
+            )
             self.parent.carla_actor.set_target_velocity(linear_velocity)
             self.parent.carla_actor.set_target_angular_velocity(angular_velocity)

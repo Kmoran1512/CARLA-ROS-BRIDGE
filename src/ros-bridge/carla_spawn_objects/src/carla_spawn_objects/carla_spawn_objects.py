@@ -44,28 +44,40 @@ class CarlaSpawnObjects(CompatibleNode):
     """
 
     def __init__(self):
-        super(CarlaSpawnObjects, self).__init__('carla_spawn_objects')
+        super(CarlaSpawnObjects, self).__init__("carla_spawn_objects")
 
-        self.objects_definition_file = self.get_param('objects_definition_file', '')
-        self.spawn_sensors_only = self.get_param('spawn_sensors_only', False)
+        self.objects_definition_file = self.get_param("objects_definition_file", "")
+        self.spawn_sensors_only = self.get_param("spawn_sensors_only", False)
 
         self.players = []
         self.vehicles_sensors = []
         self.global_sensors = []
 
         self.spawn_object_service = self.new_client(SpawnObject, "/carla/spawn_object")
-        self.destroy_object_service = self.new_client(DestroyObject, "/carla/destroy_object")
+        self.destroy_object_service = self.new_client(
+            DestroyObject, "/carla/destroy_object"
+        )
 
     def spawn_object(self, spawn_object_request):
         response_id = -1
-        response = self.call_service(self.spawn_object_service, spawn_object_request, spin_until_response_received=True)
+        response = self.call_service(
+            self.spawn_object_service,
+            spawn_object_request,
+            spin_until_response_received=True,
+        )
         response_id = response.id
         if response_id != -1:
-            self.loginfo("Object (type='{}', id='{}') spawned successfully as {}.".format(
-                spawn_object_request.type, spawn_object_request.id, response_id))
+            self.loginfo(
+                "Object (type='{}', id='{}') spawned successfully as {}.".format(
+                    spawn_object_request.type, spawn_object_request.id, response_id
+                )
+            )
         else:
-            self.logwarn("Error while spawning object (type='{}', id='{}').".format(
-                spawn_object_request.type, spawn_object_request.id))
+            self.logwarn(
+                "Error while spawning object (type='{}', id='{}').".format(
+                    spawn_object_request.type, spawn_object_request.id
+                )
+            )
             raise RuntimeError(response.error_string)
         return response_id
 
@@ -78,9 +90,14 @@ class CarlaSpawnObjects(CompatibleNode):
         :return:
         """
         # Read sensors from file
-        if not self.objects_definition_file or not os.path.exists(self.objects_definition_file):
+        if not self.objects_definition_file or not os.path.exists(
+            self.objects_definition_file
+        ):
             raise RuntimeError(
-                "Could not read object definitions from {}".format(self.objects_definition_file))
+                "Could not read object definitions from {}".format(
+                    self.objects_definition_file
+                )
+            )
         with open(self.objects_definition_file) as handle:
             json_actors = json.loads(handle.read())
 
@@ -89,7 +106,7 @@ class CarlaSpawnObjects(CompatibleNode):
         found_sensor_actor_list = False
 
         for actor in json_actors["objects"]:
-            actor_type = actor["type"].split('.')[0]
+            actor_type = actor["type"].split(".")[0]
             if actor["type"] == "sensor.pseudo.actor_list" and self.spawn_sensors_only:
                 global_sensors.append(actor)
                 found_sensor_actor_list = True
@@ -99,10 +116,15 @@ class CarlaSpawnObjects(CompatibleNode):
                 vehicles.append(actor)
             else:
                 self.logwarn(
-                    "Object with type {} is not a vehicle, a walker or a sensor, ignoring".format(actor["type"]))
+                    "Object with type {} is not a vehicle, a walker or a sensor, ignoring".format(
+                        actor["type"]
+                    )
+                )
         if self.spawn_sensors_only is True and found_sensor_actor_list is False:
-            raise RuntimeError("Parameter 'spawn_sensors_only' enabled, " +
-                               "but 'sensor.pseudo.actor_list' is not instantiated, add it to your config file.")
+            raise RuntimeError(
+                "Parameter 'spawn_sensors_only' enabled, "
+                + "but 'sensor.pseudo.actor_list' is not instantiated, add it to your config file."
+            )
 
         self.setup_sensors(global_sensors)
 
@@ -111,7 +133,10 @@ class CarlaSpawnObjects(CompatibleNode):
             actor_info_list = self.wait_for_message("/carla/actor_list", CarlaActorList)
             for vehicle in vehicles:
                 for actor_info in actor_info_list.actors:
-                    if actor_info.type == vehicle["type"] and actor_info.rolename == vehicle["id"]:
+                    if (
+                        actor_info.type == vehicle["type"]
+                        and actor_info.rolename == vehicle["id"]
+                    ):
                         vehicle["carla_id"] = actor_info.id
 
         self.setup_vehicles(vehicles)
@@ -125,7 +150,10 @@ class CarlaSpawnObjects(CompatibleNode):
                     carla_id = vehicle["carla_id"]
                 except KeyError as e:
                     self.logerr(
-                        "Could not spawn sensors of vehicle {}, its carla ID is not known.".format(vehicle["id"]))
+                        "Could not spawn sensors of vehicle {}, its carla ID is not known.".format(
+                            vehicle["id"]
+                        )
+                    )
                     break
                 # spawn the vehicle's sensors
                 self.setup_sensors(vehicle["sensors"], carla_id)
@@ -141,12 +169,16 @@ class CarlaSpawnObjects(CompatibleNode):
                 # check if there's a spawn_point corresponding to this vehicle
                 spawn_point_param = self.get_param("spawn_point_" + vehicle["id"], None)
                 spawn_param_used = False
-                if (spawn_point_param is not None):
+                if spawn_point_param is not None:
                     # try to use spawn_point from parameters
                     spawn_point = self.check_spawn_point_param(spawn_point_param)
                     if spawn_point is None:
-                        self.logwarn("{}: Could not use spawn point from parameters, ".format(vehicle["id"]) +
-                                     "the spawn point from config file will be used.")
+                        self.logwarn(
+                            "{}: Could not use spawn point from parameters, ".format(
+                                vehicle["id"]
+                            )
+                            + "the spawn point from config file will be used."
+                        )
                     else:
                         self.loginfo("Spawn point from ros parameters")
                         spawn_param_used = True
@@ -160,12 +192,18 @@ class CarlaSpawnObjects(CompatibleNode):
                             vehicle["spawn_point"]["z"],
                             vehicle["spawn_point"]["roll"],
                             vehicle["spawn_point"]["pitch"],
-                            vehicle["spawn_point"]["yaw"]
+                            vehicle["spawn_point"]["yaw"],
                         )
                         self.loginfo("Spawn point from configuration file")
                     except KeyError as e:
-                        self.logerr("{}: Could not use the spawn point from config file, ".format(vehicle["id"]) +
-                                    "the mandatory attribute {} is missing, a random spawn point will be used".format(e))
+                        self.logerr(
+                            "{}: Could not use the spawn point from config file, ".format(
+                                vehicle["id"]
+                            )
+                            + "the mandatory attribute {} is missing, a random spawn point will be used".format(
+                                e
+                            )
+                        )
 
                 if spawn_point is None:
                     # pose not specified, ask for a random one in the service call
@@ -186,7 +224,10 @@ class CarlaSpawnObjects(CompatibleNode):
                             self.setup_sensors(vehicle["sensors"], response_id)
                         except KeyError:
                             self.logwarn(
-                                "Object (type='{}', id='{}') has no 'sensors' field in his config file, none will be spawned.".format(spawn_object_request.type, spawn_object_request.id))
+                                "Object (type='{}', id='{}') has no 'sensors' field in his config file, none will be spawned.".format(
+                                    spawn_object_request.type, spawn_object_request.id
+                                )
+                            )
 
     def setup_sensors(self, sensors, attached_vehicle_id=None):
         """
@@ -217,12 +258,15 @@ class CarlaSpawnObjects(CompatibleNode):
                         spawn_point.pop("z"),
                         spawn_point.pop("roll", 0.0),
                         spawn_point.pop("pitch", 0.0),
-                        spawn_point.pop("yaw", 0.0))
+                        spawn_point.pop("yaw", 0.0),
+                    )
                 else:
                     # if sensor attached to a vehicle, or is a 'pseudo_actor', allow default pose
                     spawn_point = sensor_spec.pop("spawn_point", 0)
                     if spawn_point == 0:
-                        sensor_transform = self.create_spawn_point(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+                        sensor_transform = self.create_spawn_point(
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+                        )
                     else:
                         sensor_transform = self.create_spawn_point(
                             spawn_point.pop("x", 0.0),
@@ -230,14 +274,19 @@ class CarlaSpawnObjects(CompatibleNode):
                             spawn_point.pop("z", 0.0),
                             spawn_point.pop("roll", 0.0),
                             spawn_point.pop("pitch", 0.0),
-                            spawn_point.pop("yaw", 0.0))
+                            spawn_point.pop("yaw", 0.0),
+                        )
 
                 spawn_object_request = roscomp.get_service_request(SpawnObject)
                 spawn_object_request.type = sensor_type
                 spawn_object_request.id = sensor_id
-                spawn_object_request.attach_to = attached_vehicle_id if attached_vehicle_id is not None else 0
+                spawn_object_request.attach_to = (
+                    attached_vehicle_id if attached_vehicle_id is not None else 0
+                )
                 spawn_object_request.transform = sensor_transform
-                spawn_object_request.random_pose = False  # never set a random pose for a sensor
+                spawn_object_request.random_pose = (
+                    False  # never set a random pose for a sensor
+                )
 
                 attached_objects = []
                 for attribute, value in sensor_spec.items():
@@ -246,7 +295,8 @@ class CarlaSpawnObjects(CompatibleNode):
                             attached_objects.append(attached_object)
                         continue
                     spawn_object_request.attributes.append(
-                        KeyValue(key=str(attribute), value=str(value)))
+                        KeyValue(key=str(attribute), value=str(value))
+                    )
 
                 response_id = self.spawn_object(spawn_object_request)
 
@@ -264,17 +314,22 @@ class CarlaSpawnObjects(CompatibleNode):
 
             except KeyError as e:
                 self.logerr(
-                    "Sensor {} will not be spawned, the mandatory attribute {} is missing".format(sensor_name, e))
+                    "Sensor {} will not be spawned, the mandatory attribute {} is missing".format(
+                        sensor_name, e
+                    )
+                )
                 continue
 
             except RuntimeError as e:
-                self.logerr(
-                    "Sensor {} will not be spawned: {}".format(sensor_name, e))
+                self.logerr("Sensor {} will not be spawned: {}".format(sensor_name, e))
                 continue
 
             except NameError:
-                self.logerr("Sensor rolename '{}' is only allowed to be used once. The second one will be ignored.".format(
-                    sensor_id))
+                self.logerr(
+                    "Sensor rolename '{}' is only allowed to be used once. The second one will be ignored.".format(
+                        sensor_id
+                    )
+                )
                 continue
 
     def create_spawn_point(self, x, y, z, roll, pitch, yaw):
@@ -291,7 +346,7 @@ class CarlaSpawnObjects(CompatibleNode):
         return spawn_point
 
     def check_spawn_point_param(self, spawn_point_parameter):
-        components = spawn_point_parameter.split(',')
+        components = spawn_point_parameter.split(",")
         if len(components) != 6:
             self.logwarn("Invalid spawnpoint '{}'".format(spawn_point_parameter))
             return None
@@ -301,7 +356,7 @@ class CarlaSpawnObjects(CompatibleNode):
             float(components[2]),
             float(components[3]),
             float(components[4]),
-            float(components[5])
+            float(components[5]),
         )
         return spawn_point
 
@@ -315,8 +370,12 @@ class CarlaSpawnObjects(CompatibleNode):
             for actor_id in self.vehicles_sensors:
                 destroy_object_request = roscomp.get_service_request(DestroyObject)
                 destroy_object_request.id = actor_id
-                self.call_service(self.destroy_object_service,
-                                  destroy_object_request, timeout=0.5, spin_until_response_received=True)
+                self.call_service(
+                    self.destroy_object_service,
+                    destroy_object_request,
+                    timeout=0.5,
+                    spin_until_response_received=True,
+                )
                 self.loginfo("Object {} successfully destroyed.".format(actor_id))
             self.vehicles_sensors = []
 
@@ -324,8 +383,12 @@ class CarlaSpawnObjects(CompatibleNode):
             for actor_id in self.global_sensors:
                 destroy_object_request = roscomp.get_service_request(DestroyObject)
                 destroy_object_request.id = actor_id
-                self.call_service(self.destroy_object_service,
-                                  destroy_object_request, timeout=0.5, spin_until_response_received=True)
+                self.call_service(
+                    self.destroy_object_service,
+                    destroy_object_request,
+                    timeout=0.5,
+                    spin_until_response_received=True,
+                )
                 self.loginfo("Object {} successfully destroyed.".format(actor_id))
             self.global_sensors = []
 
@@ -333,13 +396,19 @@ class CarlaSpawnObjects(CompatibleNode):
             for player_id in self.players:
                 destroy_object_request = roscomp.get_service_request(DestroyObject)
                 destroy_object_request.id = player_id
-                self.call_service(self.destroy_object_service,
-                                  destroy_object_request, timeout=0.5, spin_until_response_received=True)
+                self.call_service(
+                    self.destroy_object_service,
+                    destroy_object_request,
+                    timeout=0.5,
+                    spin_until_response_received=True,
+                )
                 self.loginfo("Object {} successfully destroyed.".format(player_id))
             self.players = []
         except ServiceException:
             self.logwarn(
-                'Could not call destroy service on objects, the ros bridge is probably already shutdown')
+                "Could not call destroy service on objects, the ros bridge is probably already shutdown"
+            )
+
 
 # ==============================================================================
 # -- main() --------------------------------------------------------------------
@@ -367,12 +436,13 @@ def main(args=None):
                 pass
         except (ROSInterruptException, ServiceException, KeyboardInterrupt):
             spawn_objects_node.logwarn(
-                "Spawning process has been interrupted. There might be actors that have not been destroyed properly")
+                "Spawning process has been interrupted. There might be actors that have not been destroyed properly"
+            )
         except RuntimeError as e:
             roscomp.logfatal("Exception caught: {}".format(e))
         finally:
             roscomp.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -24,10 +24,12 @@ from carla_msgs.msg import (
     CarlaEgoVehicleInfo,
     CarlaActorList,
     CarlaTrafficLightStatusList,
-    CarlaTrafficLightInfoList)
+    CarlaTrafficLightInfoList,
+)
 from derived_object_msgs.msg import ObjectArray, Object
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float64  # pylint: disable=import-error
+
 
 class CarlaAdAgent(Agent):
     """
@@ -49,48 +51,53 @@ class CarlaAdAgent(Agent):
         self._objects = {}
         self._lights_status = {}
         self._lights_info = {}
-        self._target_speed = 0.
-
+        self._target_speed = 0.0
 
         self.speed_command_publisher = self.new_publisher(
-            Float64, "/carla/{}/speed_command".format(role_name),
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            Float64,
+            "/carla/{}/speed_command".format(role_name),
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
 
         self._odometry_subscriber = self.new_subscription(
             Odometry,
             "/carla/{}/odometry".format(role_name),
             self.odometry_cb,
-            qos_profile=10
+            qos_profile=10,
         )
 
         self._target_speed_subscriber = self.new_subscription(
             Float64,
             "/carla/{}/target_speed".format(role_name),
             self.target_speed_cb,
-            qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+            qos_profile=QoSProfile(
+                depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
         )
 
         if self._avoid_risk:
-
             self._objects_subscriber = self.new_subscription(
                 ObjectArray,
                 "/carla/{}/objects".format(role_name),
                 self.objects_cb,
-                qos_profile=10
+                qos_profile=10,
             )
             self._traffic_light_status_subscriber = self.new_subscription(
                 CarlaTrafficLightStatusList,
                 "/carla/traffic_lights/status",
                 self.traffic_light_status_cb,
-                qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+                qos_profile=QoSProfile(
+                    depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
+                ),
             )
             self._traffic_light_info_subscriber = self.new_subscription(
                 CarlaTrafficLightInfoList,
                 "/carla/traffic_lights/info",
                 self.traffic_light_info_cb,
-                qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+                qos_profile=QoSProfile(
+                    depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
+                ),
             )
-
 
     def odometry_cb(self, odometry_msg):
         with self.data_lock:
@@ -98,7 +105,9 @@ class CarlaAdAgent(Agent):
 
     def target_speed_cb(self, target_speed_msg):
         with self.data_lock:
-            self._target_speed = target_speed_msg.data * 3.6 # target speed from scenario is in m/s
+            self._target_speed = (
+                target_speed_msg.data * 3.6
+            )  # target speed from scenario is in m/s
 
     def objects_cb(self, objects_msg):
         objects = {}
@@ -161,13 +170,17 @@ class CarlaAdAgent(Agent):
                 self._state = AgentState.BLOCKED_BY_VEHICLE
                 hazard_detected = True
 
-            pedestrian_state, pedestrian = self._is_pedestrian_hazard(ego_vehicle_pose, objects)
+            pedestrian_state, pedestrian = self._is_pedestrian_hazard(
+                ego_vehicle_pose, objects
+            )
             if pedestrian_state:
                 self._state = AgentState.BLOCKED_BY_PEDESTRIAN
                 hazard_detected = True
 
             # check for the state of the traffic lights
-            light_state, traffic_light = self._is_light_red(ego_vehicle_pose, lights_status, lights_info)
+            light_state, traffic_light = self._is_light_red(
+                ego_vehicle_pose, lights_status, lights_info
+            )
             if light_state:
                 self._state = AgentState.BLOCKED_RED_LIGHT
                 hazard_detected = True
@@ -199,7 +212,8 @@ def main(args=None):
         roscomp.on_shutdown(controller.emergency_stop)
 
         update_timer = controller.new_timer(
-            0.05, lambda timer_event=None: controller.run_step())
+            0.05, lambda timer_event=None: controller.run_step()
+        )
 
         controller.spin()
 

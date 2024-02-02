@@ -11,7 +11,6 @@ import enum
 
 
 class DurabilityPolicy(enum.Enum):
-
     TRANSIENT_LOCAL = 1
     VOLATILE = 2
 

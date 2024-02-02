@@ -39,17 +39,16 @@ class Walker(TrafficParticipant):
         :param carla_actor: carla walker actor object
         :type carla_actor: carla.Walker
         """
-        super(Walker, self).__init__(uid=uid,
-                                     name=name,
-                                     parent=parent,
-                                     node=node,
-                                     carla_actor=carla_actor)
+        super(Walker, self).__init__(
+            uid=uid, name=name, parent=parent, node=node, carla_actor=carla_actor
+        )
 
         self.control_subscriber = self.node.new_subscription(
             CarlaWalkerControl,
             self.get_topic_prefix() + "/walker_control_cmd",
             self.control_command_updated,
-            qos_profile=10)
+            qos_profile=10,
+        )
 
     def destroy(self):
         """

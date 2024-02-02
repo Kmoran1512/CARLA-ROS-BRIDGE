@@ -38,7 +38,17 @@ class Camera(Sensor):
     # global cv bridge to convert image between opencv and ros
     cv_bridge = CvBridge()
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode, is_event_sensor=False):  # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+        is_event_sensor=False,
+    ):  # pylint: disable=too-many-arguments
         """
         Constructor
 
@@ -55,27 +65,33 @@ class Camera(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(Camera, self).__init__(uid=uid,
-                                     name=name,
-                                     parent=parent,
-                                     relative_spawn_pose=relative_spawn_pose,
-                                     node=node,
-                                     carla_actor=carla_actor,
-                                     synchronous_mode=synchronous_mode,
-                                     is_event_sensor=is_event_sensor)
+        super(Camera, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+            is_event_sensor=is_event_sensor,
+        )
 
         if self.__class__.__name__ == "Camera":
-            self.node.logwarn("Created Unsupported Camera Actor"
-                              "(id={}, type={}, attributes={})".format(self.get_id(),
-                                                                       self.carla_actor.type_id,
-                                                                       self.carla_actor.attributes))
+            self.node.logwarn(
+                "Created Unsupported Camera Actor"
+                "(id={}, type={}, attributes={})".format(
+                    self.get_id(), self.carla_actor.type_id, self.carla_actor.attributes
+                )
+            )
         else:
             self._build_camera_info()
 
-        self.camera_info_publisher = node.new_publisher(CameraInfo, self.get_topic_prefix() +
-                                                        '/camera_info', qos_profile=10)
-        self.camera_image_publisher = node.new_publisher(Image, self.get_topic_prefix() +
-                                                         '/' + 'image', qos_profile=10)
+        self.camera_info_publisher = node.new_publisher(
+            CameraInfo, self.get_topic_prefix() + "/camera_info", qos_profile=10
+        )
+        self.camera_image_publisher = node.new_publisher(
+            Image, self.get_topic_prefix() + "/" + "image", qos_profile=10
+        )
 
     def destroy(self):
         super(Camera, self).destroy()
@@ -91,13 +107,14 @@ class Camera(Sensor):
         camera_info = CameraInfo()
         # store info without header
         camera_info.header = self.get_msg_header()
-        camera_info.width = int(self.carla_actor.attributes['image_size_x'])
-        camera_info.height = int(self.carla_actor.attributes['image_size_y'])
-        camera_info.distortion_model = 'plumb_bob'
+        camera_info.width = int(self.carla_actor.attributes["image_size_x"])
+        camera_info.height = int(self.carla_actor.attributes["image_size_y"])
+        camera_info.distortion_model = "plumb_bob"
         cx = camera_info.width / 2.0
         cy = camera_info.height / 2.0
         fx = camera_info.width / (
-            2.0 * math.tan(float(self.carla_actor.attributes['fov']) * math.pi / 360.0))
+            2.0 * math.tan(float(self.carla_actor.attributes["fov"]) * math.pi / 360.0)
+        )
         fy = fx
         if ROS_VERSION == 1:
             camera_info.K = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]
@@ -137,10 +154,9 @@ class Camera(Sensor):
         rotation = tf_msg.transform.rotation
 
         quat = [rotation.w, rotation.x, rotation.y, rotation.z]
-        quat_swap = transforms3d.quaternions.mat2quat(numpy.matrix(
-            [[0, 0, 1],
-             [-1, 0, 0],
-             [0, -1, 0]]))
+        quat_swap = transforms3d.quaternions.mat2quat(
+            numpy.matrix([[0, 0, 1], [-1, 0, 0], [0, -1, 0]])
+        )
         quat = transforms3d.quaternions.qmult(quat, quat_swap)
 
         tf_msg.transform.rotation.w = quat[0]
@@ -154,12 +170,15 @@ class Camera(Sensor):
         """
         Function to transform the received carla camera data into a ROS image message
         """
-        if ((carla_camera_data.height != self._camera_info.height) or
-                (carla_camera_data.width != self._camera_info.width)):
+        if (carla_camera_data.height != self._camera_info.height) or (
+            carla_camera_data.width != self._camera_info.width
+        ):
             self.node.logerr(
-                "Camera{} received image not matching configuration".format(self.get_prefix()))
-        image_data_array, encoding = self.get_carla_image_data_array(
-            carla_camera_data)
+                "Camera{} received image not matching configuration".format(
+                    self.get_prefix()
+                )
+            )
+        image_data_array, encoding = self.get_carla_image_data_array(carla_camera_data)
         img_msg = Camera.cv_bridge.cv2_to_imgmsg(image_data_array, encoding=encoding)
         # the camera data is in respect to the camera's own frame
         img_msg.header = self.get_msg_header(timestamp=carla_camera_data.timestamp)
@@ -176,7 +195,8 @@ class Camera(Sensor):
         :rtype tuple(numpy.ndarray, string)
         """
         raise NotImplementedError(
-            "This function has to be re-implemented by derived classes")
+            "This function has to be re-implemented by derived classes"
+        )
 
 
 class RgbCamera(Camera):
@@ -185,7 +205,16 @@ class RgbCamera(Camera):
     Camera implementation details for rgb camera
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -204,13 +233,15 @@ class RgbCamera(Camera):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(RgbCamera, self).__init__(uid=uid,
-                                        name=name,
-                                        parent=parent,
-                                        relative_spawn_pose=relative_spawn_pose,
-                                        node=node,
-                                        carla_actor=carla_actor,
-                                        synchronous_mode=synchronous_mode)
+        super(RgbCamera, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+        )
 
         self.listen()
 
@@ -229,9 +260,11 @@ class RgbCamera(Camera):
 
         carla_image_data_array = numpy.ndarray(
             shape=(carla_image.height, carla_image.width, 4),
-            dtype=numpy.uint8, buffer=carla_image.raw_data)
+            dtype=numpy.uint8,
+            buffer=carla_image.raw_data,
+        )
 
-        return carla_image_data_array, 'bgra8'
+        return carla_image_data_array, "bgra8"
 
 
 class DepthCamera(Camera):
@@ -240,7 +273,16 @@ class DepthCamera(Camera):
     Camera implementation details for depth camera
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -259,13 +301,15 @@ class DepthCamera(Camera):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(DepthCamera, self).__init__(uid=uid,
-                                          name=name,
-                                          parent=parent,
-                                          relative_spawn_pose=relative_spawn_pose,
-                                          node=node,
-                                          carla_actor=carla_actor,
-                                          synchronous_mode=synchronous_mode)
+        super(DepthCamera, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+        )
 
         self.listen()
 
@@ -298,7 +342,9 @@ class DepthCamera(Camera):
         #
         bgra_image = numpy.ndarray(
             shape=(carla_image.height, carla_image.width, 4),
-            dtype=numpy.uint8, buffer=carla_image.raw_data)
+            dtype=numpy.uint8,
+            buffer=carla_image.raw_data,
+        )
 
         # Apply (R + G * 256 + B * 256 * 256) / (256**3 - 1) * 1000
         # according to the documentation:
@@ -308,7 +354,7 @@ class DepthCamera(Camera):
 
         # actually we want encoding '32FC1'
         # which is automatically selected by cv bridge with passthrough
-        return depth_image, 'passthrough'
+        return depth_image, "passthrough"
 
 
 class SemanticSegmentationCamera(Camera):
@@ -317,7 +363,16 @@ class SemanticSegmentationCamera(Camera):
     Camera implementation details for segmentation camera
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -336,14 +391,15 @@ class SemanticSegmentationCamera(Camera):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(
-            SemanticSegmentationCamera, self).__init__(uid=uid,
-                                                       name=name,
-                                                       parent=parent,
-                                                       relative_spawn_pose=relative_spawn_pose,
-                                                       node=node,
-                                                       synchronous_mode=synchronous_mode,
-                                                       carla_actor=carla_actor)
+        super(SemanticSegmentationCamera, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            synchronous_mode=synchronous_mode,
+            carla_actor=carla_actor,
+        )
 
         self.listen()
 
@@ -364,8 +420,10 @@ class SemanticSegmentationCamera(Camera):
         carla_image.convert(carla.ColorConverter.CityScapesPalette)
         carla_image_data_array = numpy.ndarray(
             shape=(carla_image.height, carla_image.width, 4),
-            dtype=numpy.uint8, buffer=carla_image.raw_data)
-        return carla_image_data_array, 'bgra8'
+            dtype=numpy.uint8,
+            buffer=carla_image.raw_data,
+        )
+        return carla_image_data_array, "bgra8"
 
 
 class DVSCamera(Camera):
@@ -374,7 +432,16 @@ class DVSCamera(Camera):
     Sensor implementation details for dvs cameras
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):  # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):  # pylint: disable=too-many-arguments
         """
         Constructor
 
@@ -393,19 +460,21 @@ class DVSCamera(Camera):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(DVSCamera, self).__init__(uid=uid,
-                                        name=name,
-                                        parent=parent,
-                                        relative_spawn_pose=relative_spawn_pose,
-                                        node=node,
-                                        carla_actor=carla_actor,
-                                        synchronous_mode=synchronous_mode,
-                                        is_event_sensor=True)
+        super(DVSCamera, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+            is_event_sensor=True,
+        )
 
         self._dvs_events = None
-        self.dvs_camera_publisher = node.new_publisher(PointCloud2,
-                                                       self.get_topic_prefix() +
-                                                       '/events', qos_profile=10)
+        self.dvs_camera_publisher = node.new_publisher(
+            PointCloud2, self.get_topic_prefix() + "/events", qos_profile=10
+        )
 
         self.listen()
 
@@ -425,10 +494,10 @@ class DVSCamera(Camera):
 
         header = self.get_msg_header(timestamp=carla_dvs_event_array.timestamp)
         fields = [
-            PointField(name='x', offset=0, datatype=PointField.UINT16, count=1),
-            PointField(name='y', offset=2, datatype=PointField.UINT16, count=1),
-            PointField(name='t', offset=4, datatype=PointField.FLOAT64, count=1),
-            PointField(name='pol', offset=12, datatype=PointField.INT8, count=1)
+            PointField(name="x", offset=0, datatype=PointField.UINT16, count=1),
+            PointField(name="y", offset=2, datatype=PointField.UINT16, count=1),
+            PointField(name="t", offset=4, datatype=PointField.FLOAT64, count=1),
+            PointField(name="pol", offset=12, datatype=PointField.INT8, count=1),
         ]
 
         dvs_events_msg = create_cloud(header, fields, self._dvs_events.tolist())
@@ -447,18 +516,26 @@ class DVSCamera(Camera):
         :return tuple (numpy data array containing the image information, encoding)
         :rtype tuple(numpy.ndarray, string)
         """
-        self._dvs_events = numpy.frombuffer(carla_dvs_event_array.raw_data,
-                                            dtype=numpy.dtype([
-                                                ('x', numpy.uint16),
-                                                ('y', numpy.uint16),
-                                                ('t', numpy.int64),
-                                                ('pol', bool)
-                                            ]))
+        self._dvs_events = numpy.frombuffer(
+            carla_dvs_event_array.raw_data,
+            dtype=numpy.dtype(
+                [
+                    ("x", numpy.uint16),
+                    ("y", numpy.uint16),
+                    ("t", numpy.int64),
+                    ("pol", bool),
+                ]
+            ),
+        )
         carla_image_data_array = numpy.zeros(
             (carla_dvs_event_array.height, carla_dvs_event_array.width, 3),
-            dtype=numpy.uint8)
+            dtype=numpy.uint8,
+        )
         # Blue is positive, red is negative
-        carla_image_data_array[self._dvs_events[:]['y'], self._dvs_events[:]['x'],
-                               self._dvs_events[:]['pol'] * 2] = 255
+        carla_image_data_array[
+            self._dvs_events[:]["y"],
+            self._dvs_events[:]["x"],
+            self._dvs_events[:]["pol"] * 2,
+        ] = 255
 
-        return carla_image_data_array, 'bgr8'
+        return carla_image_data_array, "bgr8"

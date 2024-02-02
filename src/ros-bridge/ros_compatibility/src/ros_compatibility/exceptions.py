@@ -8,10 +8,10 @@
 #
 
 from ros_compatibility.core import get_ros_version
-ROS_VERSION  = get_ros_version()
+
+ROS_VERSION = get_ros_version()
 
 if ROS_VERSION == 1:
-
     import rospy
 
     class ROSException(rospy.ROSException):
@@ -23,9 +23,7 @@ if ROS_VERSION == 1:
     class ServiceException(rospy.ServiceException):
         pass
 
-
 elif ROS_VERSION == 2:
-
     import rclpy.exceptions
 
     class ROSException(Exception):
@@ -36,4 +34,3 @@ elif ROS_VERSION == 2:
 
     class ServiceException(Exception):
         pass
-

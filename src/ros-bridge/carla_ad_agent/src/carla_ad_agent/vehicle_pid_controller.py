@@ -38,9 +38,9 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
                              K_I -- Integral term
         """
         if not args_lateral:
-            args_lateral = {'K_P': 1.0, 'K_D': 0.0, 'K_I': 0.0}
+            args_lateral = {"K_P": 1.0, "K_D": 0.0, "K_I": 0.0}
         if not args_longitudinal:
-            args_longitudinal = {'K_P': 1.0, 'K_D': 0.0, 'K_I': 0.0}
+            args_longitudinal = {"K_P": 1.0, "K_D": 0.0, "K_I": 0.0}
 
         self.node = node
         self._lon_controller = PIDLongitudinalController(**args_longitudinal)
@@ -50,7 +50,7 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
             Float64,
             "/carla/{}/hazard_distance".format(self.node.role_name),
             self._lon_controller.set_distance,
-            10
+            10,
         )
 
     def run_step(self, target_speed, current_speed, current_pose, waypoint):
@@ -67,8 +67,8 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
         throttle = self._lon_controller.run_step(target_speed, current_speed)
         steering = self._lat_controller.run_step(current_pose, waypoint)
         control.steer = -steering
-        control.throttle = max(0., throttle)
-        control.brake = 0. if throttle > 0. else (throttle / 35) ** 2
+        control.throttle = max(0.0, throttle)
+        control.brake = 0.0 if throttle > 0.0 else (throttle / 35) ** 2
         control.hand_brake = False
         control.manual_gear_shift = False
 
@@ -109,13 +109,18 @@ class PIDLongitudinalController(object):  # pylint: disable=too-few-public-metho
         # restrict integral term to avoid integral windup
         self.error_integral = np.clip(self.error_integral + self.error, -40.0, 40.0)
         self.error_derivative = self.error - previous_error
-        output = self._K_P * self.error + self._K_I * self.error_integral + self._K_D * self.error_derivative + self._K_S * self.hazard_error
-        
-        return min(output, 1.)
-    
+        output = (
+            self._K_P * self.error
+            + self._K_I * self.error_integral
+            + self._K_D * self.error_derivative
+            + self._K_S * self.hazard_error
+        )
+
+        return min(output, 1.0)
+
     def set_distance(self, data):
         # hazard_distance is goal distance - current distance
-        self.hazard_error = min(0., data.data)
+        self.hazard_error = min(0.0, data.data)
 
 
 class PIDLateralController(object):  # pylint: disable=too-few-public-methods
@@ -151,7 +156,7 @@ class PIDLateralController(object):  # pylint: disable=too-few-public-methods
             current_pose.orientation.w,
             current_pose.orientation.x,
             current_pose.orientation.y,
-            current_pose.orientation.z
+            current_pose.orientation.z,
         )
         _, _, yaw = quat2euler(quaternion)
         v_end = Point()
@@ -159,11 +164,16 @@ class PIDLateralController(object):  # pylint: disable=too-few-public-methods
         v_end.y = v_begin.y + math.sin(yaw)
 
         v_vec = np.array([v_end.x - v_begin.x, v_end.y - v_begin.y, 0.0])
-        w_vec = np.array([waypoint.position.x -
-                          v_begin.x, waypoint.position.y -
-                          v_begin.y, 0.0])
-        _dot = math.acos(np.clip(np.dot(w_vec, v_vec) /
-                                 (np.linalg.norm(w_vec) * np.linalg.norm(v_vec)), -1.0, 1.0))
+        w_vec = np.array(
+            [waypoint.position.x - v_begin.x, waypoint.position.y - v_begin.y, 0.0]
+        )
+        _dot = math.acos(
+            np.clip(
+                np.dot(w_vec, v_vec) / (np.linalg.norm(w_vec) * np.linalg.norm(v_vec)),
+                -1.0,
+                1.0,
+            )
+        )
 
         _cross = np.cross(v_vec, w_vec)
         if _cross[2] < 0:
@@ -174,5 +184,9 @@ class PIDLateralController(object):  # pylint: disable=too-few-public-methods
         # restrict integral term to avoid integral windup
         self.error_integral = np.clip(self.error_integral + self.error, -400.0, 400.0)
         self.error_derivative = self.error - previous_error
-        output = self._K_P * self.error + self._K_I * self.error_integral + self._K_D * self.error_derivative
+        output = (
+            self._K_P * self.error
+            + self._K_I * self.error_integral
+            + self._K_D * self.error_derivative
+        )
         return np.clip(output, -1.0, 1.0)

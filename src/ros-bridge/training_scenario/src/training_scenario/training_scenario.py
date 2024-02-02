@@ -16,16 +16,15 @@ class TrainingScenario(Node):
         super(TrainingScenario, self).__init__("TrainingScenario")
 
 
-
 def main():
     rclpy.init()
 
     ts = TrainingScenario()
-    
+
     try:
         rclpy.spin(ts)
     except KeyboardInterrupt:
-        pass    
+        pass
 
     ts.destroy_node()
     rclpy.shutdown()

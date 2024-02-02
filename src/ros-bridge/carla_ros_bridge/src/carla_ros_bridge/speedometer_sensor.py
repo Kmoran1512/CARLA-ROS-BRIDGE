@@ -36,14 +36,13 @@ class SpeedometerSensor(PseudoActor):
         :type node: carla_ros_bridge.CarlaRosBridge
         """
 
-        super(SpeedometerSensor, self).__init__(uid=uid,
-                                                name=name,
-                                                parent=parent,
-                                                node=node)
+        super(SpeedometerSensor, self).__init__(
+            uid=uid, name=name, parent=parent, node=node
+        )
 
-        self.speedometer_publisher = node.new_publisher(Float32,
-                                                        self.get_topic_prefix(),
-                                                        qos_profile=10)
+        self.speedometer_publisher = node.new_publisher(
+            Float32, self.get_topic_prefix(), qos_profile=10
+        )
 
     def destroy(self):
         super(SpeedometerSensor, self).destroy()
@@ -67,17 +66,18 @@ class SpeedometerSensor(PseudoActor):
         except AttributeError:
             # parent actor disappeared, do not send tf
             self.node.logwarn(
-                "SpeedometerSensor could not publish. Parent actor {} not found".format(self.parent.uid))
+                "SpeedometerSensor could not publish. Parent actor {} not found".format(
+                    self.parent.uid
+                )
+            )
             return
 
         vel_np = np.array([velocity.x, velocity.y, velocity.z])
         pitch = np.deg2rad(transform.rotation.pitch)
         yaw = np.deg2rad(transform.rotation.yaw)
-        orientation = np.array([
-            np.cos(pitch) * np.cos(yaw),
-            np.cos(pitch) * np.sin(yaw),
-            np.sin(pitch)
-        ])
+        orientation = np.array(
+            [np.cos(pitch) * np.cos(yaw), np.cos(pitch) * np.sin(yaw), np.sin(pitch)]
+        )
         speed = np.dot(vel_np, orientation)
 
         self.speedometer_publisher.publish(Float32(data=speed))
