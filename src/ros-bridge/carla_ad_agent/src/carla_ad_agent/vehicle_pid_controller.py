@@ -14,7 +14,7 @@ import numpy as np
 from transforms3d.euler import quat2euler
 from geometry_msgs.msg import Point  # pylint: disable=import-error
 from carla_msgs.msg import CarlaEgoVehicleControl  # pylint: disable=import-error
-from ros_g29_force_feedback.msg import ForceFeedback
+from std_msgs.msg import Float64
 
 
 class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
@@ -46,6 +46,13 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
         self._lon_controller = PIDLongitudinalController(**args_longitudinal)
         self._lat_controller = PIDLateralController(**args_lateral)
 
+        self.node.new_subscription(
+            Float64,
+            "/carla/{}/hazard_distance".format(self.node.role_name),
+            self._lon_controller.set_distance,
+            10
+        )
+
     def run_step(self, target_speed, current_speed, current_pose, waypoint):
         """
         Execute one step of control invoking both lateral and longitudinal
@@ -60,8 +67,8 @@ class VehiclePIDController(object):  # pylint: disable=too-few-public-methods
         throttle = self._lon_controller.run_step(target_speed, current_speed)
         steering = self._lat_controller.run_step(current_pose, waypoint)
         control.steer = -steering
-        control.throttle = throttle
-        control.brake = 0.0
+        control.throttle = max(0., throttle)
+        control.brake = 0. if throttle > 0. else (throttle / 35) ** 2
         control.hand_brake = False
         control.manual_gear_shift = False
 
@@ -83,9 +90,11 @@ class PIDLongitudinalController(object):  # pylint: disable=too-few-public-metho
         self._K_P = K_P
         self._K_D = K_D
         self._K_I = K_I
+        self._K_S = 0.2
         self.error = 0.0
         self.error_integral = 0.0
         self.error_derivative = 0.0
+        self.hazard_error = 0.0
 
     def run_step(self, target_speed, current_speed):
         """
@@ -100,8 +109,13 @@ class PIDLongitudinalController(object):  # pylint: disable=too-few-public-metho
         # restrict integral term to avoid integral windup
         self.error_integral = np.clip(self.error_integral + self.error, -40.0, 40.0)
         self.error_derivative = self.error - previous_error
-        output = self._K_P * self.error + self._K_I * self.error_integral + self._K_D * self.error_derivative
-        return np.clip(output, 0.0, 1.0)
+        output = self._K_P * self.error + self._K_I * self.error_integral + self._K_D * self.error_derivative + self._K_S * self.hazard_error
+        
+        return min(output, 1.)
+    
+    def set_distance(self, data):
+        # hazard_distance is goal distance - current distance
+        self.hazard_error = min(0., data.data)
 
 
 class PIDLateralController(object):  # pylint: disable=too-few-public-methods

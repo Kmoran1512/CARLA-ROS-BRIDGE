@@ -45,7 +45,7 @@ class LocalPlanner(CompatibleNode):
     def __init__(self):
         super(LocalPlanner, self).__init__("local_planner")
 
-        role_name = self.get_param("role_name", "ego_vehicle")
+        self.role_name = self.get_param("role_name", "ego_vehicle")
         self.control_time_step = self.get_param("control_time_step", 0.05)
 
         args_lateral_dict = {}
@@ -71,28 +71,28 @@ class LocalPlanner(CompatibleNode):
         # subscribers
         self._odometry_subscriber = self.new_subscription(
             Odometry,
-            "/carla/{}/odometry".format(role_name),
+            "/carla/{}/odometry".format(self.role_name),
             self.odometry_cb,
             qos_profile=10)
         self._path_subscriber = self.new_subscription(
             Path,
-            "/carla/{}/waypoints".format(role_name),
+            "/carla/{}/waypoints".format(self.role_name),
             self.path_cb,
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self._target_speed_subscriber = self.new_subscription(
             Float64,
-            "/carla/{}/speed_command".format(role_name),
+            "/carla/{}/speed_command".format(self.role_name),
             self.target_speed_cb,
             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
 
         # publishers
         self._target_pose_publisher = self.new_publisher(
             Marker,
-            "/carla/{}/next_target".format(role_name),
+            "/carla/{}/next_target".format(self.role_name),
             qos_profile=10)
         self._control_cmd_publisher = self.new_publisher(
             CarlaEgoVehicleControl,
-            "/carla/{}/transfer_ctrl".format(role_name),
+            "/carla/{}/transfer_ctrl".format(self.role_name),
             qos_profile=10)
 
         # initializing controller
