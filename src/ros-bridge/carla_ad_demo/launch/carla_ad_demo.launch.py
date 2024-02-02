@@ -17,7 +17,8 @@ def launch_carla_spawn_object(context, *args, **kwargs):
                 'carla_spawn_objects'), 'carla_example_ego_vehicle.launch.py')
         ),
         launch_arguments={
-            'objects_definition_file': get_package_share_directory('carla_spawn_objects') + '/config/objects.json',
+            #'objects_definition_file': get_package_share_directory('carla_spawn_objects') + '/config/objects.json',
+            'objects_definition_file': get_package_share_directory('training_scenario') + '/config/objects.json',
             spawn_point_param_name: launch.substitutions.LaunchConfiguration('spawn_point')
         }.items()
     )
@@ -29,7 +30,6 @@ def launch_target_speed_publisher(context, *args, **kwargs):
     data_string = "{'data': " + launch.substitutions.LaunchConfiguration('target_speed').perform(context) + "}"
     return [
         launch.actions.ExecuteProcess(
-            output="screen",
             cmd=["ros2", "topic", "pub", topic_name,
                  "std_msgs/msg/Float64", data_string, "--qos-durability", "transient_local"],
             name='topic_pub_target_speed')]
@@ -96,16 +96,7 @@ def generate_launch_description():
         ),
         launch.actions.OpaqueFunction(function=launch_carla_spawn_object),
         launch.actions.OpaqueFunction(function=launch_target_speed_publisher),
-        # launch.actions.IncludeLaunchDescription(
-        #     launch.launch_description_sources.PythonLaunchDescriptionSource(
-        #         os.path.join(get_package_share_directory(
-        #             'weather_control'), 'weather_control.launch.py')
-        #     ),
-        #     launch_arguments={
-        #         'sun_azimuth_angle': launch.substitutions.LaunchConfiguration(60.0),
-        #         'sun_altitude_angle': launch.substitutions.LaunchConfiguration(2.0)
-        #     }.items()
-        # ),
+
         launch.actions.IncludeLaunchDescription(
             launch.launch_description_sources.PythonLaunchDescriptionSource(
                 os.path.join(get_package_share_directory(
