@@ -157,9 +157,13 @@ class CarlaAdAgent(Agent):
         if self._avoid_risk:
             # check possible obstacles
             vehicle_state, vehicle = self._is_vehicle_hazard(ego_vehicle_pose, objects)
-
             if vehicle_state:
                 self._state = AgentState.BLOCKED_BY_VEHICLE
+                hazard_detected = True
+
+            pedestrian_state, pedestrian = self._is_pedestrian_hazard(ego_vehicle_pose, objects)
+            if pedestrian_state:
+                self._state = AgentState.BLOCKED_BY_PEDESTRIAN
                 hazard_detected = True
 
             # check for the state of the traffic lights
