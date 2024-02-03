@@ -186,7 +186,7 @@ class Agent(CompatibleNode):
 
             target_waypoint = self.get_waypoint(target_pedestrian_obj.pose.position)
             distance_ahead = distance_vehicle(
-                target_waypoint.pose, ego_vehicle_pose.position
+                target_pedestrian_obj.pose, ego_vehicle_pose.position
             )
 
             hazard_distance = distance_ahead - self.desired_gap
