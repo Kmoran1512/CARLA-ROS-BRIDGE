@@ -24,20 +24,20 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="spawn_point", default_value="396.0,-313.0,2.0,0,0,90"
             ),
-            # IncludeLaunchDescription(
-            #     PythonLaunchDescriptionSource(
-            #         os.path.join(
-            #             get_package_share_directory("carla_ad_demo"),
-            #             "carla_ad_demo.launch.py",
-            #         )
-            #     ),
-            #     launch_arguments={
-            #         "role_name": LaunchConfiguration("role_name"),
-            #         "spawn_point": LaunchConfiguration("spawn_point"),
-            #         "avoid_risk": "True",
-            #         "synchronous_mode_wait_for_vehicle_control_command": True,
-            #     }.items(),
-            # ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(
+                        get_package_share_directory("carla_ad_demo"),
+                        "carla_ad_demo.launch.py",
+                    )
+                ),
+                launch_arguments={
+                    "role_name": LaunchConfiguration("role_name"),
+                    "spawn_point": LaunchConfiguration("spawn_point"),
+                    "avoid_risk": "True",
+                    "synchronous_mode_wait_for_vehicle_control_command": "True",
+                }.items(),
+            ),
             Node(
                 package="training_scenario",
                 namespace="training_scenario1",

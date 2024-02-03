@@ -4,6 +4,15 @@ import rclpy
 
 from rclpy.node import Node
 
+from carla_msgs.msg import (
+    CarlaEgoVehicleInfo,
+    CarlaActorList,
+    CarlaTrafficLightStatusList,
+    CarlaTrafficLightInfoList,
+)
+from derived_object_msgs.msg import ObjectArray
+
+
 SYNC = False
 
 
@@ -12,129 +21,43 @@ class TrainingScenario(Node):
         super(TrainingScenario, self).__init__("TrainingScenario")
 
         self.declare_parameter("pedestrian_number", "50")
-        pedestrian_number = int(self.get_parameter("pedestrian_number").value)
+        self.pedestrian_number = int(self.get_parameter("pedestrian_number").value)
 
         self.client = carla.Client("localhost", 2000)
         self.client.set_timeout(5.0)
         self.world = self.client.get_world()
 
         self.log = self.get_logger()
+        self.walker_actors = self.ids = []
 
-        if SYNC:
-            settings = self.world.get_settings()
-            settings.synchronous_mode = SYNC
-            settings.fixed_delta_seconds = 0.05
-            self.world.apply_settings(settings)
+        self.log.warn("hello this is a warning")
 
-        self._turn_off_lights()
-
-        self.walkers = self.ids = []
-        self._spawn_walkers(pedestrian_number)
-
-    def _turn_off_lights(self):
-        actors = self.world.get_actors()
-
-        for actor in actors:
-            if actor.__class__ is carla.libcarla.TrafficLight:
-                actor.set_state(carla.libcarla.TrafficLightState.Off)
-                actor.freeze(True)
-
-    def _spawn_walkers(self, n=10):
-        bps = self.world.get_blueprint_library().filter("walker.pedestrian.*")
-        self.world.set_pedestrians_cross_factor(0.7)
-
-        spawn_points = []
-        walkers_speeds = []
-        spawned_walkers = []
-
-        for _ in range(n):
-            spawn_point = carla.Transform()
-            loc = self.world.get_random_location_from_navigation()
-
-            spawn_point.location = loc
-            spawn_points.append(spawn_point)
-
-        batch = []
-        for spawn_point in spawn_points:
-            bp = random.choice(bps)
-            bp.set_attribute("is_invincible", "false")
-
-            # Adjust for running here
-            walkers_speeds.append(bp.get_attribute("speed").recommended_values[1])
-
-            batch.append(carla.command.SpawnActor(bp, spawn_point))
-
-        results = self.client.apply_batch_sync(batch, True)
-
-        batch = []
-        matching_speeds = []
-        for i in range(len(results)):
-            if results[i].error:
-                self.log.error(results[i].error)
-            else:
-                spawned_walkers.append({"id": results[i].actor_id})
-                matching_speeds.append(walkers_speeds[i])
-        walkers_speeds = matching_speeds
-
-        walker_controller_bp = self.world.get_blueprint_library().find(
-            "controller.ai.walker"
+        self._traffic_light_info_subscriber = self.create_subscription(
+            CarlaTrafficLightStatusList,
+            "/carla/traffic_lights/status",
+            self.traffic_light_status,
+            10,
         )
-        for walker in spawned_walkers:
-            batch.append(
-                carla.command.SpawnActor(
-                    walker_controller_bp, carla.Transform(), walker["id"]
-                )
-            )
-        results = self.client.apply_batch_sync(batch, True)
 
-        for i in range(len(results)):
-            if results[i].error:
-                self.log.error(results[i].error)
+    def traffic_light_status(self, traffic_light_info_msg):
+        lights_on = []
+        for tl_info in traffic_light_info_msg.traffic_lights:
+            if tl_info.state == 3:
                 continue
+            lights_on.append(tl_info.id)
 
-            a_id = results[i].actor_id
-            spawned_walkers[i]["controller"] = a_id
+        self.log.info(f"lights on:  {len(lights_on)}")
+        if not lights_on:
+            return
+        all_actors = self.world.get_actors(lights_on)
+        self._turn_off_lights(all_actors)
 
-        all_ids = []
-        for walker in spawned_walkers:
-            all_ids.append(walker["controller"])
-            all_ids.append(walker["id"])
-        all_actors = self.world.get_actors(all_ids)
-
-        if SYNC:
-            self.world.tick()
-
-        for i in range(0, len(all_ids), 2):
-            all_actors[i].start()
-            all_actors[i].go_to_location(
-                self.world.get_random_location_from_navigation()
-            )
-            all_actors[i].set_max_speed(float(walkers_speeds[int(i / 2)]))
-
-        self.log.info(
-            "spawned %d walkers, press Ctrl+C to exit." % (len(spawned_walkers))
-        )
-        self.walkers = all_actors
-        self.ids = all_ids
-
-    def clean_up(self):
-        if SYNC:
-            settings = self.world.get_settings()
-            settings.synchronous_mode = False
-            settings.fixed_delta_seconds = None
-            self.world.apply_settings(settings)
-
-        for i in range(0, len(self.ids), 2):
-            self.walkers[i].stop()
-
-        self.log.info("\ndestroying %d walkers" % (len(self.walkers) / 2))
-        self.client.apply_batch([carla.command.DestroyActor(x) for x in self.ids])
-
-    def run_step(self):
-        if SYNC:
-            self.world.tick()
-        else:
-            self.world.wait_for_tick()
+    def _turn_off_lights(self, light_actors):
+        for actor in light_actors:
+            if actor.__class__ is not carla.libcarla.TrafficLight:
+                continue
+            actor.set_state(carla.libcarla.TrafficLightState.Off)
+            actor.freeze(True)
 
 
 def main():
@@ -143,15 +66,24 @@ def main():
     ts = TrainingScenario()
 
     try:
-        while True:
-            ts.run_step()
+        rclpy.spin(ts)
     except KeyboardInterrupt:
         pass
 
-    ts.clean_up()
     ts.destroy_node()
     rclpy.shutdown()
 
 
 if __name__ == "__main__":
     main()
+
+# TODO:
+# - Get spawn points from the blueprints
+# - SpawnActor service to create actors
+# - Wait for the response
+# - Attach a walker agent to the actor
+# - Give the actor a goal position
+# - Walk them around
+
+# - Access the stop light actors
+# - Disable & Freeze them
