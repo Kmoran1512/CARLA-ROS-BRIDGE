@@ -20,9 +20,12 @@ def launch_carla_spawn_object(context, *args, **kwargs):
             )
         ),
         launch_arguments={
-            #'objects_definition_file': get_package_share_directory('carla_spawn_objects') + '/config/objects.json',
-            "objects_definition_file": get_package_share_directory("training_scenario")
+            "objects_definition_file": get_package_share_directory(
+                "carla_spawn_objects"
+            )
             + "/config/objects.json",
+            # "objects_definition_file": get_package_share_directory("training_scenario")
+            # + "/config/objects.json",
             spawn_point_param_name: launch.substitutions.LaunchConfiguration(
                 "spawn_point"
             ),

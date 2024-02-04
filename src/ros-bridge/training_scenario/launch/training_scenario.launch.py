@@ -20,7 +20,7 @@ def generate_launch_description():
             DeclareLaunchArgument(name="intensity", default_value="0.70"),
             DeclareLaunchArgument(name="sun_azimuth", default_value="0.50"),
             DeclareLaunchArgument(name="sun_elevation", default_value="0.05"),
-            DeclareLaunchArgument(name="pedestrian_number", default_value="50"),
+            DeclareLaunchArgument(name="pedestrian_number", default_value="2"),
             DeclareLaunchArgument(
                 name="spawn_point", default_value="396.0,-313.0,2.0,0,0,90"
             ),
