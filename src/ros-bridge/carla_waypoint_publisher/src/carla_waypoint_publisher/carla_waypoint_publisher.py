@@ -115,6 +115,8 @@ class CarlaToRosWaypointConverter(CompatibleNode):
         response.waypoint.pose = trans.carla_transform_to_ros_pose(
             carla_waypoint.transform
         )
+        response.waypoint.s_val = carla_waypoint.s
+        response.waypoint.lane_width = carla_waypoint.lane_width
         response.waypoint.is_junction = carla_waypoint.is_junction
         response.waypoint.road_id = carla_waypoint.road_id
         response.waypoint.section_id = carla_waypoint.section_id
