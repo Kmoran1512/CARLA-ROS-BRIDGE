@@ -173,7 +173,7 @@ class Agent(CompatibleNode):
         return (False, None)
 
     def _is_pedestrian_hazard(self, ego_vehicle_pose, objects):
-        ego_vehicle_transform = trans.ros_pose_to_carla_transform(ego_vehicle_pose)
+        ego_vehicle_waypoint = self.get_waypoint(ego_vehicle_pose.position)
 
         closest_ped = Float64()
         closest_ped.data = 0.0
@@ -185,39 +185,48 @@ class Agent(CompatibleNode):
                 continue
 
             target_waypoint = self.get_waypoint(target_pedestrian_obj.pose.position)
-            distance_ahead = distance_vehicle(
+
+            if (
+                target_waypoint.road_id != ego_vehicle_waypoint.road_id
+                or target_waypoint.lane_id != ego_vehicle_waypoint.lane_id
+            ):
+                continue
+
+            distance_ahead = target_waypoint.s_val - ego_vehicle_waypoint.s_val
+            absolute_distance = distance_vehicle(
                 target_pedestrian_obj.pose, ego_vehicle_pose.position
             )
 
-            hazard_distance = distance_ahead - self.desired_gap
-            closest_ped.data = (
-                hazard_distance
-                if hazard_distance < closest_ped.data
-                else closest_ped.data
-            )
-            if distance_ahead > 8.0:
-                continue
+            hazard_distance = min(distance_ahead, self.desired_gap) - self.desired_gap
 
             is_in_lane = (
                 distance_vehicle(
                     target_waypoint.pose, target_pedestrian_obj.pose.position
                 )
-                < 3.0
+                < target_waypoint.lane_width / 2
+            )
+
+            target_transform = trans.ros_pose_to_carla_transform(
+                target_pedestrian_obj.pose
             )
             target_waypoint_transform = trans.ros_pose_to_carla_transform(
                 target_waypoint.pose
             )
-            target_transform = trans.ros_pose_to_carla_transform(
-                target_pedestrian_obj.pose
-            )
 
             is_crossing_lane = is_within_distance_ahead(
-                target_waypoint_transform, target_transform, 5.0
+                target_waypoint_transform, target_transform, 2.0
             )
 
-            if is_in_lane or is_crossing_lane and distance_ahead < 8.0:
-                pedestrian_status = (True, target_pedestrian_id)
-                break
+            if is_in_lane or is_crossing_lane:
+                if absolute_distance < 5.0:
+                    pedestrian_status = (True, target_pedestrian_id)
+                    break
+                else:
+                    closest_ped.data = (
+                        hazard_distance
+                        if hazard_distance < closest_ped.data
+                        else closest_ped.data
+                    )
 
         self._ped_dist_publisher.publish(closest_ped)
         return pedestrian_status
