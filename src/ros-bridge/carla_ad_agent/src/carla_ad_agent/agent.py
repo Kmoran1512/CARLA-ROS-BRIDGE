@@ -187,8 +187,9 @@ class Agent(CompatibleNode):
             target_waypoint = self.get_waypoint(target_pedestrian_obj.pose.position)
 
             if (
-                target_waypoint.road_id != ego_vehicle_waypoint.road_id
-                or target_waypoint.lane_id != ego_vehicle_waypoint.lane_id
+                target_waypoint.road_id
+                != ego_vehicle_waypoint.road_id
+                # or target_waypoint.lane_id != ego_vehicle_waypoint.lane_id
             ):
                 continue
 
@@ -218,7 +219,7 @@ class Agent(CompatibleNode):
             )
 
             if is_in_lane or is_crossing_lane:
-                if absolute_distance < 5.0:
+                if absolute_distance < 5.0 and distance_ahead > -3:
                     pedestrian_status = (True, target_pedestrian_id)
                     break
                 else:
