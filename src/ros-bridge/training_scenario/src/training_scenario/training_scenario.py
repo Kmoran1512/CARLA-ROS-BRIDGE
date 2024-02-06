@@ -6,7 +6,7 @@ from rclpy.node import Node
 
 import carla_common.transforms as trans
 from carla_msgs.srv import SpawnObject, DestroyObject
-from carla_msgs.msg import CarlaTrafficLightStatusList
+from carla_msgs.msg import CarlaTrafficLightStatusList, CarlaWeatherParameters
 from geometry_msgs.msg import Pose
 
 
@@ -15,7 +15,12 @@ class TrainingScenario(Node):
         super(TrainingScenario, self).__init__("TrainingScenario")
 
         self.declare_parameter("pedestrian_number", "1")
+        self.declare_parameter("sun_azimuth", "60.0")
+        self.declare_parameter("sun_elevation", "2.0")
+
         self.pedestrian_number = int(self.get_parameter("pedestrian_number").value)
+        self.azimuth = float(self.get_parameter("sun_azimuth").value)
+        self.altitude = float(self.get_parameter("sun_elevation").value)
 
         self.client = carla.Client("localhost", 2000)
         self.client.set_timeout(5.0)
@@ -37,13 +42,19 @@ class TrainingScenario(Node):
             10,
         )
 
+        self.weather_publisher = self.create_publisher(
+            CarlaWeatherParameters,
+            "/carla/weather_control",
+            10,
+        )
+
     def clean_up(self):
         self.client.apply_batch(
             [carla.command.DestroyActor(x) for x in self.walker_agents.keys()]
         )
 
     def run_step(self):
-        if not len(self.walker_agents) > 0:
+        if len(self.walker_agents) == 0:
             return
 
         self.world.wait_for_tick()
@@ -136,6 +147,12 @@ class TrainingScenario(Node):
 
         return spawn_poses
 
+    def set_weather(self):
+        weather_msg = CarlaWeatherParameters()
+        weather_msg.sun_azimuth_angle = self.azimuth
+        weather_msg.sun_altitude_angle = self.altitude
+        self.weather_publisher.publish(weather_msg)
+
     def _turn_off_lights(self, light_actors):
         for actor in light_actors:
             if actor.__class__ is not carla.libcarla.TrafficLight:
@@ -149,6 +166,7 @@ def main():
 
     ts = TrainingScenario()
     ts.spawn_walkers()
+    ts.set_weather()
 
     try:
         ts.create_timer(0.05, lambda timer_event=None: ts.run_step())
@@ -170,6 +188,10 @@ if __name__ == "__main__":
 # - ~~SpawnActor service to create actors~~
 # - ~~Wait for the response~~
 # - ~~Ensure the car doesn't **stop** for walkers on the sidewalk~~
-# - Attach a walker agent to the actor
-# - Give the actor a goal position
-# - Walk them around
+# - ~~Attach a walker agent to the actor~~
+# - ~~Give the actor a goal position~~
+# - ~~Walk them around~~
+# - ~~Change the weather~~
+# - Fix stopping when ahead
+# - Get 200 actors to display
+# - Get it to not throttle the computer
