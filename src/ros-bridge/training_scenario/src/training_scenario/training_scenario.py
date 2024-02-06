@@ -26,7 +26,7 @@ class TrainingScenario(Node):
         self.client.set_timeout(5.0)
         self.world = self.client.get_world()
 
-        self.world.set_pedestrians_cross_factor(0.7)
+        self.world.set_pedestrians_cross_factor(0.8)
 
         self.walkers = {}
 

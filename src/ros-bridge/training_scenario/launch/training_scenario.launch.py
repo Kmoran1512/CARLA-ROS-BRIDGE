@@ -15,11 +15,11 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="town", default_value="Town01"
             ),  # TODO: Change this to HD_opt10 or whatever
-            DeclareLaunchArgument(name="sun_azimuth", default_value="0.50"),
-            DeclareLaunchArgument(name="sun_elevation", default_value="0.05"),
+            DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
+            DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
             DeclareLaunchArgument(name="pedestrian_number", default_value="2"),
             DeclareLaunchArgument(
-                name="spawn_point", default_value="396.0,-313.0,2.0,0,0,90"
+                name="spawn_point", default_value="338.0,-250.0,2.0,0,0,90"
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -29,7 +29,7 @@ def generate_launch_description():
                     )
                 ),
                 launch_arguments={
-                    "role_name": LaunchConfiguration("role_name"),
+                    "role_name": "ego_vehicle",
                     "spawn_point": LaunchConfiguration("spawn_point"),
                     "avoid_risk": "True",
                     "synchronous_mode_wait_for_vehicle_control_command": "True",
@@ -42,7 +42,8 @@ def generate_launch_description():
                 output="screen",
                 name="train",
                 parameters=[
-                    {"role_name": LaunchConfiguration("role_name")},
+                    {"sun_azimuth": LaunchConfiguration("sun_azimuth")},
+                    {"sun_elevation": LaunchConfiguration("sun_elevation")},
                     {"pedestrian_number": LaunchConfiguration("pedestrian_number")},
                 ],
             ),
