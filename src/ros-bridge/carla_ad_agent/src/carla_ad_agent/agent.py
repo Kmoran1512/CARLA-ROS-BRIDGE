@@ -32,7 +32,12 @@ from carla_ad_agent.misc import (
 from carla_msgs.msg import CarlaEgoVehicleInfo, CarlaTrafficLightStatus
 from carla_waypoint_types.srv import GetWaypoint
 from derived_object_msgs.msg import Object
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Int32
+
+import tf2_ros
+import tf2_geometry_msgs
+
+from geometry_msgs.msg import PoseStamped
 
 
 class AgentState(enum.Enum):
@@ -88,6 +93,9 @@ class Agent(CompatibleNode):
             Float64, "/carla/{}/hazard_distance".format(role_name), 10
         )
         self.desired_gap = 40.0
+
+        self.tf_buffer = tf2_ros.Buffer()
+        tf2_ros.TransformListener(self.tf_buffer, self)
 
     def get_waypoint(self, location):
         """
@@ -173,63 +181,50 @@ class Agent(CompatibleNode):
         return (False, None)
 
     def _is_pedestrian_hazard(self, ego_vehicle_pose, objects):
-        ego_vehicle_waypoint = self.get_waypoint(ego_vehicle_pose.position)
-
         closest_ped = Float64()
         closest_ped.data = 0.0
 
         pedestrian_status = (False, None)
 
+        # TODO: Handle junctions
+
         for target_pedestrian_id, target_pedestrian_obj in objects.items():
             if target_pedestrian_obj.classification != Object.CLASSIFICATION_PEDESTRIAN:
                 continue
 
-            target_waypoint = self.get_waypoint(target_pedestrian_obj.pose.position)
+            ped_pos_stamp = PoseStamped()
+            ped_pos_stamp.header.frame_id = "map"
+            ped_pos_stamp.pose = target_pedestrian_obj.pose
 
-            if (
-                target_waypoint.road_id
-                != ego_vehicle_waypoint.road_id
-                # or target_waypoint.lane_id != ego_vehicle_waypoint.lane_id
-            ):
+            try:
+                pedestrian_transform = self.tf_buffer.transform(
+                    ped_pos_stamp, "ego_vehicle"
+                )
+            except tf2_ros.TransformException as ex:
+                self.logerr(f"Transform Exception: {ex}")
+
+            # if target_waypoint.road_id != ego_vehicle_waypoint.road_id:
+            #     continue
+
+            distance_ahead = pedestrian_transform.pose.position.x - 2
+            is_in_front = abs(pedestrian_transform.pose.position.y) < 2.9
+
+            if distance_ahead < 0 or not is_in_front:
                 continue
-
-            distance_ahead = target_waypoint.s_val - ego_vehicle_waypoint.s_val
-            absolute_distance = distance_vehicle(
-                target_pedestrian_obj.pose, ego_vehicle_pose.position
-            )
+            elif distance_ahead < 7:
+                pedestrian_status = (True, target_pedestrian_id)
+                break
 
             hazard_distance = min(distance_ahead, self.desired_gap) - self.desired_gap
 
-            is_in_lane = (
-                distance_vehicle(
-                    target_waypoint.pose, target_pedestrian_obj.pose.position
-                )
-                < target_waypoint.lane_width / 2
+            closest_ped.data = (
+                hazard_distance
+                if hazard_distance < closest_ped.data
+                else closest_ped.data
             )
 
-            target_transform = trans.ros_pose_to_carla_transform(
-                target_pedestrian_obj.pose
-            )
-            target_waypoint_transform = trans.ros_pose_to_carla_transform(
-                target_waypoint.pose
-            )
-
-            is_crossing_lane = is_within_distance_ahead(
-                target_waypoint_transform, target_transform, 2.0
-            )
-
-            if is_in_lane or is_crossing_lane:
-                if absolute_distance < 5.0 and distance_ahead > -3:
-                    pedestrian_status = (True, target_pedestrian_id)
-                    break
-                else:
-                    closest_ped.data = (
-                        hazard_distance
-                        if hazard_distance < closest_ped.data
-                        else closest_ped.data
-                    )
-
-        self._ped_dist_publisher.publish(closest_ped)
+        if closest_ped.data != 0.0:
+            self._ped_dist_publisher.publish(closest_ped)
         return pedestrian_status
 
     def _is_light_red(self, ego_vehicle_pose, lights_status, lights_info):
