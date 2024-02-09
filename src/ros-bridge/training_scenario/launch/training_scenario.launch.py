@@ -19,7 +19,7 @@ def generate_launch_description():
             DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
             DeclareLaunchArgument(name="pedestrian_number", default_value="2"),
             DeclareLaunchArgument(
-                name="spawn_point", default_value="338.0,-250.0,2.0,0,0,90"
+                name="spawn_point", default_value="338.7,-290.0,2.0,0,0,90"
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

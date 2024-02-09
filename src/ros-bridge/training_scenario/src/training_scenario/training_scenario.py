@@ -25,8 +25,7 @@ class TrainingScenario(Node):
         self.client = carla.Client("localhost", 2000)
         self.client.set_timeout(5.0)
         self.world = self.client.get_world()
-
-        self.world.set_pedestrians_cross_factor(0.8)
+        self.world.set_pedestrians_cross_factor(0.99)
 
         self.walkers = {}
 
@@ -88,6 +87,18 @@ class TrainingScenario(Node):
         self.get_logger().info(f"\n\n\n spawned {len(self.walkers)} walkers \n\n\n")
         self._walk()
 
+    def traffic_light_status(self, traffic_light_info_msg):
+        lights_on = []
+        for tl_info in traffic_light_info_msg.traffic_lights:
+            if tl_info.state == 3:
+                continue
+            lights_on.append(tl_info.id)
+
+        if not lights_on:
+            return
+        all_actors = self.world.get_actors(lights_on)
+        self._turn_off_lights(all_actors)
+
     def _walk(self):
         walker_controller_bp = self.world.get_blueprint_library().find(
             "controller.ai.walker"
@@ -115,24 +126,17 @@ class TrainingScenario(Node):
 
         for _, agent in self.walker_agents.items():
             agent.start()
-            agent.go_to_location(self.world.get_random_location_from_navigation())
+
+            point = self.world.get_random_location_from_navigation()
+            # point.x = 342.5
+            # point.y = 225.0
+
+            agent.go_to_location(point)
             agent.set_max_speed(2.0)
 
         self.get_logger().info(
             f"\n\n\n Agents spawned {len(self.walker_agents)} \n\n\n"
         )
-
-    def traffic_light_status(self, traffic_light_info_msg):
-        lights_on = []
-        for tl_info in traffic_light_info_msg.traffic_lights:
-            if tl_info.state == 3:
-                continue
-            lights_on.append(tl_info.id)
-
-        if not lights_on:
-            return
-        all_actors = self.world.get_actors(lights_on)
-        self._turn_off_lights(all_actors)
 
     def _get_spawn_location(self):
         spawn_poses = []
@@ -142,6 +146,14 @@ class TrainingScenario(Node):
 
             spawn_point = self.world.get_random_location_from_navigation()
             spawn_pose.position = trans.carla_location_to_ros_point(spawn_point)
+
+            # 338.0,-250.0,2.0,0,0,90
+            # spawn_pose.position.x = 342.0
+            # spawn_pose.position.y = -123.0
+
+            # spawn_pose.orientation = trans.carla_rotation_to_ros_quaternion(
+            #     carla.Rotation(yaw=-180)
+            # )
 
             spawn_poses.append(spawn_pose)
 
@@ -192,6 +204,7 @@ if __name__ == "__main__":
 # - ~~Give the actor a goal position~~
 # - ~~Walk them around~~
 # - ~~Change the weather~~
-# - Fix stopping when ahead
-# - Get 200 actors to display
-# - Get it to not throttle the computer
+# - ~~Fix stopping when ahead~~
+# - ~~Get 200 actors to display~~
+# - ~~Get it to not throttle the computer~~
+# - ~~Better dealing with pedestrians~~

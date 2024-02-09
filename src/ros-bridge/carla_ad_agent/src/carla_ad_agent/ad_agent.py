@@ -48,6 +48,7 @@ class CarlaAdAgent(Agent):
         self.data_lock = threading.Lock()
 
         self._ego_vehicle_pose = None
+        self._rotatation_direction = None
         self._objects = {}
         self._lights_status = {}
         self._lights_info = {}
@@ -102,6 +103,13 @@ class CarlaAdAgent(Agent):
     def odometry_cb(self, odometry_msg):
         with self.data_lock:
             self._ego_vehicle_pose = odometry_msg.pose.pose
+            self._rotatation_direction = 0
+            if odometry_msg.twist.twist.angular.z > 0.1:
+                # ccw
+                self._rotatation_direction = 1
+            elif odometry_msg.twist.twist.angular.z < -0.1:
+                # cw
+                self._rotatation_direction = -1
 
     def target_speed_cb(self, target_speed_msg):
         with self.data_lock:
@@ -171,7 +179,7 @@ class CarlaAdAgent(Agent):
                 hazard_detected = True
 
             pedestrian_state, pedestrian = self._is_pedestrian_hazard(
-                ego_vehicle_pose, objects
+                ego_vehicle_pose, self._rotatation_direction, objects
             )
             if pedestrian_state:
                 self._state = AgentState.BLOCKED_BY_PEDESTRIAN

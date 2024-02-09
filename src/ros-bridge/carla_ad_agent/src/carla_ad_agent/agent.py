@@ -180,13 +180,15 @@ class Agent(CompatibleNode):
 
         return (False, None)
 
-    def _is_pedestrian_hazard(self, ego_vehicle_pose, objects):
+    def _is_pedestrian_hazard(self, ego_vehicle_pose, rotation_direction, objects):
         closest_ped = Float64()
         closest_ped.data = 0.0
 
         pedestrian_status = (False, None)
 
-        # TODO: Handle junctions
+        ego_yaw = trans.ros_quaternion_to_carla_rotation(
+            ego_vehicle_pose.orientation
+        ).yaw
 
         for target_pedestrian_id, target_pedestrian_obj in objects.items():
             if target_pedestrian_obj.classification != Object.CLASSIFICATION_PEDESTRIAN:
@@ -203,13 +205,11 @@ class Agent(CompatibleNode):
             except tf2_ros.TransformException as ex:
                 self.logerr(f"Transform Exception: {ex}")
 
-            # if target_waypoint.road_id != ego_vehicle_waypoint.road_id:
-            #     continue
+            (distance_ahead, is_hazard) = self.get_hazard(
+                ego_yaw, rotation_direction, pedestrian_transform
+            )
 
-            distance_ahead = pedestrian_transform.pose.position.x - 2
-            is_in_front = abs(pedestrian_transform.pose.position.y) < 2.9
-
-            if distance_ahead < 0 or not is_in_front:
+            if not is_hazard or distance_ahead < 0:
                 continue
             elif distance_ahead < 7:
                 pedestrian_status = (True, target_pedestrian_id)
@@ -223,9 +223,42 @@ class Agent(CompatibleNode):
                 else closest_ped.data
             )
 
-        if closest_ped.data != 0.0:
-            self._ped_dist_publisher.publish(closest_ped)
+        self._ped_dist_publisher.publish(closest_ped)
         return pedestrian_status
+
+    def get_hazard(self, ego_yaw, rotation_direction, pedestrian_transform):
+        pedestrian_yaw = trans.ros_quaternion_to_carla_rotation(
+            pedestrian_transform.pose.orientation
+        ).yaw
+
+        p_x = pedestrian_transform.pose.position.x
+        p_y = pedestrian_transform.pose.position.y
+
+        e = 6
+
+        if rotation_direction == 1:
+            # ccw
+            p_x = -pedestrian_transform.pose.position.y
+            p_y = pedestrian_transform.pose.position.x
+        elif rotation_direction == -1:
+            # cw
+            p_x = pedestrian_transform.pose.position.y
+            p_y = -pedestrian_transform.pose.position.x
+
+        distance_ahead = p_x - 1
+        is_in_lane = -2.9 < p_y < 2.9
+
+        lane_id = 1
+        if -e < ego_yaw < e or 90 - e < ego_yaw < 90 + e:
+            lane_id = -1
+
+        # TODO: Test diriving in all 4 directions with a single ped
+
+        is_crossing_street = (
+            0 < p_y < 8.4 and abs(pedestrian_yaw - 90 * lane_id) <= 2
+        ) or (-3.5 < p_y < 0 and abs(pedestrian_yaw + 90 * lane_id) <= 2)
+
+        return (distance_ahead, is_in_lane or is_crossing_street)
 
     def _is_light_red(self, ego_vehicle_pose, lights_status, lights_info):
         """
