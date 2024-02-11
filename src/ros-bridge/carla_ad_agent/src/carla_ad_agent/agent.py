@@ -39,6 +39,8 @@ import tf2_geometry_msgs
 
 from geometry_msgs.msg import PoseStamped
 
+from transforms3d.euler import quat2euler
+
 
 class AgentState(enum.Enum):
     """
@@ -207,8 +209,8 @@ class Agent(CompatibleNode):
             except tf2_ros.TransformException as ex:
                 self.logerr(f"Transform Exception: {ex}")
 
-            (distance_ahead, is_hazard) = self.get_hazard(
-                ego_yaw, rotation_direction, pedestrian_transform
+            (distance_ahead, is_hazard) = self.get_hazard_2(
+                ego_yaw, rotation_direction, target_pedestrian_obj.pose, next_50
             )
 
             if not is_hazard or distance_ahead < 0:
@@ -262,13 +264,69 @@ class Agent(CompatibleNode):
         distance_ahead = p_x - 1
         is_in_lane = -2.9 < p_y < 2.9
 
-        # TODO: Test diriving in all 4 directions with a single ped
-
         is_crossing_street = (0 < p_y < 8.4 and abs(pedestrian_yaw - 90) <= 2) or (
             -3.5 < p_y < 0 and abs(pedestrian_yaw + 90) <= 2
         )
 
         return (distance_ahead, is_in_lane or is_crossing_street)
+
+    def get_hazard_2(self, ego_yaw, rotation_direction, pedestrian_pose, next_50):
+        d_y = self.desired_gap
+        d_x = -1.0
+
+        _, _, ped_yaw = quat2euler(
+            (
+                pedestrian_pose.orientation.w,
+                pedestrian_pose.orientation.x,
+                pedestrian_pose.orientation.y,
+                pedestrian_pose.orientation.z,
+            )
+        )
+
+        relative_yaw = 0.0
+        is_on_right = False
+
+        for i, pose in enumerate(next_50):
+            point = pose.position
+
+            x = (point.x - pedestrian_pose.position.x) ** 2
+            y = (point.y - pedestrian_pose.position.y) ** 2
+
+            if not (math.sqrt(x + y) < d_y):
+                continue
+
+            d_y = math.sqrt(x + y)
+            d_x = float(i)
+
+            _, _, point_yaw = quat2euler(
+                (
+                    pose.orientation.w,
+                    pose.orientation.x,
+                    pose.orientation.y,
+                    pose.orientation.z,
+                )
+            )
+
+            direction_to_pedestrian = np.array(
+                (pedestrian_pose.position.x, pedestrian_pose.position.y)
+            ) - np.array((point.x, point.y))
+            forward_vector = np.array([np.cos(point_yaw), np.sin(point_yaw)])
+
+            is_on_right = np.cross(forward_vector, direction_to_pedestrian) < 0
+            relative_yaw = math.degrees(
+                (ped_yaw - point_yaw + math.pi) % (2 * math.pi) - math.pi
+            )
+
+        if d_x < 0.0:
+            return (-1.0, False)
+
+        is_in_lane = d_y < 2.9
+
+        is_crossing_street = (
+            not is_on_right and abs(relative_yaw + 90) <= 3 and d_y < 8.4
+        ) or (is_on_right and abs(relative_yaw - 90) <= 3 and d_y < 3.5)
+
+        return (d_x, is_in_lane or is_crossing_street)
 
     def _is_light_red(self, ego_vehicle_pose, lights_status, lights_info):
         """
