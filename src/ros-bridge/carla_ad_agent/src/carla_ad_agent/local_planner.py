@@ -24,6 +24,7 @@ from carla_ad_agent.misc import distance_vehicle
 from carla_msgs.msg import CarlaEgoVehicleControl  # pylint: disable=import-error
 from ros_g29_force_feedback.msg import ForceFeedback
 from nav_msgs.msg import Odometry, Path
+from geometry_msgs.msg import PoseArray
 from std_msgs.msg import Float64
 from visualization_msgs.msg import Marker
 
@@ -96,6 +97,9 @@ class LocalPlanner(CompatibleNode):
             CarlaEgoVehicleControl,
             "/carla/{}/transfer_ctrl".format(self.role_name),
             qos_profile=10,
+        )
+        self._upcoming_waypoints_publisher = self.new_publisher(
+            PoseArray, "/carla/{}/next_50".format(self.role_name), qos_profile=10
         )
 
         # initializing controller
@@ -189,6 +193,20 @@ class LocalPlanner(CompatibleNode):
             if max_index >= 0:
                 for i in range(max_index + 1):
                     self._waypoint_buffer.popleft()
+
+            if len(self._waypoint_buffer):
+                next_50_msg = PoseArray()
+                buffered = [
+                    self._waypoint_buffer[i]
+                    for i in range(min(len(self._waypoint_buffer), 50))
+                ]
+                fifty = buffered + [
+                    self._waypoints_queue[i]
+                    for i in range(min(len(self._waypoints_queue), 50 - len(buffered)))
+                ]
+
+                next_50_msg.poses = fifty
+                self._upcoming_waypoints_publisher.publish(next_50_msg)
 
             self._control_cmd_publisher.publish(control_msg)
 
