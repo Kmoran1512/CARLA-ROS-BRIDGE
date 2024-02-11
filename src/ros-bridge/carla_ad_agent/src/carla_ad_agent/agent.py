@@ -180,7 +180,9 @@ class Agent(CompatibleNode):
 
         return (False, None)
 
-    def _is_pedestrian_hazard(self, ego_vehicle_pose, rotation_direction, objects):
+    def _is_pedestrian_hazard(
+        self, ego_vehicle_pose, rotation_direction, objects, next_50
+    ):
         closest_ped = Float64()
         closest_ped.data = 0.0
 
@@ -234,29 +236,37 @@ class Agent(CompatibleNode):
         p_x = pedestrian_transform.pose.position.x
         p_y = pedestrian_transform.pose.position.y
 
-        e = 6
+        if rotation_direction >= 0.2:
+            yaw_norm = math.radians(ego_yaw % 180)
+            sin_theta = math.sin(yaw_norm)
+            cos_theta = math.cos(yaw_norm)
 
-        if rotation_direction == 1:
-            # ccw
-            p_x = -pedestrian_transform.pose.position.y
-            p_y = pedestrian_transform.pose.position.x
-        elif rotation_direction == -1:
+            pedestrian_yaw = ego_yaw + pedestrian_yaw - 90
+
             # cw
-            p_x = pedestrian_transform.pose.position.y
-            p_y = -pedestrian_transform.pose.position.x
+            p_x = p_x * sin_theta - p_y * cos_theta
+            p_y = p_y * sin_theta + p_x * cos_theta
+
+        if rotation_direction <= -0.2:
+            # clockwise
+
+            yaw_norm = math.radians(-ego_yaw % 180)
+            sin_theta = math.sin(yaw_norm)
+            cos_theta = math.cos(yaw_norm)
+
+            pedestrian_yaw = ego_yaw + pedestrian_yaw + 90
+
+            p_x = p_x * sin_theta + p_y * cos_theta
+            p_y = p_y * sin_theta + p_x * cos_theta
 
         distance_ahead = p_x - 1
         is_in_lane = -2.9 < p_y < 2.9
 
-        lane_id = 1
-        if -e < ego_yaw < e or 90 - e < ego_yaw < 90 + e:
-            lane_id = -1
-
         # TODO: Test diriving in all 4 directions with a single ped
 
-        is_crossing_street = (
-            0 < p_y < 8.4 and abs(pedestrian_yaw - 90 * lane_id) <= 2
-        ) or (-3.5 < p_y < 0 and abs(pedestrian_yaw + 90 * lane_id) <= 2)
+        is_crossing_street = (0 < p_y < 8.4 and abs(pedestrian_yaw - 90) <= 2) or (
+            -3.5 < p_y < 0 and abs(pedestrian_yaw + 90) <= 2
+        )
 
         return (distance_ahead, is_in_lane or is_crossing_street)
 
