@@ -21,13 +21,13 @@ from ros_compatibility.qos import QoSProfile, DurabilityPolicy
 from carla_ad_agent.agent import Agent, AgentState
 
 from carla_msgs.msg import (
-    CarlaEgoVehicleInfo,
-    CarlaActorList,
+    CarlaEgoVehicleStatus,
     CarlaTrafficLightStatusList,
     CarlaTrafficLightInfoList,
 )
 from derived_object_msgs.msg import ObjectArray, Object
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, Path
+from geometry_msgs.msg import PoseArray
 from std_msgs.msg import Float64  # pylint: disable=import-error
 
 
@@ -53,6 +53,7 @@ class CarlaAdAgent(Agent):
         self._lights_status = {}
         self._lights_info = {}
         self._target_speed = 0.0
+        self._next_50 = []
 
         self.speed_command_publisher = self.new_publisher(
             Float64,
@@ -100,16 +101,22 @@ class CarlaAdAgent(Agent):
                 ),
             )
 
+            self.vehicle_status_subscriber = self.new_subscription(
+                CarlaEgoVehicleStatus,
+                "/carla/{}/vehicle_status".format(role_name),
+                self.vehicle_status_updated,
+                qos_profile=10,
+            )
+            self.way_sub = self.new_subscription(
+                PoseArray,
+                "/carla/{}/next_50".format(role_name),
+                self.waypoints_updated,
+                qos_profile=10,
+            )
+
     def odometry_cb(self, odometry_msg):
         with self.data_lock:
             self._ego_vehicle_pose = odometry_msg.pose.pose
-            self._rotatation_direction = 0
-            if odometry_msg.twist.twist.angular.z > 0.1:
-                # ccw
-                self._rotatation_direction = 1
-            elif odometry_msg.twist.twist.angular.z < -0.1:
-                # cw
-                self._rotatation_direction = -1
 
     def target_speed_cb(self, target_speed_msg):
         with self.data_lock:
@@ -140,6 +147,15 @@ class CarlaAdAgent(Agent):
 
         with self.data_lock:
             self._lights_info = lights_info
+
+    def vehicle_status_updated(self, vehicle_status_msg):
+        steer_angle = vehicle_status_msg.control.steer
+        with self.data_lock:
+            self._rotatation_direction = -steer_angle
+
+    def waypoints_updated(self, path):
+        with self.data_lock:
+            self._next_50 = path.poses
 
     def emergency_stop(self):
         stopping_speed = Float64()
@@ -179,7 +195,7 @@ class CarlaAdAgent(Agent):
                 hazard_detected = True
 
             pedestrian_state, pedestrian = self._is_pedestrian_hazard(
-                ego_vehicle_pose, self._rotatation_direction, objects
+                ego_vehicle_pose, self._rotatation_direction, objects, self._next_50
             )
             if pedestrian_state:
                 self._state = AgentState.BLOCKED_BY_PEDESTRIAN
