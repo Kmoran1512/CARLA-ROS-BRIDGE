@@ -94,7 +94,7 @@ class Agent(CompatibleNode):
         self._ped_dist_publisher = self.new_publisher(
             Float64, "/carla/{}/hazard_distance".format(role_name), 10
         )
-        self.desired_gap = 40.0
+        self.desired_gap = 50.0
 
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, self)
