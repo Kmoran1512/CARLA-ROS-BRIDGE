@@ -13,6 +13,22 @@ def generate_launch_description():
     ld = LaunchDescription(
         [
             DeclareLaunchArgument(
+                name="spawn_definition_file",
+                default_value=os.path.join(
+                    get_package_share_directory("training_scenario"),
+                    "config",
+                    "spawn_points.csv",
+                ),
+            ),
+            DeclareLaunchArgument(
+                name="speeds_file",
+                default_value=os.path.join(
+                    get_package_share_directory("training_scenario"),
+                    "config",
+                    "speeds.csv",
+                ),
+            ),
+            DeclareLaunchArgument(
                 name="town", default_value="Town01"
             ),  # TODO: Change this to HD_opt10 or whatever
             DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
@@ -21,6 +37,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="spawn_point", default_value="338.7,-290.0,2.0,0,0,90"
             ),
+            DeclareLaunchArgument(name="target_speed", default_value="11.2"),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(
@@ -33,6 +50,7 @@ def generate_launch_description():
                     "spawn_point": LaunchConfiguration("spawn_point"),
                     "avoid_risk": "True",
                     "synchronous_mode_wait_for_vehicle_control_command": "True",
+                    "target_speed": LaunchConfiguration("target_speed"),
                 }.items(),
             ),
             Node(
@@ -45,6 +63,12 @@ def generate_launch_description():
                     {"sun_azimuth": LaunchConfiguration("sun_azimuth")},
                     {"sun_elevation": LaunchConfiguration("sun_elevation")},
                     {"pedestrian_number": LaunchConfiguration("pedestrian_number")},
+                    {
+                        "spawn_definition_file": LaunchConfiguration(
+                            "spawn_definition_file"
+                        )
+                    },
+                    {"speeds_file": LaunchConfiguration("speeds_file")},
                 ],
             ),
         ]
