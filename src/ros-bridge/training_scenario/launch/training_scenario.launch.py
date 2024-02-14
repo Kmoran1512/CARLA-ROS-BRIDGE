@@ -28,7 +28,6 @@ def generate_launch_description():
                     "speeds.csv",
                 ),
             ),
-            DeclareLaunchArgument(name="town", default_value="Town01"),
             DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
             DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
             DeclareLaunchArgument(name="pedestrian_number", default_value="2"),
