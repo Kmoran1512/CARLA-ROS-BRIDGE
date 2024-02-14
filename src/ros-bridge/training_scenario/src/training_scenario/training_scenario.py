@@ -77,7 +77,7 @@ class TrainingScenario(Node):
         for i in range(self.pedestrian_number):
             walker_request = SpawnObject.Request()
 
-            number = (i % 44) + 1
+            number = (i % 49) + 1
 
             walker_request.type = f"walker.pedestrian.{number:04}"
             walker_request.id = f"walker{i:04}"
