@@ -1,13 +1,16 @@
 import random
 import carla
 import rclpy
+import csv
 
 from rclpy.node import Node
 
 import carla_common.transforms as trans
 from carla_msgs.srv import SpawnObject, DestroyObject
 from carla_msgs.msg import CarlaTrafficLightStatusList, CarlaWeatherParameters
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Point
+
+random.seed(4242)
 
 
 class TrainingScenario(Node):
@@ -17,10 +20,14 @@ class TrainingScenario(Node):
         self.declare_parameter("pedestrian_number", "1")
         self.declare_parameter("sun_azimuth", "60.0")
         self.declare_parameter("sun_elevation", "2.0")
+        self.declare_parameter("spawn_definition_file", "")
+        self.declare_parameter("speeds_file", "")
 
         self.pedestrian_number = int(self.get_parameter("pedestrian_number").value)
         self.azimuth = float(self.get_parameter("sun_azimuth").value)
         self.altitude = float(self.get_parameter("sun_elevation").value)
+        self.spawn_definition_file = self.get_parameter("spawn_definition_file").value
+        self.speeds_file = self.get_parameter("speeds_file").value
 
         self.client = carla.Client("localhost", 2000)
         self.client.set_timeout(5.0)
@@ -28,8 +35,10 @@ class TrainingScenario(Node):
         self.world.set_pedestrians_cross_factor(0.99)
 
         self.walkers = {}
-
         self.walker_agents = {}
+
+        self._preset_points = []
+
         self.spawn_actors_service = self.create_client(
             SpawnObject, "/carla/spawn_object"
         )
@@ -55,7 +64,6 @@ class TrainingScenario(Node):
     def run_step(self):
         if len(self.walker_agents) == 0:
             return
-
         self.world.wait_for_tick()
 
     def spawn_walkers(self):
@@ -63,7 +71,7 @@ class TrainingScenario(Node):
             self.get_logger().error("Service spawn_actors not available after waiting")
             return
 
-        spawn_points = self._get_spawn_location()
+        self._get_points()
         walker_requests = []
 
         for i in range(self.pedestrian_number):
@@ -73,7 +81,7 @@ class TrainingScenario(Node):
 
             walker_request.type = f"walker.pedestrian.{number:04}"
             walker_request.id = f"walker{i:04}"
-            walker_request.transform = spawn_points[i]
+            walker_request.transform = self._preset_points[i]
 
             walker_requests.append(self.spawn_actors_service.call_async(walker_request))
 
@@ -126,38 +134,26 @@ class TrainingScenario(Node):
 
         for _, agent in self.walker_agents.items():
             agent.start()
-
-            point = self.world.get_random_location_from_navigation()
-            # point.x = 342.5
-            # point.y = 225.0
-
-            agent.go_to_location(point)
+            pose_in_map = random.choice(self._preset_points)
+            loc = trans.ros_point_to_carla_location(pose_in_map.position)
+            agent.go_to_location(loc)
             agent.set_max_speed(2.0)
 
         self.get_logger().info(
             f"\n\n\n Agents spawned {len(self.walker_agents)} \n\n\n"
         )
 
-    def _get_spawn_location(self):
-        spawn_poses = []
+    def _get_points(self):
+        with open(self.spawn_definition_file, newline="") as f:
+            csv_points = [tuple(row) for row in csv.reader(f, delimiter=" ")]
 
-        for _ in range(self.pedestrian_number):
-            spawn_pose = Pose()
+        for x, y, z in csv_points:
+            pt = Pose()
+            pt.position.x = float(x)
+            pt.position.y = -float(y)
+            pt.position.z = float(z)
 
-            spawn_point = self.world.get_random_location_from_navigation()
-            spawn_pose.position = trans.carla_location_to_ros_point(spawn_point)
-
-            # 338.0,-250.0,2.0,0,0,90
-            # spawn_pose.position.x = 342.0
-            # spawn_pose.position.y = -123.0
-
-            # spawn_pose.orientation = trans.carla_rotation_to_ros_quaternion(
-            #     carla.Rotation(yaw=-180)
-            # )
-
-            spawn_poses.append(spawn_pose)
-
-        return spawn_poses
+            self._preset_points.append(pt)
 
     def set_weather(self):
         weather_msg = CarlaWeatherParameters()
