@@ -38,6 +38,7 @@ class TrainingScenario(Node):
         self.walker_agents = {}
 
         self._preset_points = []
+        self._speeds = []
 
         self.spawn_actors_service = self.create_client(
             SpawnObject, "/carla/spawn_object"
@@ -71,7 +72,7 @@ class TrainingScenario(Node):
             self.get_logger().error("Service spawn_actors not available after waiting")
             return
 
-        self._get_points()
+        self._get_config()
         walker_requests = []
 
         for i in range(self.pedestrian_number):
@@ -132,18 +133,18 @@ class TrainingScenario(Node):
                     result.actor_id
                 )
 
-        for _, agent in self.walker_agents.items():
+        for i, agent in enumerate(self.walker_agents.values()):
             agent.start()
             pose_in_map = random.choice(self._preset_points)
             loc = trans.ros_point_to_carla_location(pose_in_map.position)
             agent.go_to_location(loc)
-            agent.set_max_speed(2.0)
+            agent.set_max_speed(self._speeds[i % 49])
 
         self.get_logger().info(
             f"\n\n\n Agents spawned {len(self.walker_agents)} \n\n\n"
         )
 
-    def _get_points(self):
+    def _get_config(self):
         with open(self.spawn_definition_file, newline="") as f:
             csv_points = [tuple(row) for row in csv.reader(f, delimiter=" ")]
 
@@ -154,6 +155,9 @@ class TrainingScenario(Node):
             pt.position.z = float(z)
 
             self._preset_points.append(pt)
+
+        with open(self.speeds_file, newline="") as f:
+            self._speeds = [float(row[0]) for row in csv.reader(f)]
 
     def set_weather(self):
         weather_msg = CarlaWeatherParameters()
