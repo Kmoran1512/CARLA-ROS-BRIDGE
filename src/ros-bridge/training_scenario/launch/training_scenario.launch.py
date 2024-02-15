@@ -34,7 +34,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="spawn_point", default_value="338.7,-290.0,2.0,0,0,90"
             ),
-            DeclareLaunchArgument(name="target_speed", default_value="11.2"),
+            DeclareLaunchArgument(name="target_speed", default_value="8.33"),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     os.path.join(
