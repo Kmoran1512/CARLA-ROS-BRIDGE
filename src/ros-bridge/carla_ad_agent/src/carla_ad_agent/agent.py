@@ -94,7 +94,7 @@ class Agent(CompatibleNode):
         self._ped_dist_publisher = self.new_publisher(
             Float64, "/carla/{}/hazard_distance".format(role_name), 10
         )
-        self.desired_gap = 50.0
+        self.desired_gap = 40.0
 
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, self)
@@ -197,6 +197,8 @@ class Agent(CompatibleNode):
         for target_pedestrian_id, target_pedestrian_obj in objects.items():
             if target_pedestrian_obj.classification != Object.CLASSIFICATION_PEDESTRIAN:
                 continue
+            elif abs(target_pedestrian_obj.pose.position.z - ego_vehicle_pose.position.z) > 2.0:
+                continue
 
             ped_pos_stamp = PoseStamped()
             ped_pos_stamp.header.frame_id = "map"
@@ -213,9 +215,9 @@ class Agent(CompatibleNode):
                 ego_yaw, rotation_direction, target_pedestrian_obj.pose, next_50
             )
 
-            if not is_hazard or distance_ahead < 0:
+            if not is_hazard or distance_ahead < 0.0:
                 continue
-            elif distance_ahead < 7:
+            elif 0.0 < distance_ahead < 7.0:
                 pedestrian_status = (True, target_pedestrian_id)
                 break
 
@@ -226,6 +228,9 @@ class Agent(CompatibleNode):
                 if hazard_distance < closest_ped.data
                 else closest_ped.data
             )
+
+        if pedestrian_status[0]:
+            self.loginfo(f"hazard ::: {pedestrian_status} {closest_ped.data}")
 
         self._ped_dist_publisher.publish(closest_ped)
         return pedestrian_status
@@ -286,7 +291,7 @@ class Agent(CompatibleNode):
         relative_yaw = 0.0
         is_on_right = False
 
-        for i, pose in enumerate(next_50):
+        for i, pose in enumerate(next_50[:40]):
             point = pose.position
 
             x = (point.x - pedestrian_pose.position.x) ** 2
@@ -320,13 +325,32 @@ class Agent(CompatibleNode):
         if d_x < 0.0:
             return (-1.0, False)
 
-        is_in_lane = d_y < 2.9
+        is_in_lane = d_y < 1.9 if is_on_right else 5.0
 
         is_crossing_street = (
             not is_on_right and abs(relative_yaw + 90) <= 3 and d_y < 8.4
         ) or (is_on_right and abs(relative_yaw - 90) <= 3 and d_y < 3.5)
 
         return (d_x, is_in_lane or is_crossing_street)
+
+    def _get_relative_y_coord(self, point_angle, wx, wy, px, py, i):
+        point_angle = math.degrees(point_angle)
+
+        if math.isclose(point_angle, 90, abs_tol=3) or math.isclose(
+            point_angle, -90, abs_tol=3
+        ):
+            return abs(wx - px)
+        elif (
+            math.isclose(point_angle, -180, abs_tol=3)
+            or math.isclose(point_angle, 180, abs_tol=3)
+            or math.isclose(point_angle, 0, abs_tol=3)
+        ):
+            return abs(wy - py)
+        else:
+            x = (wx - px) ** 2
+            y = (wy - py) ** 2
+
+            return math.sqrt(x + y)
 
     def _is_light_red(self, ego_vehicle_pose, lights_status, lights_info):
         """
