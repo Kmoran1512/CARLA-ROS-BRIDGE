@@ -70,7 +70,7 @@ def generate_launch_description():
                 name="host", default_value="localhost"
             ),
             launch.actions.DeclareLaunchArgument(name="port", default_value="2000"),
-            launch.actions.DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
+            launch.actions.DeclareLaunchArgument(name="town", default_value="Town01"),
             launch.actions.DeclareLaunchArgument(name="timeout", default_value="10"),
             launch.actions.DeclareLaunchArgument(
                 name="synchronous_mode_wait_for_vehicle_control_command",
@@ -83,13 +83,16 @@ def generate_launch_description():
                 name="role_name", default_value="ego_vehicle"
             ),
             launch.actions.DeclareLaunchArgument(
-                name="spawn_point", default_value="105.3,-94.4,2.0,0,0,90"
+                name="spawn_point", default_value="312.0,-195.5,2.0,0,0,180"
             ),
             launch.actions.DeclareLaunchArgument(
                 name="target_speed", default_value="8.33"  # in m/s
             ),
             launch.actions.DeclareLaunchArgument(
                 name="avoid_risk", default_value="True"
+            ),
+            launch.actions.DeclareLaunchArgument(
+                name="avoid_pedestrian", default_value="True"
             ),
             launch.actions.DeclareLaunchArgument(
                 name="sigterm_timeout", default_value="15"
@@ -127,6 +130,9 @@ def generate_launch_description():
                     "role_name": launch.substitutions.LaunchConfiguration("role_name"),
                     "avoid_risk": launch.substitutions.LaunchConfiguration(
                         "avoid_risk"
+                    ),
+                    "avoid_pedestrian": launch.substitutions.LaunchConfiguration(
+                        "avoid_pedestrian"
                     ),
                 }.items(),
             ),

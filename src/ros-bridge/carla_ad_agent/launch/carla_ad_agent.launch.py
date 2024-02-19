@@ -54,6 +54,11 @@ def generate_launch_description():
                             "avoid_risk"
                         )
                     },
+                    {
+                        "avoid_risk": launch.substitutions.LaunchConfiguration(
+                            "avoid_pedestrian"
+                        )
+                    },
                 ],
             ),
             launch_ros.actions.Node(
