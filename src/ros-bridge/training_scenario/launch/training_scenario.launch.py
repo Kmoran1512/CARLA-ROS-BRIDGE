@@ -32,7 +32,7 @@ def generate_launch_description():
             DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
             DeclareLaunchArgument(name="pedestrian_number", default_value="2"),
             DeclareLaunchArgument(
-                name="spawn_point", default_value="338.7,-290.0,2.0,0,0,90"
+                name="spawn_point", default_value="105.3,-94.4,2.0,0,0,90"
             ),
             DeclareLaunchArgument(name="target_speed", default_value="8.33"),
             IncludeLaunchDescription(
@@ -46,7 +46,7 @@ def generate_launch_description():
                     "role_name": "ego_vehicle",
                     "spawn_point": LaunchConfiguration("spawn_point"),
                     "avoid_risk": "True",
-                    "synchronous_mode_wait_for_vehicle_control_command": "True",
+                    "synchronous_mode_wait_for_vehicle_control_command": "False",
                     "target_speed": LaunchConfiguration("target_speed"),
                 }.items(),
             ),

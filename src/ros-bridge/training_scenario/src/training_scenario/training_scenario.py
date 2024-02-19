@@ -122,7 +122,7 @@ class TrainingScenario(Node):
             self.get_logger().error("Service spawn_actors not available after waiting")
             return
 
-        self._get_config()
+        self._get_config(rand=True)
         walker_requests = []
         for i in range(self.pedestrian_number):
             walker_request = SpawnObject.Request()
@@ -169,17 +169,27 @@ class TrainingScenario(Node):
         self.goal_lock = True
         self.goal_publisher.publish(self.goals.pop())
 
-    def _get_config(self):
-        with open(self.spawn_definition_file, newline="") as f:
-            csv_points = [tuple(row) for row in csv.reader(f, delimiter=" ")]
+    def _get_config(self, rand=False):
+        if rand:
+            for _ in range(self.pedestrian_number):
+                loc = self.world.get_random_location_from_navigation()
+                if loc == None:
+                    continue
+                
+                pt = Pose()
+                pt.position = trans.carla_location_to_ros_point(loc)
+                self._preset_points.append(pt)
+        else:
+            with open(self.spawn_definition_file, newline="") as f:
+                csv_points = [tuple(row) for row in csv.reader(f, delimiter=" ")]
 
-        for x, y, z in csv_points:
-            pt = Pose()
-            pt.position.x = float(x)
-            pt.position.y = -float(y)
-            pt.position.z = float(z)
+            for x, y, z in csv_points:
+                pt = Pose()
+                pt.position.x = float(x)
+                pt.position.y = -float(y)
+                pt.position.z = float(z)
 
-            self._preset_points.append(pt)
+                self._preset_points.append(pt)
 
         with open(self.speeds_file, newline="") as f:
             self._speeds = [float(row[0]) for row in csv.reader(f)]
