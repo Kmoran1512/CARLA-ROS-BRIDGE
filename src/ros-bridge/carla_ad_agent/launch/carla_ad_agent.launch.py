@@ -12,6 +12,9 @@ def generate_launch_description():
                 name="avoid_risk", default_value="True"
             ),
             launch.actions.DeclareLaunchArgument(
+                name="avoid_pedestrian", default_value="True"
+            ),
+            launch.actions.DeclareLaunchArgument(
                 name="Kp_lateral", default_value="0.9"
             ),
             launch.actions.DeclareLaunchArgument(

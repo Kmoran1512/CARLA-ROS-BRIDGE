@@ -44,6 +44,7 @@ class CarlaAdAgent(Agent):
 
         role_name = self.get_param("role_name", "ego_vehicle")
         self._avoid_risk = self.get_param("avoid_risk", True)
+        self._avoid_pedestrians = self.get_param("avoid_pedestrians", True)
 
         self.data_lock = threading.Lock()
 
@@ -194,12 +195,13 @@ class CarlaAdAgent(Agent):
                 self._state = AgentState.BLOCKED_BY_VEHICLE
                 hazard_detected = True
 
-            pedestrian_state, pedestrian = self._is_pedestrian_hazard(
-                ego_vehicle_pose, self._rotatation_direction, objects, self._next_50
-            )
-            if pedestrian_state:
-                self._state = AgentState.BLOCKED_BY_PEDESTRIAN
-                hazard_detected = True
+            if self._avoid_pedestrians:
+                pedestrian_state, pedestrian = self._is_pedestrian_hazard(
+                    ego_vehicle_pose, self._rotatation_direction, objects, self._next_50
+                )
+                if pedestrian_state:
+                    self._state = AgentState.BLOCKED_BY_PEDESTRIAN
+                    hazard_detected = True
 
             # check for the state of the traffic lights
             light_state, traffic_light = self._is_light_red(
