@@ -143,7 +143,7 @@ def main(args=None):
     orchestrator = RecordingOrchestrator()
 
     try:
-        orchestrator.create_timer(0.01, lambda _=None: orchestrator.write())
+        orchestrator.create_timer(0.1, lambda _=None: orchestrator.write())
 
         rclpy.spin(orchestrator, orchestrator.executor)
     except KeyboardInterrupt:
