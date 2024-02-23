@@ -23,6 +23,7 @@ if ROS_VERSION == 1:
     class ServiceException(rospy.ServiceException):
         pass
 
+
 elif ROS_VERSION == 2:
     import rclpy.exceptions
 

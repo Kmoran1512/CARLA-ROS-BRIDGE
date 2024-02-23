@@ -38,9 +38,7 @@ elif ROS_VERSION == 2:
         description="CARLA ROS2 bridge",
         license="MIT",
         tests_require=["pytest"],
-        entry_points={
-            "console_scripts": ["bridge = carla_ros_bridge.bridge:main"],
-        },
+        entry_points={"console_scripts": ["bridge = carla_ros_bridge.bridge:main"]},
         package_dir={"": "src"},
         package_data={"": ["CARLA_VERSION"]},
         include_package_data=True,

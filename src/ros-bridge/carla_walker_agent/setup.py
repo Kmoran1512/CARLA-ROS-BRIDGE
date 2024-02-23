@@ -38,7 +38,7 @@ elif ROS_VERSION == 2:
         entry_points={
             "console_scripts": [
                 "carla_walker_agent = carla_walker_agent.carla_walker_agent:main"
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

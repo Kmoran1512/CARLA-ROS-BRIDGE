@@ -544,10 +544,8 @@ class CarlaAckermannControl(CompatibleNode):
         # the driving impedance moves the 'zero' acceleration border
         # Interpretation: To reach a zero acceleration the throttle has to pushed
         # down for a certain amount
-        self.info.status.throttle_lower_border = (
-            phys.get_vehicle_driving_impedance_acceleration(
-                self.vehicle_info, self.vehicle_status, self.info.output.reverse
-            )
+        self.info.status.throttle_lower_border = phys.get_vehicle_driving_impedance_acceleration(
+            self.vehicle_info, self.vehicle_status, self.info.output.reverse
         )
 
         # the engine lay off acceleration defines the size of the coasting area

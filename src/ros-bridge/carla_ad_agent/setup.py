@@ -38,7 +38,7 @@ elif ROS_VERSION == 2:
                 "ad_agent = carla_ad_agent.ad_agent:main",
                 "local_planner = carla_ad_agent.local_planner:main",
                 "testing_waypoints = carla_ad_agent.testing_waypoints:main",
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

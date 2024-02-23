@@ -29,6 +29,7 @@ if ROS_VERSION == 1:
     def logfatal(msg):
         rospy.logfatal(msg)
 
+
 elif ROS_VERSION == 2:
     import rclpy
 

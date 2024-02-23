@@ -20,11 +20,10 @@ def generate_launch_description():
                 executable="record_node",
                 output="screen",
                 name="test",
-            ),
+            )
         ]
     )
     return ld
-
 
 
 if __name__ == "__main__":

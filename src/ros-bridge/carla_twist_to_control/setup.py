@@ -40,7 +40,7 @@ elif ROS_VERSION == 2:
         entry_points={
             "console_scripts": [
                 "carla_twist_to_control = carla_twist_to_control.carla_twist_to_control:main"
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

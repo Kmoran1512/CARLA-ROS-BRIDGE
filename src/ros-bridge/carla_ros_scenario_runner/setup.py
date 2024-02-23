@@ -38,7 +38,7 @@ elif ROS_VERSION == 2:
         entry_points={
             "console_scripts": [
                 "carla_ros_scenario_runner = carla_ros_scenario_runner.carla_ros_scenario_runner_node:main"
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

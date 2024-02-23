@@ -9,7 +9,7 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 
 RIGHT = -195.5
 LEFT = -192.5
-PEDESTRIAN  = 222.0
+PEDESTRIAN = 222.0
 VEHICLE = 312.0
 
 
@@ -22,7 +22,6 @@ class TestScenarios(Node):
         self._init_pub_sub()
 
         self.pedestrian_ids = []
-        
 
     def _init_params(self):
         self.declare_parameter("sun_azimuth", "60.0")
@@ -31,7 +30,7 @@ class TestScenarios(Node):
         self.declare_parameter("ego_side", "right")
         self.declare_parameter("single_side", "right")
         self.declare_parameter("has_multi", "False")
-        
+
         self._azimuth = float(self.get_parameter("sun_azimuth").value)
         self._altitude = float(self.get_parameter("sun_elevation").value)
         self._ego_side = self.get_parameter("ego_side").value
@@ -51,14 +50,10 @@ class TestScenarios(Node):
         )
 
         self.weather_publisher = self.create_publisher(
-            CarlaWeatherParameters,
-            "/carla/weather_control",
-            10,
+            CarlaWeatherParameters, "/carla/weather_control", 10
         )
         self.ego_pose_publisher = self.create_publisher(
-            PoseWithCovarianceStamped,
-            "/initialpose",
-            10,
+            PoseWithCovarianceStamped, "/initialpose", 10
         )
 
     def clean_up(self):
@@ -87,7 +82,7 @@ class TestScenarios(Node):
 
                 walker_pose = Pose()
                 walker_pose.position.x = PEDESTRIAN
-                walker_pose.position.y = RIGHT if self._single_side == 'left' else LEFT
+                walker_pose.position.y = RIGHT if self._single_side == "left" else LEFT
                 if i == 0:
                     walker_pose.position.x -= 1
                 elif i == 1:
@@ -98,15 +93,18 @@ class TestScenarios(Node):
                     walker_pose.position.y += 1
 
                 walker_request.transform = walker_pose
-                walker_requests.append(self.spawn_actors_service.call_async(walker_request))
+                walker_requests.append(
+                    self.spawn_actors_service.call_async(walker_request)
+                )
 
         walker_request = SpawnObject.Request()
         walker_request.type = f"walker.pedestrian.{self.scenario_number:04}"
         walker_request.id = f"walker{self.scenario_number:04}"
         walker_request.transform.position.x = PEDESTRIAN
-        walker_request.transform.position.y = LEFT if self._single_side == 'left' else RIGHT
+        walker_request.transform.position.y = (
+            LEFT if self._single_side == "left" else RIGHT
+        )
         walker_requests.append(self.spawn_actors_service.call_async(walker_request))
-
 
         for i, request in enumerate(walker_requests):
             future = request

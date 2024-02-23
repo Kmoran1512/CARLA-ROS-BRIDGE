@@ -70,6 +70,7 @@ if ROS_VERSION == 1:
     def get_package_share_directory(package_name):
         return rospkg.RosPack().get_path(package_name)
 
+
 elif ROS_VERSION == 2:
     import ament_index_python.packages
     import rclpy

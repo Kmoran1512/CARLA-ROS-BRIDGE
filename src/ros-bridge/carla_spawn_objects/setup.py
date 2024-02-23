@@ -41,6 +41,6 @@ elif ROS_VERSION == 2:
             "console_scripts": [
                 "carla_spawn_objects = src.carla_spawn_objects.carla_spawn_objects:main",
                 "set_initial_pose = src.carla_spawn_objects.set_initial_pose:main",
-            ],
+            ]
         },
     )

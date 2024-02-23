@@ -42,7 +42,7 @@ elif ROS_VERSION == 2:
                 "{}_node = {}.{}_node:main".format(
                     package_name, package_name, package_name
                 )
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

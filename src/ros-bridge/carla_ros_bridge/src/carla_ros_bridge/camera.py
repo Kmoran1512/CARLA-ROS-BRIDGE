@@ -349,7 +349,7 @@ class DepthCamera(Camera):
         # Apply (R + G * 256 + B * 256 * 256) / (256**3 - 1) * 1000
         # according to the documentation:
         # https://carla.readthedocs.io/en/latest/cameras_and_sensors/#camera-depth-map
-        scales = numpy.array([65536.0, 256.0, 1.0, 0]) / (256**3 - 1) * 1000
+        scales = numpy.array([65536.0, 256.0, 1.0, 0]) / (256 ** 3 - 1) * 1000
         depth_image = numpy.dot(bgra_image, scales).astype(numpy.float32)
 
         # actually we want encoding '32FC1'

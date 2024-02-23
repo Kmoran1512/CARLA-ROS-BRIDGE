@@ -39,7 +39,7 @@ elif ROS_VERSION == 2:
         entry_points={
             "console_scripts": [
                 "carla_manual_control = carla_manual_control.carla_manual_control:main"
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

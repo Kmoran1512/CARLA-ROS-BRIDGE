@@ -105,10 +105,7 @@ class RosVehicleControl(BasicControl):
                 self.controller_runner_log,
                 "RosVehicleControl: launching controller node",
             )
-            self.controller_launch.execute(
-                cmdline,
-                env=os.environ,
-            )
+            self.controller_launch.execute(cmdline, env=os.environ)
 
             self.node.loginfo(
                 "{}: Successfully started ros vehicle control".format(self._role_name)

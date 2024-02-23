@@ -123,9 +123,9 @@ class ManualControl(CompatibleNode):
         Callback on collision event
         """
         intensity = math.sqrt(
-            data.normal_impulse.x**2
-            + data.normal_impulse.y**2
-            + data.normal_impulse.z**2
+            data.normal_impulse.x ** 2
+            + data.normal_impulse.y ** 2
+            + data.normal_impulse.z ** 2
         )
         self.hud.notification(
             "Collision with {} (impulse {})".format(data.other_actor_id, intensity)

@@ -7,7 +7,7 @@ import math
 import rclpy
 from rclpy.node import Node
 
-#from record_node.gaze_publisher import GazeReader
+# from record_node.gaze_publisher import GazeReader
 
 from carla_msgs.msg import CarlaEgoVehicleStatus
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
@@ -23,9 +23,34 @@ class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 
-        #self.gaze_reader = GazeReader()
+        # self.gaze_reader = GazeReader()
 
-        self.header = ['time' , 'car_x', 'car_y', 'car_yaw', 'car_v', 'car_w', 'throttle', 'break', 'torque', 'wheel_sigma', 'command_sigma', 'is_autonomous', 'gaze_x', 'gaze_y', 'next_waypoint_x', 'next_waypoint_y', 'ped0_x', 'ped0_y', 'ped1_x', 'ped1_y', 'ped2_x', 'ped2_y', 'ped3_x', 'ped3_y']
+        self.header = [
+            "time",
+            "car_x",
+            "car_y",
+            "car_yaw",
+            "car_v",
+            "car_w",
+            "throttle",
+            "break",
+            "torque",
+            "wheel_sigma",
+            "command_sigma",
+            "is_autonomous",
+            "gaze_x",
+            "gaze_y",
+            "next_waypoint_x",
+            "next_waypoint_y",
+            "ped0_x",
+            "ped0_y",
+            "ped1_x",
+            "ped1_y",
+            "ped2_x",
+            "ped2_y",
+            "ped3_x",
+            "ped3_y",
+        ]
         self.all_data = []
         self.next_row = [0.0] * len(self.header)
 
@@ -47,9 +72,8 @@ class RecordingOrchestrator(Node):
             ObjectArray, "/carla/objects", self._record_object_status, qos_profile=10
         )
 
-
         self.create_subscription(
-            ForceControl, "/force_control", self._record_torque , 10
+            ForceControl, "/force_control", self._record_torque, 10
         )
         self.create_subscription(
             ForceFeedback, "/ff_target", self._record_target_steer, 10
@@ -61,12 +85,8 @@ class RecordingOrchestrator(Node):
             10,
         )
         self.create_subscription(
-            PoseArray,
-            "/carla/ego_vehicle/next_50",
-            self._record_next_waypoint,
-            10,
+            PoseArray, "/carla/ego_vehicle/next_50", self._record_next_waypoint, 10
         )
-
 
     def write(self):
         self._get_gaze()
@@ -80,14 +100,15 @@ class RecordingOrchestrator(Node):
             home_dir, *target_dir, datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         )
 
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             w = csv.writer(f)
-        
+
             w.writerow(self.header)
             w.writerows(self.all_data)
 
     def _get_gaze(self):
         pass
+
     #     gaze_x, gaze_y = self.gaze_reader.get_gaze()
     #     if gaze_x and gaze_y:
     #         self.next_row[12] = gaze_x
@@ -120,7 +141,6 @@ class RecordingOrchestrator(Node):
                 self.next_row[17 + ped_i] = obj.pose.position.y
                 ped_i += 1
 
-
     def _record_vehicle_status(self, data):
         self.next_row[4] = data.velocity
         self.next_row[9] = data.control.steer
@@ -130,11 +150,11 @@ class RecordingOrchestrator(Node):
     def _record_auton_status(self, data):
         self.next_row[11] = float(not data.data)
 
-    def _record_torque(self,data):
-        self.next_row[8]=data.torque
+    def _record_torque(self, data):
+        self.next_row[8] = data.torque
 
-    def _record_target_steer(self,data):
-        self.next_row[10]=data.position
+    def _record_target_steer(self, data):
+        self.next_row[10] = data.position
 
 
 def main(args=None):

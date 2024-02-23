@@ -11,32 +11,20 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-
-
-
     ld = LaunchDescription(
         [
             # Temporary Settings
             DeclareLaunchArgument(name="Kp", default_value="0.9"),
             DeclareLaunchArgument(name="Ki", default_value="0.0"),
             DeclareLaunchArgument(name="Kd", default_value="0.0"),
-
             # Weather Information
             DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
             DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
             # Spawn Settings
-            DeclareLaunchArgument(
-                name="ego_side", default_value="right"
-            ),
-            DeclareLaunchArgument(
-                name="single_side", default_value="right"
-            ),
-            DeclareLaunchArgument(
-                name="has_multi", default_value="False"
-            ),
-            DeclareLaunchArgument(
-                name="avoid_pedestrian", default_value="False"
-            ),
+            DeclareLaunchArgument(name="ego_side", default_value="right"),
+            DeclareLaunchArgument(name="single_side", default_value="right"),
+            DeclareLaunchArgument(name="has_multi", default_value="False"),
+            DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
             # Driving Settings
             DeclareLaunchArgument(name="target_speed", default_value="12.0"),
             DeclareLaunchArgument(name="goal", default_value="0.0,0.0,0.0,0,0,90"),
@@ -62,9 +50,10 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(
                     os.path.join(
                         get_package_share_directory("ros_g29_force_feedback"),
-                        "launch","g29_feedback.launch.py",
+                        "launch",
+                        "g29_feedback.launch.py",
                     )
-                ),
+                )
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -72,7 +61,7 @@ def generate_launch_description():
                         get_package_share_directory("record_node"),
                         "record_node.launch.py",
                     )
-                ),
+                )
             ),
             # Run Node
             Node(
@@ -93,7 +82,6 @@ def generate_launch_description():
         ]
     )
     return ld
-
 
 
 if __name__ == "__main__":

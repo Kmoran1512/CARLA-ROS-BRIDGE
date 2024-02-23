@@ -190,13 +190,13 @@ class Agent(CompatibleNode):
 
         pedestrian_status = (False, None)
 
-    
-
-
         for target_pedestrian_id, target_pedestrian_obj in objects.items():
             if target_pedestrian_obj.classification != Object.CLASSIFICATION_PEDESTRIAN:
                 continue
-            elif abs(target_pedestrian_obj.pose.position.z - ego_vehicle_pose.position.z) > 2.0:
+            elif (
+                abs(target_pedestrian_obj.pose.position.z - ego_vehicle_pose.position.z)
+                > 2.0
+            ):
                 continue
 
             ped_pos_stamp = PoseStamped()

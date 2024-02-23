@@ -114,9 +114,9 @@ class LocalPlanner(CompatibleNode):
             self._current_pose = odometry_msg.pose.pose
             self._current_speed = (
                 math.sqrt(
-                    odometry_msg.twist.twist.linear.x**2
-                    + odometry_msg.twist.twist.linear.y**2
-                    + odometry_msg.twist.twist.linear.z**2
+                    odometry_msg.twist.twist.linear.x ** 2
+                    + odometry_msg.twist.twist.linear.y ** 2
+                    + odometry_msg.twist.twist.linear.z ** 2
                 )
                 * 3.6
             )

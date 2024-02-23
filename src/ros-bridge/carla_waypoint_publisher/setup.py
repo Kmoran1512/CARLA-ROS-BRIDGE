@@ -13,8 +13,7 @@ if ROS_VERSION == 1:
     from catkin_pkg.python_setup import generate_distutils_setup
 
     d = generate_distutils_setup(
-        packages=["carla_waypoint_publisher"],
-        package_dir={"": "src"},
+        packages=["carla_waypoint_publisher"], package_dir={"": "src"}
     )
 
     setup(**d)
@@ -42,7 +41,7 @@ elif ROS_VERSION == 2:
         entry_points={
             "console_scripts": [
                 "carla_waypoint_publisher = carla_waypoint_publisher.carla_waypoint_publisher:main"
-            ],
+            ]
         },
         package_dir={"": "src"},
     )

@@ -22,6 +22,7 @@ if ROS_VERSION == 1:
     class MutuallyExclusiveCallbackGroup(CallbackGroup):
         pass
 
+
 elif ROS_VERSION == 2:
     import rclpy.callback_groups
 

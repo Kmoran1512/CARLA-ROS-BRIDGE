@@ -21,9 +21,7 @@ setup(
     license="TODO: License declaration",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": [
-            "test_scenarios = test_scenarios.test_scenarios:main"
-        ],
+        "console_scripts": ["test_scenarios = test_scenarios.test_scenarios:main"]
     },
     package_dir={"": "src"},
 )

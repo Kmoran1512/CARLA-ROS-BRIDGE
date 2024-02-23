@@ -63,16 +63,11 @@ class TrainingScenario(Node):
             10,
         )
         self.create_subscription(
-            PoseArray,
-            "/carla/ego_vehicle/next_50",
-            self._waypoints_updated,
-            10,
+            PoseArray, "/carla/ego_vehicle/next_50", self._waypoints_updated, 10
         )
 
         self.weather_publisher = self.create_publisher(
-            CarlaWeatherParameters,
-            "/carla/weather_control",
-            10,
+            CarlaWeatherParameters, "/carla/weather_control", 10
         )
         self.goal_publisher = self.create_publisher(
             PoseStamped, "/carla/ego_vehicle/goal", 10
@@ -175,7 +170,7 @@ class TrainingScenario(Node):
                 loc = self.world.get_random_location_from_navigation()
                 if loc == None:
                     continue
-                
+
                 pt = Pose()
                 pt.position = trans.carla_location_to_ros_point(loc)
                 self._preset_points.append(pt)

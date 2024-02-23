@@ -27,7 +27,7 @@ setup(
     entry_points={
         "console_scripts": [
             "training_scenario = training_scenario.training_scenario:main"
-        ],
+        ]
     },
     package_dir={"": "src"},
 )

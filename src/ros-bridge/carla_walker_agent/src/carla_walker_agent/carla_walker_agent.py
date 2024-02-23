@@ -121,7 +121,7 @@ class CarlaWalkerAgent(CompatibleNode):
             direction = Vector3()
             direction.x = self._waypoints[0].position.x - self._current_pose.position.x
             direction.y = self._waypoints[0].position.y - self._current_pose.position.y
-            direction_norm = math.sqrt(direction.x**2 + direction.y**2)
+            direction_norm = math.sqrt(direction.x ** 2 + direction.y ** 2)
             if direction_norm > CarlaWalkerAgent.MIN_DISTANCE:
                 control.speed = self._target_speed
                 control.direction.x = direction.x / direction_norm

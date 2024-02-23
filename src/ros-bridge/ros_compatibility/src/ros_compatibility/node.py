@@ -120,6 +120,7 @@ if ROS_VERSION == 1:
         def destroy(self):
             pass
 
+
 elif ROS_VERSION == 2:
     import time
     from rclpy import Parameter
@@ -157,7 +158,7 @@ elif ROS_VERSION == 2:
         def get_time(self):
             t = self.get_clock().now()
             t = t.seconds_nanoseconds()
-            return float(t[0] + (t[1] / 10**9))
+            return float(t[0] + (t[1] / 10 ** 9))
 
         def logdebug(self, text):
             self.get_logger().debug(text)
