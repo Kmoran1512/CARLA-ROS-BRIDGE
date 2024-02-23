@@ -14,7 +14,7 @@ from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 
 from transforms3d.euler import quat2euler
 
@@ -26,30 +26,32 @@ class RecordingOrchestrator(Node):
         # self.gaze_reader = GazeReader()
 
         self.header = [
-            "time",
-            "car_x",
-            "car_y",
-            "car_yaw",
-            "car_v",
-            "car_w",
-            "throttle",
-            "break",
-            "torque",
-            "wheel_sigma",
-            "command_sigma",
-            "is_autonomous",
-            "gaze_x",
-            "gaze_y",
-            "next_waypoint_x",
-            "next_waypoint_y",
-            "ped0_x",
-            "ped0_y",
-            "ped1_x",
-            "ped1_y",
-            "ped2_x",
-            "ped2_y",
-            "ped3_x",
-            "ped3_y",
+            "time (ms since start)", # 0
+            "car_x (world frame x)", # 1
+            "car_y (world frame y)", # 2
+            "car_yaw (degrees, 0->180 0->-180)", # 3
+            "car_v (m/s)", # 4
+            "car_w (m/s)", # 5
+            "throttle (depressed %)", # 6
+            "break (depressed %)", # 7
+            "torque (N on wheel motor)", # 8
+            "response_theta (±turn % max 200)", # 9
+            "true_theta (±turn % max 100)", # 10
+            "command_theta  (±turn % max 100)", # 11
+            "sim_theta  (±turn % max 200)", # 12
+            "is_autonomous (1 is auton, 0 is manual)", # 13
+            "gaze_x (0 is left)", # 14
+            "gaze_y (0 is top)", # 15
+            "next_waypoint_x (in world frame)", # 16
+            "next_waypoint_y (in world frame)", # 17
+            "ped0_x (in world frame)", # 18
+            "ped0_y (in world frame)", # 19
+            "ped1_x (in world frame)", # 20
+            "ped1_y (in world frame)", # 21
+            "ped2_x (in world frame)", # 22
+            "ped2_y (in world frame)", # 23
+            "ped3_x (in world frame)", # 24
+            "ped3_y (in world frame)", # 25
         ]
         self.all_data = []
         self.next_row = [0.0] * len(self.header)
@@ -87,6 +89,8 @@ class RecordingOrchestrator(Node):
         self.create_subscription(
             PoseArray, "/carla/ego_vehicle/next_50", self._record_next_waypoint, 10
         )
+        self.create_subscription(Float32, "/ts_pub", self._record_ts_number, 10)
+        self.create_subscription(Float32, "/sim_pub", self._record_sim_number, 10)
 
     def write(self):
         self._get_gaze()
@@ -143,7 +147,7 @@ class RecordingOrchestrator(Node):
 
     def _record_vehicle_status(self, data):
         self.next_row[4] = data.velocity
-        self.next_row[9] = data.control.steer
+        self.next_row[9] = data.control.steer # return theta
         self.next_row[6] = data.control.throttle
         self.next_row[7] = data.control.brake
 
@@ -154,7 +158,13 @@ class RecordingOrchestrator(Node):
         self.next_row[8] = data.torque
 
     def _record_target_steer(self, data):
-        self.next_row[10] = data.position
+        self.next_row[11] = data.position # command theta
+
+    def _record_sim_number(self, data):
+        self.next_row[12] = data.data # sent to simulator
+
+    def _record_ts_number(self, data):
+        self.next_row[10] = data.data # true steer
 
 
 def main(args=None):
