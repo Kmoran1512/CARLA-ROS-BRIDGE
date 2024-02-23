@@ -13,10 +13,6 @@ def generate_launch_description():
 
     ld = LaunchDescription(
         [
-            # Temporary Settings
-            DeclareLaunchArgument(name="Kp", default_value="0.9"),
-            DeclareLaunchArgument(name="Ki", default_value="0.0"),
-            DeclareLaunchArgument(name="Kd", default_value="0.0"),
             # Weather Information
             DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
             DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
@@ -41,9 +37,6 @@ def generate_launch_description():
                     "avoid_pedestrian": LaunchConfiguration("avoid_pedestrian"),
                     "synchronous_mode_wait_for_vehicle_control_command": "True",
                     "target_speed": LaunchConfiguration("target_speed"),
-                    "Kp_lateral": LaunchConfiguration("Kp"),
-                    "Ki_lateral": LaunchConfiguration("Ki"),
-                    "Kd_lateral": LaunchConfiguration("Kd"),
                 }.items(),
             ),
             IncludeLaunchDescription(

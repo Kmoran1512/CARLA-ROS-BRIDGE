@@ -83,7 +83,7 @@ def generate_launch_description():
                 name="role_name", default_value="ego_vehicle"
             ),
             launch.actions.DeclareLaunchArgument(
-                name="spawn_point", default_value="312.0,-195.5,2.0,0,0,180"
+                name="spawn_point", default_value="312.0,-195.16,2.0,0,0,180"
             ),
             launch.actions.DeclareLaunchArgument(
                 name="target_speed", default_value="8.33"  # in m/s
