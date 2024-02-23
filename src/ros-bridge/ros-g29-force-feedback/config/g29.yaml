@@ -1,7 +1,7 @@
 g29_force_feedback:
   ros__parameters:
     device_name: "/dev/input/event20"
-    loop_rate: 0.1
+    loop_rate: 0.05
     max_torque: 1.0
     min_torque: 0.0
     brake_torque: 0.2

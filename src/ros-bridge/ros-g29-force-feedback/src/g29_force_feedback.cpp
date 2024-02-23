@@ -148,8 +148,8 @@ void G29ForceFeedback::calcRotateForce(double &torque,
                                        const ros_g29_force_feedback::msg::ForceFeedback &target,
                                        const double &current_position) {
 
-    double k_p = 8.0;
-    double k_d = 0.0;
+    double k_p = 25.0;
+    double k_d = 5.0;
     double k_i = 0.0;
 
     double prev_err = m_err;
