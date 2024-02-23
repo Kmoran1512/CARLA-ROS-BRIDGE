@@ -77,7 +77,7 @@ from ros_g29_force_feedback.msg import ForceControl
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import NavSatFix
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 
 # ==============================================================================
 # -- World ---------------------------------------------------------------------
@@ -342,12 +342,13 @@ class JoystickControl(object):
         self.m_ctrl = CarlaEgoVehicleControl()
         self.a_ctrl = CarlaEgoVehicleControl()
         self._steer_cache = 0.0
+        self._true_steer = 0.0
         self._key_cache = False
 
         pygame.joystick.init()
         self._set_joystick_dimensions()
 
-        self.pubsub = PubSub(self.node, self)
+        self.pubsub = PubSub(self)
 
         self.manual_override = False
         self.set_manual_override(self.manual_override)
@@ -440,9 +441,9 @@ class JoystickControl(object):
             for i in range(self._joystick.get_numbuttons())
         ]
 
-        self._steer_cache = 1.0 * math.tan(
-            1.1 * jsInputs[self._steer_idx]
-        )  ## 1.0 -> 0.55
+        self._true_steer = jsInputs[self._steer_idx]
+        self._steer_cache = 1.0 * math.tan(1.1 * self._true_steer)  ## 1.0 -> 0.55
+
         self.m_ctrl.throttle = max(
             0.0,
             min(
@@ -496,8 +497,8 @@ class JoystickControl(object):
 
 
 class PubSub(object):
-    def __init__(self, node, parent: JoystickControl):
-        self.node = node
+    def __init__(self, parent: JoystickControl):
+        self.node = parent.node
 
         fast_qos = QoSProfile(depth=10)
         fast_latched_qos = QoSProfile(
@@ -509,35 +510,32 @@ class PubSub(object):
             "/carla/{}/vehicle_control_manual_override".format(parent.role_name),
             qos_profile=fast_latched_qos,
         )
-
         self.m_vc = self.node.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/{}/vehicle_control_cmd_manual".format(parent.role_name),
             qos_profile=fast_qos,
         )
-
         self.a_vc = self.node.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/{}/vehicle_control_cmd".format(parent.role_name),
             qos_profile=fast_qos,
         )
-
         self.force_feedback_publisher = self.node.new_publisher(
             ForceFeedback, "/ff_target", qos_profile=fast_qos
         )
+        self.true_steer_publisher = self.node.new_publisher(Float32, "/ts_pub", 10)
+        self.sim_steer_publisher = self.node.new_publisher(Float32, "/sim_pub", 10)
 
-        self.carla_status_subscriber = self.node.new_subscription(
+        self.node.new_subscription(
             CarlaStatus, "/carla/status", parent.on_new_carla_frame, qos_profile=10
         )
-
-        self.carla_steer_control_subscriber = self.node.new_subscription(
+        self.node.new_subscription(
             CarlaEgoVehicleControl,
             "/carla/{}/transfer_ctrl".format(parent.role_name),
             parent.auton_ctrl,
             qos_profile=10,
         )
-
-        self.force_sub = self.node.new_subscription(
+        self.node.new_subscription(
             ForceControl, "/force_control", parent.force_ctrl, 10
         )
 
