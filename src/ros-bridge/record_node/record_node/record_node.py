@@ -7,7 +7,8 @@ import math
 import rclpy
 from rclpy.node import Node
 
-# from record_node.gaze_publisher import GazeReader
+from .gaze_reader import GazeReader
+from .img_publisher import ImageView
 
 from carla_msgs.msg import CarlaEgoVehicleStatus
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
@@ -23,7 +24,10 @@ class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 
-        # self.gaze_reader = GazeReader()
+        track_gaze = False
+        self.gaze_reader = GazeReader() if track_gaze else None
+
+        self.img = ImageView()
 
         self.header = [
             "time (ms since start)", # 0
@@ -111,12 +115,10 @@ class RecordingOrchestrator(Node):
             w.writerows(self.all_data)
 
     def _get_gaze(self):
-        pass
-
-    #     gaze_x, gaze_y = self.gaze_reader.get_gaze()
-    #     if gaze_x and gaze_y:
-    #         self.next_row[12] = gaze_x
-    #         self.next_row[13] = gaze_y
+        self.gaze_x, self.gaze_y = self.gaze_reader.get_gaze() if self.gaze_reader else (0.0,0.0)
+        if self.gaze_x and self.gaze_y:
+            self.next_row[12] = self.gaze_x
+            self.next_row[13] = self.gaze_y
 
     def _record_next_waypoint(self, data):
         self.next_row[14] = data.poses[0].position.x
