@@ -8,7 +8,7 @@ IP_ADDRESS = "192.168.56.30"
 TARGET_PORT = 4242
 
 
-class GazePublisher:
+class GazeReader:
     def __init__(self):
         self._server_connection()
         self.data = []
