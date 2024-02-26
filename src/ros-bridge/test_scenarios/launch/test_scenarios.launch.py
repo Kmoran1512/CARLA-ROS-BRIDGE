@@ -61,9 +61,7 @@ def generate_launch_description():
                 package="image_view",  # Change to your actual package name
                 executable="image_view",  # Change to your actual executable name
                 output="screen",
-                remappings=[
-                    ('image', '/driver_img_view'),
-                ],
+                remappings=[("image", "/driver_img_view")],
             ),
             Node(
                 package="test_scenarios",
