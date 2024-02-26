@@ -24,9 +24,10 @@ class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 
-        track_gaze = False
-        self.gaze_reader = GazeReader() if track_gaze else None
+        self._init_parmas()
+        self.gaze_reader = GazeReader() if self.record_gaze else None
 
+        # TODO: pass draw params
         self.img = ImageView(self)
 
         self.header = [
@@ -63,6 +64,25 @@ class RecordingOrchestrator(Node):
         self._init_pub_sub()
 
         self.start = time.time()
+
+    def _init_parmas(self):
+        self.declare_parameter("record_gaze", "False")
+        self.declare_parameter("participant_number", "1")
+        self.declare_parameter("test_number", "1")
+
+        self.declare_parameter("draw_manctrl", "False")
+        self.declare_parameter("draw_gaze", "False")
+        self.declare_parameter("draw_outline", "False")
+        self.declare_parameter("draw_route", "False")
+
+        self.record_gaze = bool(self.get_parameter("record_gaze").value)
+        self.participant_number = int(self.get_parameter("participant_number").value)
+        self.test_number = int(self.get_parameter("test_number").value)
+
+        self.draw_manctrl = bool(self.get_parameter("draw_manctrl").value)
+        self.draw_gaze = bool(self.get_parameter("draw_gaze").value)
+        self.draw_outline = bool(self.get_parameter("draw_outline").value)
+        self.draw_route = bool(self.get_parameter("draw_route").value)
 
     def _init_pub_sub(self):
         # Records velocity, steering, throttle, brake
@@ -103,10 +123,13 @@ class RecordingOrchestrator(Node):
 
     def complete(self):
         home_dir = os.path.expanduser("~")
-        target_dir = ["expiremental_recordings"]
-        filename = os.path.join(
-            home_dir, *target_dir, datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        target_dir = ["Documents", "MATLAB", "test_data"]
+        filename = "p{:02}_n{:02}-{}".format(
+            self.participant_number,
+            self.test_number,
+            datetime.datetime.now().strftime("%m_%d"),
         )
+        filename = os.path.join(home_dir, *target_dir, filename)
 
         with open(filename, "w") as f:
             w = csv.writer(f)
