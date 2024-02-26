@@ -9,7 +9,9 @@ from sensor_msgs.msg import Image
 
 
 class ImageView:
-    def __init__(self, node):
+    def __init__(self, node, show_man_ctrl=True):
+        self.show_man_ctrl = show_man_ctrl
+
         self._init_pubsub(node)
 
         self.image = Image()
@@ -27,7 +29,7 @@ class ImageView:
         node.create_subscription(
             Bool,
             "/carla/ego_vehicle/vehicle_control_manual_override",
-            self._placeholder,
+            self._set_manctrl_status,
             10,
         )
         node.create_subscription(
@@ -44,6 +46,8 @@ class ImageView:
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
 
         # Draw manctrl status
+        if self.show_man_ctrl:
+            self._draw_manctrl_status(cv_image)
         # Draw gaze
         # Draw boxes
         # Draw route
@@ -51,5 +55,30 @@ class ImageView:
         self.image = self.bridge.cv2_to_imgmsg(cv_image, encoding="rgb8")
         self.img_pub.publish(self.image)
 
-    def _placeholder(self, data):
+    def _set_manctrl_status(self, data):
+        self.manctrl_status = data.data
+
+    def _placeholder(self, _):
         pass
+
+    def _draw_manctrl_status(self, image):
+        text = "M" if self.manctrl_status else "A"
+        color = (255, 0, 0) if self.manctrl_status else (0, 255, 0)
+
+        (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)
+
+        image_height, image_width, _ = image.shape
+        c = (image_width // 2, image_height - 150)
+
+        cv2.circle(image, c, 50, color, -1)
+
+        cv2.putText(
+            image,
+            text,
+            (c[0] - tw + 2, c[1] + th),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            2,
+            (0, 0, 0),
+            2,
+            lineType=cv2.LINE_AA,
+        )
