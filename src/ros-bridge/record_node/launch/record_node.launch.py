@@ -13,10 +13,10 @@ def generate_launch_description():
 
     ld = LaunchDescription(
         [
-            DeclareLaunchArgument(name="record_gaze", default_value="False"),
+            DeclareLaunchArgument(name="record_gaze", default_value="True"),
             DeclareLaunchArgument(name="participant_number", default_value="1"),
             DeclareLaunchArgument(name="test_number", default_value="1"),
-            DeclareLaunchArgument(name="draw_manctrl", default_value="False"),
+            DeclareLaunchArgument(name="draw_manctrl", default_value="True"),
             DeclareLaunchArgument(name="draw_gaze", default_value="False"),
             DeclareLaunchArgument(name="draw_outline", default_value="False"),
             DeclareLaunchArgument(name="draw_route", default_value="False"),

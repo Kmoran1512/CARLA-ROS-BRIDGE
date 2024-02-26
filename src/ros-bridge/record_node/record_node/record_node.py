@@ -26,9 +26,10 @@ class RecordingOrchestrator(Node):
 
         self._init_parmas()
         self.gaze_reader = GazeReader() if self.record_gaze else None
+        self.gaze_x = self.gaze_y = 0.0
 
         # TODO: pass draw params
-        self.img = ImageView(self)
+        self.img = ImageView(self, self.draw_manctrl)
 
         self.header = [
             "time (ms since start)",  # 0
@@ -72,7 +73,7 @@ class RecordingOrchestrator(Node):
         self.declare_parameter("participant_number", "1")
         self.declare_parameter("test_number", "1")
 
-        self.declare_parameter("draw_manctrl", "False")
+        self.declare_parameter("draw_manctrl", "True")
         self.declare_parameter("draw_gaze", "False")
         self.declare_parameter("draw_outline", "False")
         self.declare_parameter("draw_route", "False")
@@ -143,10 +144,16 @@ class RecordingOrchestrator(Node):
             w.writerows(self.all_data)
 
     def _get_gaze(self):
-        self.gaze_x, self.gaze_y = (
-            self.gaze_reader.get_gaze() if self.gaze_reader else (0.0, 0.0)
+        gaze_x, gaze_y = (
+            self.gaze_reader.get_gaze() if self.gaze_reader is not None else (0.0, 0.0)
         )
-        if self.gaze_x and self.gaze_y:
+
+        if gaze_x > 0.0 or gaze_y > 0.0:
+            self.gaze_x = gaze_x
+            self.gaze_y = gaze_y
+
+        self.get_logger().info(f"gaze   ::: {self.gaze_x}, {self.gaze_y}")
+        if gaze_x and gaze_y:
             self.next_row[12] = self.gaze_x
             self.next_row[13] = self.gaze_y
 

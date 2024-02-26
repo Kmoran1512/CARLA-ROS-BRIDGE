@@ -21,7 +21,7 @@ class GazeReader:
         self._receive_gaze_data()
 
         if len(self.data) < 5:
-            return
+            return (-1.0, -1.0)
 
         return separate_data(self.data)
 
@@ -51,9 +51,6 @@ class GazeReader:
                 self.data.append(temp)
         except IndexError:
             pass
-            # print(
-            #     "Gazepoint Server fell behind | Data will be repeated until it catches up"
-            # )
 
     def _server_connection(self):
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -66,4 +63,4 @@ class GazeReader:
 
 def separate_data(data):
     """return x, y, v, d"""
-    return data[0], data[1], data[4], data[3]
+    return (data[0], data[1])
