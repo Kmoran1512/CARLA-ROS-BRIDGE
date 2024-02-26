@@ -64,11 +64,9 @@ class RecordingOrchestrator(Node):
 
         self._init_pub_sub()
 
-        self.start = time.time()
+        self.start = None
 
     def _init_parmas(self):
-        self.begin = False
-
         self.declare_parameter("record_gaze", "False")
         self.declare_parameter("participant_number", "1")
         self.declare_parameter("test_number", "1")
@@ -120,7 +118,7 @@ class RecordingOrchestrator(Node):
         self.create_subscription(Float32, "/sim_pub", self._record_sim_number, 10)
 
     def write(self):
-        if not self.begin:
+        if self.start is None:
             return
 
         self._get_gaze()
@@ -130,7 +128,7 @@ class RecordingOrchestrator(Node):
     def complete(self):
         home_dir = os.path.expanduser("~")
         target_dir = ["Documents", "MATLAB", "test_data"]
-        filename = "p{:02}_n{:02}-{}".format(
+        filename = "p{:02}_n{:02}-{}.csv".format(
             self.participant_number,
             self.test_number,
             datetime.datetime.now().strftime("%m_%d"),
@@ -154,18 +152,18 @@ class RecordingOrchestrator(Node):
 
         self.get_logger().info(f"gaze   ::: {self.gaze_x}, {self.gaze_y}")
         if gaze_x and gaze_y:
-            self.next_row[12] = self.gaze_x
-            self.next_row[13] = self.gaze_y
+            self.next_row[14] = self.gaze_x
+            self.next_row[15] = self.gaze_y
 
     def _record_next_waypoint(self, data):
-        self.next_row[14] = data.poses[0].position.x
-        self.next_row[15] = data.poses[0].position.y
+        self.next_row[16] = data.poses[0].position.x
+        self.next_row[17] = data.poses[0].position.y
 
     def _record_object_status(self, data):
         ped_i = 0
         for obj in data.objects:
             if obj.classification == Object.CLASSIFICATION_CAR:
-                self.begin = True
+                self.start = time.time()
 
                 self.next_row[1] = obj.pose.position.x
                 self.next_row[2] = -obj.pose.position.y
@@ -182,8 +180,8 @@ class RecordingOrchestrator(Node):
                 self.next_row[5] = obj.twist.angular.z
 
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
-                self.next_row[16 + ped_i] = obj.pose.position.x
-                self.next_row[17 + ped_i] = obj.pose.position.y
+                self.next_row[18 + ped_i] = obj.pose.position.x
+                self.next_row[19 + ped_i] = obj.pose.position.y
                 ped_i += 1
 
     def _record_vehicle_status(self, data):
@@ -193,7 +191,7 @@ class RecordingOrchestrator(Node):
         self.next_row[7] = data.control.brake
 
     def _record_auton_status(self, data):
-        self.next_row[11] = float(not data.data)
+        self.next_row[13] = float(not data.data)
 
     def _record_torque(self, data):
         self.next_row[8] = data.torque
