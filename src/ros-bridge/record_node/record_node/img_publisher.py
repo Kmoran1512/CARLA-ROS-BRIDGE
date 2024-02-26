@@ -19,10 +19,10 @@ class ImageView:
         self.gaze_x, self.gaze_y = (0, 0)
 
     def _init_pubsub(self, node):
-        self.img_pub = node.create_publisher(Image, "/driver_img_view", 10)
+        self.img_pub = node.create_publisher(Image, "/driver_img_view", 25)
 
         node.create_subscription(
-            Image, "/carla/ego_vehicle/rgb_front/image", self._on_view_img, 10
+            Image, "/carla/ego_vehicle/rgb_front/image", self._on_view_img, 25
         )
         node.create_subscription(
             Bool,
