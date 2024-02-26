@@ -66,6 +66,8 @@ class RecordingOrchestrator(Node):
         self.start = time.time()
 
     def _init_parmas(self):
+        self.begin = False
+
         self.declare_parameter("record_gaze", "False")
         self.declare_parameter("participant_number", "1")
         self.declare_parameter("test_number", "1")
@@ -117,6 +119,9 @@ class RecordingOrchestrator(Node):
         self.create_subscription(Float32, "/sim_pub", self._record_sim_number, 10)
 
     def write(self):
+        if not self.begin:
+            return
+
         self._get_gaze()
         self.next_row[0] = time.time() - self.start
         self.all_data.append(self.next_row[:])
@@ -153,6 +158,8 @@ class RecordingOrchestrator(Node):
         ped_i = 0
         for obj in data.objects:
             if obj.classification == Object.CLASSIFICATION_CAR:
+                self.begin = True
+
                 self.next_row[1] = obj.pose.position.x
                 self.next_row[2] = -obj.pose.position.y
 
