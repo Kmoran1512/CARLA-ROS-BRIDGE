@@ -7,8 +7,8 @@ from carla_msgs.msg import CarlaWeatherParameters
 from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 
 
-RIGHT = -195.5
-LEFT = -192.5
+RIGHT = -192.0 #-195.5
+LEFT = -201.0 #-199.5
 PEDESTRIAN = 222.0
 VEHICLE = 312.0
 
@@ -74,7 +74,7 @@ class TestScenarios(Node):
 
         walker_requests = []
         if self._has_multi:
-            for i in range(3):
+            for i in range(1):
                 walker_request = SpawnObject.Request()
 
                 walker_request.type = f"walker.pedestrian.{self.scenario_number:04}"
@@ -83,14 +83,17 @@ class TestScenarios(Node):
                 walker_pose = Pose()
                 walker_pose.position.x = PEDESTRIAN
                 walker_pose.position.y = RIGHT if self._single_side == "left" else LEFT
-                if i == 0:
-                    walker_pose.position.x -= 1
-                elif i == 1:
-                    walker_pose.position.x += 1
-                    walker_pose.position.y -= 1
-                else:
-                    walker_pose.position.x += 1
-                    walker_pose.position.y += 1
+                walker_pose.position.z = 1.0
+                # if i == 0:
+                #     walker_pose.position.x -= 1
+                # elif i == 1:
+                #     walker_pose.position.x += 1
+                #     walker_pose.position.y -= 1
+                # else:
+                #     walker_pose.position.x += 1
+                #     walker_pose.position.y += 1
+
+                self.get_logger().warn(f"\n\n\n ped loc ::: {walker_pose.position}\n\n\n ")
 
                 walker_request.transform = walker_pose
                 walker_requests.append(
@@ -106,7 +109,7 @@ class TestScenarios(Node):
         )
         walker_requests.append(self.spawn_actors_service.call_async(walker_request))
 
-        for i, request in enumerate(walker_requests):
+        for request in walker_requests:
             future = request
             rclpy.spin_until_future_complete(self, future)
             walker_id = future.result().id
