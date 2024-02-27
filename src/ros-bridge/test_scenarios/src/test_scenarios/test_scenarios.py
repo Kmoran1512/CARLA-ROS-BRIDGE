@@ -7,8 +7,8 @@ from carla_msgs.msg import CarlaWeatherParameters
 from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 
 
-RIGHT = -192.0 #-195.5
-LEFT = -201.0 #-199.5
+RIGHT = -192.0  # -195.5
+LEFT = -201.0  # -199.5
 PEDESTRIAN = 222.0
 VEHICLE = 312.0
 
@@ -92,8 +92,6 @@ class TestScenarios(Node):
                 # else:
                 #     walker_pose.position.x += 1
                 #     walker_pose.position.y += 1
-
-                self.get_logger().warn(f"\n\n\n ped loc ::: {walker_pose.position}\n\n\n ")
 
                 walker_request.transform = walker_pose
                 walker_requests.append(
