@@ -29,7 +29,7 @@ class RecordingOrchestrator(Node):
         self.gaze_x = self.gaze_y = 0.0
 
         # TODO: pass draw params
-        self.img = ImageView(self, self.draw_manctrl)
+        self.img = ImageView(self, self.draw_manctrl, self.draw_gaze)
 
         self.header = [
             "time (ms since start)",  # 0
@@ -150,7 +150,8 @@ class RecordingOrchestrator(Node):
             self.gaze_x = gaze_x
             self.gaze_y = gaze_y
 
-        self.get_logger().info(f"gaze   ::: {self.gaze_x}, {self.gaze_y}")
+            self.img.update_gaze(gaze_x, gaze_y)
+
         if gaze_x and gaze_y:
             self.next_row[14] = self.gaze_x
             self.next_row[15] = self.gaze_y
