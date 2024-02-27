@@ -24,6 +24,9 @@ def generate_launch_description():
             # Driving Settings
             DeclareLaunchArgument(name="target_speed", default_value="12.0"),
             DeclareLaunchArgument(name="goal", default_value="0.0,0.0,0.0,0,0,90"),
+            # Recorder Settings
+            DeclareLaunchArgument(name="record_gaze", default_value="False"),
+            DeclareLaunchArgument(name="draw_gaze", default_value="False"),
             # Additional Nodes
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -54,13 +57,15 @@ def generate_launch_description():
                         get_package_share_directory("record_node"),
                         "record_node.launch.py",
                     )
-                )
+                ),
+                launch_arguments={
+                    "record_gaze": LaunchConfiguration("record_gaze")
+                }.items(),
             ),
             # Run Node
             Node(
-                package="image_view",  # Change to your actual package name
-                executable="image_view",  # Change to your actual executable name
-                output="screen",
+                package="image_view",
+                executable="image_view",
                 remappings=[("image", "/driver_img_view")],
             ),
             Node(
