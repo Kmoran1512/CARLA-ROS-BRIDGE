@@ -181,8 +181,8 @@ class RecordingOrchestrator(Node):
                 self.next_row[5] = obj.twist.angular.z
 
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
-                self.next_row[18 + ped_i] = obj.pose.position.x
-                self.next_row[19 + ped_i] = obj.pose.position.y
+                self.next_row[18 + ped_i * 2] = obj.pose.position.x
+                self.next_row[19 + ped_i * 2] = obj.pose.position.y
                 ped_i += 1
 
     def _record_vehicle_status(self, data):
