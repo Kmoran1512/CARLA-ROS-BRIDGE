@@ -20,5 +20,10 @@ setup(
     description="TODO: Package description",
     license="TODO: License declaration",
     tests_require=["pytest"],
-    entry_points={"console_scripts": ["record_node = record_node.record_node:main"]},
+    entry_points={
+        "console_scripts": [
+            "record_node = record_node.record_node:main",
+            "img_publisher = record_node.img_publisher:main",
+        ]
+    },
 )

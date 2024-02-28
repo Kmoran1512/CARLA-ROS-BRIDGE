@@ -23,6 +23,19 @@ def generate_launch_description():
             # Run Node
             Node(
                 package="record_node",
+                namespace="img_publisher1",
+                executable="img_publisher",
+                output="screen",
+                name="test",
+                parameters=[
+                    {"draw_manctrl": LaunchConfiguration("draw_manctrl")},
+                    {"draw_gaze": LaunchConfiguration("draw_gaze")},
+                    {"draw_outline": LaunchConfiguration("draw_outline")},
+                    {"draw_route": LaunchConfiguration("draw_route")},
+                ],
+            ),
+            Node(
+                package="record_node",
                 namespace="record_node1",
                 executable="record_node",
                 output="screen",
@@ -31,10 +44,6 @@ def generate_launch_description():
                     {"record_gaze": LaunchConfiguration("record_gaze")},
                     {"participant_number": LaunchConfiguration("participant_number")},
                     {"test_number": LaunchConfiguration("test_number")},
-                    {"draw_manctrl": LaunchConfiguration("draw_manctrl")},
-                    {"draw_gaze": LaunchConfiguration("draw_gaze")},
-                    {"draw_outline": LaunchConfiguration("draw_outline")},
-                    {"draw_route": LaunchConfiguration("draw_route")},
                 ],
             ),
         ]

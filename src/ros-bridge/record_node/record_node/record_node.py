@@ -28,9 +28,6 @@ class RecordingOrchestrator(Node):
         self.gaze_reader = GazeReader() if self.record_gaze else None
         self.gaze_x = self.gaze_y = 0.0
 
-        # TODO: pass draw params
-        self.img = ImageView(self, self.draw_manctrl, self.draw_gaze)
-
         self.header = [
             "time (ms since start)",  # 0
             "car_x (world frame x)",  # 1
@@ -71,19 +68,9 @@ class RecordingOrchestrator(Node):
         self.declare_parameter("participant_number", "1")
         self.declare_parameter("test_number", "1")
 
-        self.declare_parameter("draw_manctrl", "True")
-        self.declare_parameter("draw_gaze", "False")
-        self.declare_parameter("draw_outline", "False")
-        self.declare_parameter("draw_route", "False")
-
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
         self.participant_number = int(self.get_parameter("participant_number").value)
         self.test_number = int(self.get_parameter("test_number").value)
-
-        self.draw_manctrl = bool(self.get_parameter("draw_manctrl").value)
-        self.draw_gaze = bool(self.get_parameter("draw_gaze").value)
-        self.draw_outline = bool(self.get_parameter("draw_outline").value)
-        self.draw_route = bool(self.get_parameter("draw_route").value)
 
     def _init_pub_sub(self):
         # Records velocity, steering, throttle, brake
@@ -146,15 +133,14 @@ class RecordingOrchestrator(Node):
             self.gaze_reader.get_gaze() if self.gaze_reader is not None else (0.0, 0.0)
         )
 
-        if gaze_x > 0.0 or gaze_y > 0.0:
-            self.gaze_x = gaze_x
-            self.gaze_y = gaze_y
+        if gaze_x <= 0.0 or gaze_y <= 0.0:
+            return
 
-            self.img.update_gaze(gaze_x, gaze_y)
+        self.gaze_x = gaze_x
+        self.gaze_y = gaze_y
 
-        if gaze_x and gaze_y:
-            self.next_row[14] = self.gaze_x
-            self.next_row[15] = self.gaze_y
+        self.next_row[14] = self.gaze_x
+        self.next_row[15] = self.gaze_y
 
     def _record_next_waypoint(self, data):
         self.next_row[16] = data.poses[0].position.x
@@ -164,7 +150,8 @@ class RecordingOrchestrator(Node):
         ped_i = 0
         for obj in data.objects:
             if obj.classification == Object.CLASSIFICATION_CAR:
-                self.start = time.time()
+                if self.start is None:
+                    self.start = time.time()
 
                 self.next_row[1] = obj.pose.position.x
                 self.next_row[2] = -obj.pose.position.y

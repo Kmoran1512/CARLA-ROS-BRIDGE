@@ -2,17 +2,22 @@
 import cv2
 import rclpy
 
+from .gaze_reader import GazeReader
+
+from rclpy.node import Node
 from cv_bridge import CvBridge
 from std_msgs.msg import Bool
 from sensor_msgs.msg import Image
 
 
-class ImageView:
-    def __init__(self, node, show_man_ctrl=True, show_gaze=False):
-        self.show_man_ctrl = show_man_ctrl
-        self.show_gaze = show_gaze
+class ImageView(Node):
+    def __init__(self):
+        super().__init__("image_view")
 
-        self._init_pubsub(node)
+        self._init_parmas()
+        self.gaze_reader = GazeReader() if self.show_gaze else None
+
+        self._init_pubsub()
 
         self.image = Image()
         self.bridge = CvBridge()
@@ -20,30 +25,32 @@ class ImageView:
 
         self.gaze_x, self.gaze_y = (0, 0)
 
-    def _init_pubsub(self, node):
-        self.img_pub = node.create_publisher(Image, "/driver_img_view", 25)
+    def _init_parmas(self):
+        self.declare_parameter("draw_manctrl", "True")
+        self.declare_parameter("draw_gaze", "False")
+        self.declare_parameter("draw_outline", "False")
+        self.declare_parameter("draw_route", "False")
 
-        node.create_subscription(
-            Image, "/carla/ego_vehicle/rgb_front/image", self._on_view_img, 25
+        self.show_man_ctrl = bool(self.get_parameter("draw_manctrl").value)
+        self.show_gaze = bool(self.get_parameter("draw_gaze").value)
+        self.show_outline = bool(self.get_parameter("draw_outline").value)
+        self.show_route = bool(self.get_parameter("draw_route").value)
+
+    def _init_pubsub(self):
+        self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
+
+        self.create_subscription(
+            Image, "/carla/ego_vehicle/rgb_front/image", self._on_view_img, 10
         )
-        node.create_subscription(
+        self.create_subscription(
             Bool,
             "/carla/ego_vehicle/vehicle_control_manual_override",
             self._set_manctrl_status,
             10,
         )
-        node.create_subscription(
-            Image,
-            "/carla/ego_vehicle/semantic_segmentation_front/image",
-            self._placeholder,
-            10,
-        )
-
-    def update_gaze(self, x, y):
-        self.gaze_x = x
-        self.gaze_y = y
 
     def _on_view_img(self, data):
+        self._update_gaze()
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
 
         # Draw manctrl status
@@ -60,9 +67,6 @@ class ImageView:
 
     def _set_manctrl_status(self, data):
         self.manctrl_status = data.data
-
-    def _placeholder(self, _):
-        pass
 
     def _draw_gaze(self, image):
         point_color = (0, 0, 255)
@@ -95,3 +99,31 @@ class ImageView:
             2,
             lineType=cv2.LINE_AA,
         )
+
+    def _update_gaze(self):
+        gaze_x, gaze_y = (
+            self.gaze_reader.get_gaze() if self.gaze_reader is not None else (0.0, 0.0)
+        )
+
+        if gaze_x <= 0.0 or gaze_y <= 0.0:
+            return
+
+        self.gaze_x = gaze_x
+        self.gaze_y = gaze_y
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    img_view = ImageView()
+
+    try:
+        rclpy.spin(img_view)
+    except KeyboardInterrupt:
+        pass
+
+    img_view.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
