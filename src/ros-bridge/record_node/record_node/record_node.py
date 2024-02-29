@@ -3,61 +3,34 @@ import csv
 import os
 import time, datetime
 import math
-
 import rclpy
+
 from rclpy.node import Node
+from transforms3d.euler import quat2euler
+from ament_index_python.packages import get_package_share_directory
 
 from .gaze_reader import GazeReader
-from .img_publisher import ImageView
 
 from carla_msgs.msg import CarlaEgoVehicleStatus
-from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
-
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
+from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from std_msgs.msg import Bool, Float32
-
-from transforms3d.euler import quat2euler
 
 
 class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 
+        self.headers = {}
         self._init_parmas()
         self.gaze_reader = GazeReader() if self.record_gaze else None
         self.gaze_x = self.gaze_y = 0.0
 
-        self.header = [
-            "time (ms since start)",  # 0
-            "car_x (world frame x)",  # 1
-            "car_y (world frame y)",  # 2
-            "car_yaw (degrees, 0->180 0->-180)",  # 3
-            "car_v (m/s)",  # 4
-            "car_w (m/s)",  # 5
-            "throttle (depressed %)",  # 6
-            "break (depressed %)",  # 7
-            "torque (N on wheel motor)",  # 8
-            "response_theta (±turn % max 200)",  # 9
-            "true_theta (±turn % max 100)",  # 10
-            "command_theta  (±turn % max 100)",  # 11
-            "sim_theta  (±turn % max 200)",  # 12
-            "is_autonomous (1 is auton, 0 is manual)",  # 13
-            "gaze_x (0 is left)",  # 14
-            "gaze_y (0 is top)",  # 15
-            "next_waypoint_x (in world frame)",  # 16
-            "next_waypoint_y (in world frame)",  # 17
-            "ped0_x (in world frame)",  # 18
-            "ped0_y (in world frame)",  # 19
-            "ped1_x (in world frame)",  # 20
-            "ped1_y (in world frame)",  # 21
-            "ped2_x (in world frame)",  # 22
-            "ped2_y (in world frame)",  # 23
-            "ped3_x (in world frame)",  # 24
-            "ped3_y (in world frame)",  # 25
-        ]
         self.all_data = []
-        self.next_row = [0.0] * len(self.header)
+        self.next_row = [0.0] * len(self.headers)
+
+        self.get_logger().info(str(self.headers.keys()))
 
         self._init_pub_sub()
 
@@ -71,6 +44,14 @@ class RecordingOrchestrator(Node):
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
         self.participant_number = int(self.get_parameter("participant_number").value)
         self.test_number = int(self.get_parameter("test_number").value)
+
+        header_file = os.path.join(
+            get_package_share_directory("record_node"), "config", "column_headers.txt"
+        )
+
+        with open(header_file, "r") as f:
+            for i, line in enumerate(f.read().splitlines()):
+                self.headers[line] = i
 
     def _init_pub_sub(self):
         # Records velocity, steering, throttle, brake
@@ -125,7 +106,7 @@ class RecordingOrchestrator(Node):
         with open(filename, "w") as f:
             w = csv.writer(f)
 
-            w.writerow(self.header)
+            w.writerow(self.headers.keys())
             w.writerows(self.all_data)
 
     def _get_gaze(self):
@@ -139,12 +120,12 @@ class RecordingOrchestrator(Node):
         self.gaze_x = gaze_x
         self.gaze_y = gaze_y
 
-        self.next_row[14] = self.gaze_x
-        self.next_row[15] = self.gaze_y
+        self.next_row[self.headers["gaze_x"]] = self.gaze_x
+        self.next_row[self.headers["gaze_y"]] = self.gaze_y
 
     def _record_next_waypoint(self, data):
-        self.next_row[16] = data.poses[0].position.x
-        self.next_row[17] = data.poses[0].position.y
+        self.next_row[self.headers["next_waypoint_x (m)"]] = data.poses[0].position.x
+        self.next_row[self.headers["next_waypoint_y (m)"]] = data.poses[0].position.y
 
     def _record_object_status(self, data):
         ped_i = 0
@@ -153,8 +134,8 @@ class RecordingOrchestrator(Node):
                 if self.start is None:
                     self.start = time.time()
 
-                self.next_row[1] = obj.pose.position.x
-                self.next_row[2] = -obj.pose.position.y
+                self.next_row[self.headers["car_x (m)"]] = obj.pose.position.x
+                self.next_row[self.headers["car_y (m)"]] = -obj.pose.position.y
 
                 quaternion = (
                     obj.pose.orientation.w,
@@ -163,35 +144,42 @@ class RecordingOrchestrator(Node):
                     obj.pose.orientation.z,
                 )
                 _, _, yaw = quat2euler(quaternion)
-                self.next_row[3] = math.degrees(yaw)
-
-                self.next_row[5] = obj.twist.angular.z
+                self.next_row[self.headers["car_yaw (degrees)"]] = math.degrees(yaw)
+                self.next_row[self.headers["car_w (m/s)"]] = obj.twist.angular.z
 
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
-                self.next_row[18 + ped_i * 2] = obj.pose.position.x
-                self.next_row[19 + ped_i * 2] = obj.pose.position.y
+                self.next_row[self.headers[f"ped{ped_i}_x (m)"]] = obj.pose.position.x
+                self.next_row[self.headers[f"ped{ped_i}_y (m)"]] = obj.pose.position.y
                 ped_i += 1
 
     def _record_vehicle_status(self, data):
-        self.next_row[4] = data.velocity
-        self.next_row[9] = data.control.steer  # return theta
-        self.next_row[6] = data.control.throttle
-        self.next_row[7] = data.control.brake
+        self.next_row[self.headers["car_v (m/s)"]] = data.velocity
+        self.next_row[
+            self.headers["response_theta (±turn % max 200)"]
+        ] = data.control.steer
+        self.next_row[self.headers["throttle (%)"]] = data.control.throttle
+        self.next_row[self.headers["break (%)"]] = data.control.brake
 
     def _record_auton_status(self, data):
-        self.next_row[13] = float(not data.data)
+        self.next_row[self.headers["is_autonomous"]] = float(not data.data)
 
     def _record_torque(self, data):
-        self.next_row[8] = data.torque
+        self.next_row[self.headers["torque (N)"]] = data.torque
 
     def _record_target_steer(self, data):
-        self.next_row[11] = data.position  # command theta
+        self.next_row[
+            self.headers["command_theta  (±turn % max 100)"]
+        ] = data.position  # command theta
 
     def _record_sim_number(self, data):
-        self.next_row[12] = data.data  # sent to simulator
+        self.next_row[
+            self.headers["sim_theta  (±turn % max 200)"]
+        ] = data.data  # sent to simulator
 
     def _record_ts_number(self, data):
-        self.next_row[10] = data.data  # true steer
+        self.next_row[
+            self.headers["true_theta (±turn % max 100)"]
+        ] = data.data  # true steer
 
 
 def main(args=None):
