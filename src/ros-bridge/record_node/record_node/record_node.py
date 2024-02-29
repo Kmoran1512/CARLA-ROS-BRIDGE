@@ -30,8 +30,6 @@ class RecordingOrchestrator(Node):
         self.all_data = []
         self.next_row = [0.0] * len(self.headers)
 
-        self.get_logger().info(str(self.headers.keys()))
-
         self._init_pub_sub()
 
         self.start = None
@@ -133,24 +131,28 @@ class RecordingOrchestrator(Node):
             if obj.classification == Object.CLASSIFICATION_CAR:
                 if self.start is None:
                     self.start = time.time()
-
-                self.next_row[self.headers["car_x (m)"]] = obj.pose.position.x
-                self.next_row[self.headers["car_y (m)"]] = -obj.pose.position.y
-
-                quaternion = (
-                    obj.pose.orientation.w,
-                    obj.pose.orientation.x,
-                    obj.pose.orientation.y,
-                    obj.pose.orientation.z,
-                )
-                _, _, yaw = quat2euler(quaternion)
-                self.next_row[self.headers["car_yaw (degrees)"]] = math.degrees(yaw)
-                self.next_row[self.headers["car_w (m/s)"]] = obj.twist.angular.z
-
+                self._record_vehicle_object(self)
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
-                self.next_row[self.headers[f"ped{ped_i}_x (m)"]] = obj.pose.position.x
-                self.next_row[self.headers[f"ped{ped_i}_y (m)"]] = obj.pose.position.y
+                self._record_ped_object(obj, ped_i)
                 ped_i += 1
+
+    def _record_vehicle_object(self, obj):
+        self.next_row[self.headers["car_x (m)"]] = obj.pose.position.x
+        self.next_row[self.headers["car_y (m)"]] = -obj.pose.position.y
+
+        quaternion = (
+            obj.pose.orientation.w,
+            obj.pose.orientation.x,
+            obj.pose.orientation.y,
+            obj.pose.orientation.z,
+        )
+        _, _, yaw = quat2euler(quaternion)
+        self.next_row[self.headers["car_yaw (degrees)"]] = math.degrees(yaw)
+        self.next_row[self.headers["car_w (m/s)"]] = obj.twist.angular.z
+
+    def _record_ped_object(self, obj, n):
+        self.next_row[self.headers[f"ped{n}_x (m)"]] = obj.pose.position.x
+        self.next_row[self.headers[f"ped{n}_y (m)"]] = obj.pose.position.y
 
     def _record_vehicle_status(self, data):
         self.next_row[self.headers["car_v (m/s)"]] = data.velocity
