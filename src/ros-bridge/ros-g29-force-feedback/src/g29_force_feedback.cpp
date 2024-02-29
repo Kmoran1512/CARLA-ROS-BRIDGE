@@ -45,6 +45,7 @@ private:
     double m_err = 0.0;
     double m_d_err = 0.0;
     double m_i_err = 0.0;
+    float m_prev_target = 0.0;
 
 public:
     G29ForceFeedback();
@@ -148,8 +149,8 @@ void G29ForceFeedback::calcRotateForce(double &torque,
                                        const ros_g29_force_feedback::msg::ForceFeedback &target,
                                        const double &current_position) {
 
-    double k_p = 25.0;
-    double k_d = 5.0;
+    double k_p = 8.0;
+    double k_d = 0.0;
     double k_i = 0.0;
 
     double prev_err = m_err;
@@ -160,6 +161,7 @@ void G29ForceFeedback::calcRotateForce(double &torque,
     torque = k_p * m_err + k_d * m_d_err + k_i * m_i_err;
     torque = std::min(m_max_torque, std::max(-m_max_torque, torque));
     attack_length = m_loop_rate;
+    m_prev_target = target.position;
 }
 
 

@@ -341,6 +341,9 @@ class JoystickControl(object):
 
         self.m_ctrl = CarlaEgoVehicleControl()
         self.a_ctrl = CarlaEgoVehicleControl()
+
+        self._a_steer_cache = 0.0
+
         self._steer_cache = 0.0
         self._true_steer = 0.0
         self._key_cache = False
@@ -482,22 +485,20 @@ class JoystickControl(object):
         if self.manual_override:
             return
 
-        self.a_ctrl = data
-
+        self.pubsub.a_vc.publish(data)
         self._adjust_force_feedback(data.steer)
 
-    def force_ctrl(self, data):
-        if not data.is_centering and data.torque >= 0.5:
+    def force_ctrl(self, data: ForceControl):
+        if not data.is_centering and data.torque >= 0.2:
             self.manual_override = True
             self.set_manual_override(self.manual_override)
 
     def _publish_control(self):
-        if self.manual_override:
-            self.m_ctrl.steer = self._steer_cache
-            self.pubsub.m_vc.publish(self.m_ctrl)
-        else:
-            self.a_ctrl.steer = self._steer_cache
-            self.pubsub.a_vc.publish(self.a_ctrl)
+        if not self.manual_override:
+            return
+
+        self.m_ctrl.steer = self._steer_cache
+        self.pubsub.m_vc.publish(self.m_ctrl)
 
 
 class PubSub(object):
