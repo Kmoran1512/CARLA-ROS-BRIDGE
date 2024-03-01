@@ -55,11 +55,14 @@ class SemanticBoxes(Node):
             single_box = CarlaBoundingBox()
             x, y, w, h = cv2.boundingRect(contour)
 
-            single_box.center.x = float(x + w // 2)
-            single_box.center.y = float(y + w // 2)
+            if w + h < 5:
+                continue
 
-            single_box.size.x = float(w + self.err)
-            single_box.size.y = float(h + self.err)
+            single_box.center.x = float(x + w // 2)
+            single_box.center.y = float(y + h // 2)
+
+            single_box.size.x = float(w)
+            single_box.size.y = float(h)
 
             boxes.boxes.append(single_box)
 
