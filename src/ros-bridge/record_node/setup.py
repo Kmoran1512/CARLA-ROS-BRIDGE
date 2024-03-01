@@ -11,7 +11,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        ("share/" + package_name + "/config", ["config/column_headers.txt"]),
+        ("share/" + package_name + "/config", ["config/column_headers.txt", "config/semantic_map.json"]),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
     ],
     install_requires=["setuptools"],
@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             "record_node = record_node.record_node:main",
             "img_publisher = record_node.img_publisher:main",
+            "semantic_boxes = record_node.semantic_boxes:main",
         ]
     },
 )

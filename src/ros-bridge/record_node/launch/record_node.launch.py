@@ -46,6 +46,14 @@ def generate_launch_description():
                     {"test_number": LaunchConfiguration("test_number")},
                 ],
             ),
+            Node(
+                package="record_node",
+                namespace="semantic_boxes1",
+                executable="semantic_boxes",
+                output="screen",
+                name="test",
+            ),
+
         ]
     )
     return ld
