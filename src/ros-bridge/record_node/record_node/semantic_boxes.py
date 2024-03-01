@@ -13,8 +13,8 @@ from ament_index_python.packages import get_package_share_directory
 
 
 semantic_dict_path = os.path.join(
-            get_package_share_directory("record_node"), "config", "semantic_map.json"
-        )
+    get_package_share_directory("record_node"), "config", "semantic_map.json"
+)
 
 
 class SemanticBoxes(Node):
@@ -31,9 +31,7 @@ class SemanticBoxes(Node):
 
     def _init_pubsub(self):
         self.box_pub = self.create_publisher(
-            CarlaBoundingBoxArray,
-            "/carla/bounding_boxes",
-            10
+            CarlaBoundingBoxArray, "/carla/bounding_boxes", 10
         )
 
         self.create_subscription(
@@ -67,6 +65,7 @@ class SemanticBoxes(Node):
             boxes.boxes.append(single_box)
 
         self.box_pub.publish(boxes)
+
 
 def main(args=None):
     rclpy.init(args=args)
