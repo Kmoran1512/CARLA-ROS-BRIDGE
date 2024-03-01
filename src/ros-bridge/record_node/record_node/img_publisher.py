@@ -4,10 +4,12 @@ import rclpy
 
 from .gaze_reader import GazeReader
 
-from rclpy.node import Node
+from carla_msgs.msg import CarlaBoundingBox, CarlaBoundingBoxArray
 from cv_bridge import CvBridge
-from std_msgs.msg import Bool
 from sensor_msgs.msg import Image
+from std_msgs.msg import Bool
+from typing import List
+from rclpy.node import Node
 
 
 class ImageView(Node):
@@ -24,6 +26,7 @@ class ImageView(Node):
         self.manctrl_status = "enabled"
 
         self.gaze_x, self.gaze_y = (0, 0)
+        self.boxes: List[CarlaBoundingBox] = []
 
     def _init_parmas(self):
         self.declare_parameter("draw_manctrl", "True")
@@ -40,7 +43,7 @@ class ImageView(Node):
         self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
 
         self.create_subscription(
-            Image, "/carla/ego_vehicle/rgb_front/image", self._on_view_img, 10
+            Image, "/carla/ego_vehicle/rgb_front/image", self.on_view_img, 10
         )
         self.create_subscription(
             Bool,
@@ -48,18 +51,20 @@ class ImageView(Node):
             self._set_manctrl_status,
             10,
         )
+        self.create_subscription(
+            CarlaBoundingBoxArray, "/carla/bounding_boxes", self._update_outlines, 10
+        )
 
-    def _on_view_img(self, data):
+    def on_view_img(self, data):
         self._update_gaze()
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
 
-        # Draw manctrl status
         if self.show_man_ctrl:
             self._draw_manctrl_status(cv_image)
-        # Draw gaze
         if self.show_gaze:
             self._draw_gaze(cv_image)
-        # Draw boxes
+        if self.show_outline:
+            self._draw_outlines(cv_image)
         # Draw route
 
         self.image = self.bridge.cv2_to_imgmsg(cv_image, encoding="rgb8")
@@ -100,6 +105,18 @@ class ImageView(Node):
             lineType=cv2.LINE_AA,
         )
 
+    def _draw_outlines(self, img):
+        for bbox in self.boxes:
+            half_w = bbox.size.x // 2
+            half_h = bbox.size.y // 2
+
+            x0 = int(bbox.center.x - half_w)
+            y0 = int(bbox.center.y - half_h)
+            x1 = int(bbox.center.x + half_w)
+            y1 = int(bbox.center.y + half_h)
+
+            cv2.rectangle(img, (x0, y0), (x1, y1), (0, 0, 255), 2)
+
     def _update_gaze(self):
         gaze_x, gaze_y = (
             self.gaze_reader.get_gaze() if self.gaze_reader is not None else (0.0, 0.0)
@@ -110,6 +127,12 @@ class ImageView(Node):
 
         self.gaze_x = gaze_x
         self.gaze_y = gaze_y
+
+    def _update_outlines(self, data: CarlaBoundingBoxArray):
+        self.boxes = []
+
+        for bbox in data.boxes:
+            self.boxes.append(bbox)
 
 
 def main(args=None):
