@@ -27,6 +27,7 @@ def generate_launch_description():
             # Recorder Settings
             DeclareLaunchArgument(name="record_gaze", default_value="False"),
             DeclareLaunchArgument(name="draw_gaze", default_value="False"),
+            DeclareLaunchArgument(name="draw_outline", default_value="False"),
             # Additional Nodes
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -59,7 +60,9 @@ def generate_launch_description():
                     )
                 ),
                 launch_arguments={
-                    "record_gaze": LaunchConfiguration("record_gaze")
+                    "record_gaze": LaunchConfiguration("record_gaze"),
+                    "draw_gaze": LaunchConfiguration("draw_gaze"),
+                    "draw_outline": LaunchConfiguration("draw_outline"),
                 }.items(),
             ),
             # Run Node
