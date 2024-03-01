@@ -131,7 +131,7 @@ class RecordingOrchestrator(Node):
             if obj.classification == Object.CLASSIFICATION_CAR:
                 if self.start is None:
                     self.start = time.time()
-                self._record_vehicle_object(self)
+                self._record_vehicle_object(obj)
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
                 self._record_ped_object(obj, ped_i)
                 ped_i += 1
