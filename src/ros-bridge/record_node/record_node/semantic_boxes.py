@@ -2,14 +2,13 @@ import cv2
 import json
 import os
 import numpy as np
-
 import rclpy
-from rclpy.node import Node
 
-from sensor_msgs.msg import Image
+from ament_index_python.packages import get_package_share_directory
 from carla_msgs.msg import CarlaBoundingBox, CarlaBoundingBoxArray
 from cv_bridge import CvBridge
-from ament_index_python.packages import get_package_share_directory
+from rclpy.node import Node
+from sensor_msgs.msg import Image
 
 
 semantic_dict_path = os.path.join(
