@@ -11,7 +11,11 @@ from ament_index_python.packages import get_package_share_directory
 
 from .gaze_reader import GazeReader
 
-from carla_msgs.msg import CarlaEgoVehicleStatus
+from carla_msgs.msg import (
+    CarlaBoundingBox,
+    CarlaBoundingBoxArray,
+    CarlaEgoVehicleStatus,
+)
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
@@ -82,6 +86,12 @@ class RecordingOrchestrator(Node):
         )
         self.create_subscription(Float32, "/ts_pub", self._record_ts_number, 10)
         self.create_subscription(Float32, "/sim_pub", self._record_sim_number, 10)
+        self.create_subscription(
+            CarlaBoundingBoxArray,
+            "/carla/bounding_boxes",
+            self._record_ped_2d_transform,
+            10,
+        )
 
     def write(self):
         if self.start is None:
@@ -182,6 +192,14 @@ class RecordingOrchestrator(Node):
         self.next_row[
             self.headers["true_theta (±turn % max 100)"]
         ] = data.data  # true steer
+
+    def _record_ped_2d_transform(self, data: CarlaBoundingBoxArray):
+        ped_id = 0
+        for bbox in data.boxes:
+            bbox: CarlaBoundingBox
+            self.next_row[self.headers[f"ped{ped_id}_cx"]] = bbox.center.x
+            self.next_row[self.headers[f"ped{ped_id}_cy"]] = bbox.center.y
+            ped_id += 1
 
 
 def main(args=None):

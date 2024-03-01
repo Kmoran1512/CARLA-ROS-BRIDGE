@@ -18,9 +18,17 @@ next_waypoint_x (m)
 next_waypoint_y (m)
 ped0_x (m)
 ped0_y (m)
+ped0_cx
+ped0_cy
 ped1_x (m)
 ped1_y (m)
+ped1_cx
+ped1_cy
 ped2_x (m)
 ped2_y (m)
+ped2_cx
+ped2_cy
 ped3_x (m)
 ped3_y (m)
+ped3_cx
+ped3_cy
