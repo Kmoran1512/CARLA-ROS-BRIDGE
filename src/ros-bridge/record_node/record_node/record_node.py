@@ -179,6 +179,8 @@ class RecordingOrchestrator(Node):
 
     def _record_ped_object(self):
         for i, loc in enumerate(self.ped_locations):
+            self._ensure_ped_headers(i)
+
             self.next_row[self.headers[f"ped{i}_x (m)"]] = loc[0]
             self.next_row[self.headers[f"ped{i}_y (m)"]] = loc[1]
             self.next_row[self.headers[f"ped{i}_v (m/s)"]] = loc[2]
@@ -214,12 +216,32 @@ class RecordingOrchestrator(Node):
         ] = data.data  # true steer
 
     def _record_ped_2d_transform(self, data: CarlaBoundingBoxArray):
-        sorted_objects = sorted(data.boxes, key=lambda bbox: bbox.center.x)
+        sorted_objects: List[CarlaBoundingBox] = sorted(
+            data.boxes, key=lambda bbox: bbox.center.x
+        )
 
         for i, bbox in enumerate(sorted_objects):
-            bbox: CarlaBoundingBox
+            self._ensure_ped_headers(i)
+
             self.next_row[self.headers[f"ped{i}_cx"]] = bbox.center.x
             self.next_row[self.headers[f"ped{i}_cy"]] = bbox.center.y
+
+    def _ensure_ped_headers(self, i):
+        pedestrian_headers = [
+            f"ped{i}_x (m)",
+            f"ped{i}_y (m)",
+            f"ped{i}_v (m/s)",
+            f"ped{i}_yaw (degrees)",
+            f"ped{i}_cx",
+            f"ped{i}_cy",
+            f"ped{i}_id",
+        ]
+
+        existing_headers = set(self.headers.keys())
+        for header in pedestrian_headers:
+            if header not in existing_headers:
+                self.headers[header] = len(self.next_row)
+                self.next_row.append(0.0)
 
 
 def get_yaw(obj: Object):

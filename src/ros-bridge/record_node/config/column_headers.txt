@@ -23,24 +23,3 @@ ped0_yaw (degrees)
 ped0_cx
 ped0_cy
 ped0_id
-ped1_x (m)
-ped1_y (m)
-ped1_v (m/s)
-ped1_yaw (degrees)
-ped1_cx
-ped1_cy
-ped1_id
-ped2_x (m)
-ped2_y (m)
-ped2_v (m/s)
-ped2_yaw (degrees)
-ped2_cx
-ped2_cy
-ped2_id
-ped3_x (m)
-ped3_y (m)
-ped3_v (m/s)
-ped3_yaw (degrees)
-ped3_cx
-ped3_cy
-ped3_id
