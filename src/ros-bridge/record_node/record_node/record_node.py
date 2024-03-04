@@ -106,6 +106,9 @@ class RecordingOrchestrator(Node):
         self.all_data.append(self.next_row[:])
 
     def complete(self):
+        if self.start is None:
+            return
+
         home_dir = os.path.expanduser("~")
         target_dir = ["Documents", "MATLAB", "test_data"]
         filename = "p{:02}_n{:02}-{}.csv".format(
