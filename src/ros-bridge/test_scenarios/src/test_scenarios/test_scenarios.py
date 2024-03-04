@@ -1,14 +1,16 @@
+from typing import List
 import carla
 import rclpy
 
-from rclpy.node import Node
 from carla_msgs.srv import SpawnObject
 from carla_msgs.msg import CarlaWeatherParameters
 from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
+from rclpy.node import Node
+from rclpy.task import Future
 
-
-RIGHT = -192.0  # -195.5
-LEFT = -201.0  # -199.5
+RIGHT = -191.5
+CENTER = -195.5
+LEFT = -199.5
 PEDESTRIAN = 222.0
 VEHICLE = 312.0
 
@@ -28,16 +30,12 @@ class TestScenarios(Node):
         self.declare_parameter("sun_elevation", "2.0")
         # TODO: Allow to run on different sides and all
         self.declare_parameter("ego_side", "right")
-        self.declare_parameter("single_side", "right")
-        self.declare_parameter("has_multi", "False")
 
         self._azimuth = float(self.get_parameter("sun_azimuth").value)
         self._altitude = float(self.get_parameter("sun_elevation").value)
         self._ego_side = self.get_parameter("ego_side").value
-        self._single_side = self.get_parameter("single_side").value
-        self._has_multi = bool(self.get_parameter("has_multi").value)
 
-        self.scenario_number = 1
+        self.scenario_number = 26
 
     def _init_carla(self):
         self.client = carla.Client("localhost", 2000)
@@ -72,47 +70,39 @@ class TestScenarios(Node):
             self.get_logger().error("Service spawn_actors not available after waiting")
             return
 
-        walker_requests = []
-        if self._has_multi:
-            for i in range(1):
-                walker_request = SpawnObject.Request()
+        requests: List[Future] = []
+        ped_number = self.scenario_number % 50
 
-                walker_request.type = f"walker.pedestrian.{self.scenario_number:04}"
-                walker_request.id = f"walker{self.scenario_number:04}"
+        lanes = [RIGHT, CENTER, LEFT]
 
-                walker_pose = Pose()
-                walker_pose.position.x = PEDESTRIAN
-                walker_pose.position.y = RIGHT if self._single_side == "left" else LEFT
-                walker_pose.position.z = 1.0
-                # if i == 0:
-                #     walker_pose.position.x -= 1
-                # elif i == 1:
-                #     walker_pose.position.x += 1
-                #     walker_pose.position.y -= 1
-                # else:
-                #     walker_pose.position.x += 1
-                #     walker_pose.position.y += 1
+        for i, lane in enumerate(lanes):
+            lane_status = (ped_number // (3 ** i)) % 3
 
-                walker_request.transform = walker_pose
-                walker_requests.append(
-                    self.spawn_actors_service.call_async(walker_request)
-                )
+            if lane_status == 1:
+                requests.append(self.spawn_1(ped_number, lane))
+            elif lane_status == 2:
+                requests.extend(self.spawn_3(ped_number, lane))
 
-        walker_request = SpawnObject.Request()
-        walker_request.type = f"walker.pedestrian.{self.scenario_number:04}"
-        walker_request.id = f"walker{self.scenario_number:04}"
-        walker_request.transform.position.x = PEDESTRIAN
-        walker_request.transform.position.y = (
-            LEFT if self._single_side == "left" else RIGHT
-        )
-        walker_requests.append(self.spawn_actors_service.call_async(walker_request))
-
-        for request in walker_requests:
-            future = request
+        for future in requests:
             rclpy.spin_until_future_complete(self, future)
             walker_id = future.result().id
             if walker_id > 0:
                 self.pedestrian_ids.append(walker_id)
+
+    def spawn_3(self, ped_num, y) -> List[Future]:
+        spawn_offsets = [(-1., 0.), (0., 1.), (0., -1.)]
+        return [
+            self.spawn_1(ped_num, y + y_offset, PEDESTRIAN + x_offset)
+            for x_offset, y_offset in spawn_offsets
+        ]
+
+    def spawn_1(self, ped_num, y, x=PEDESTRIAN) -> Future:
+        walker_request = SpawnObject.Request(
+            type=f"walker.pedestrian.{ped_num:04}", id=f"walker{ped_num:04}"
+        )
+        walker_request.transform.position.x = x
+        walker_request.transform.position.y = y
+        return self.spawn_actors_service.call_async(walker_request)
 
 
 def main():
