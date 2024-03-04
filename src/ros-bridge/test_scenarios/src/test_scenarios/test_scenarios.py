@@ -8,9 +8,9 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 from rclpy.node import Node
 from rclpy.task import Future
 
-RIGHT = -191.5
-CENTER = -195.5
-LEFT = -199.5
+RIGHT = -191.0
+CENTER = -195.2
+LEFT = -198.7
 PEDESTRIAN = 222.0
 VEHICLE = 312.0
 
@@ -90,7 +90,7 @@ class TestScenarios(Node):
                 self.pedestrian_ids.append(walker_id)
 
     def spawn_3(self, ped_num, y) -> List[Future]:
-        spawn_offsets = [(-1., 0.), (0., 1.), (0., -1.)]
+        spawn_offsets = [(-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)]
         return [
             self.spawn_1(ped_num, y + y_offset, PEDESTRIAN + x_offset)
             for x_offset, y_offset in spawn_offsets
@@ -102,6 +102,7 @@ class TestScenarios(Node):
         )
         walker_request.transform.position.x = x
         walker_request.transform.position.y = y
+        walker_request.transform.position.z = 1.0
         return self.spawn_actors_service.call_async(walker_request)
 
 
