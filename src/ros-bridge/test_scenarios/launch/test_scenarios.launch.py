@@ -18,8 +18,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
         # Spawn Settings
         DeclareLaunchArgument(name="ego_side", default_value="right"),
-        DeclareLaunchArgument(name="single_side", default_value="right"),
-        DeclareLaunchArgument(name="has_multi", default_value="False"),
+        DeclareLaunchArgument(name="scenario_number", default_value="3"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
@@ -62,6 +61,7 @@ def generate_launch_description():
                 "record_gaze": LaunchConfiguration("record_gaze"),
                 "draw_gaze": LaunchConfiguration("draw_gaze"),
                 "draw_outline": LaunchConfiguration("draw_outline"),
+                "scenario_number": LaunchConfiguration("scenario_number"),
             }.items(),
         ),
         # Run Node
@@ -80,8 +80,7 @@ def generate_launch_description():
                 {"sun_azimuth": LaunchConfiguration("sun_azimuth")},
                 {"sun_elevation": LaunchConfiguration("sun_elevation")},
                 {"ego_side": LaunchConfiguration("ego_side")},
-                {"single_side": LaunchConfiguration("single_side")},
-                {"has_multi": LaunchConfiguration("has_multi")},
+                {"scenario_number": LaunchConfiguration("scenario_number")},
                 {"avoid_pedestrian": LaunchConfiguration("avoid_pedestrian")},
             ],
         ),

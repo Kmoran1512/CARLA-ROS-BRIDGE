@@ -28,14 +28,13 @@ class TestScenarios(Node):
     def _init_params(self):
         self.declare_parameter("sun_azimuth", "60.0")
         self.declare_parameter("sun_elevation", "2.0")
-        # TODO: Allow to run on different sides and all
         self.declare_parameter("ego_side", "right")
+        self.declare_parameter("scenario_number", 3)
 
         self._azimuth = float(self.get_parameter("sun_azimuth").value)
         self._altitude = float(self.get_parameter("sun_elevation").value)
         self._ego_side = self.get_parameter("ego_side").value
-
-        self.scenario_number = 26
+        self.scenario_number = int(self.get_parameter("scenario_number").value)
 
     def _init_carla(self):
         self.client = carla.Client("localhost", 2000)

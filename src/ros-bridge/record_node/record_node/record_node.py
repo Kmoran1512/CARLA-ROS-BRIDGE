@@ -43,11 +43,11 @@ class RecordingOrchestrator(Node):
     def _init_parmas(self):
         self.declare_parameter("record_gaze", "False")
         self.declare_parameter("participant_number", "1")
-        self.declare_parameter("test_number", "1")
+        self.declare_parameter("scenario_number", "1")
 
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
         self.participant_number = int(self.get_parameter("participant_number").value)
-        self.test_number = int(self.get_parameter("test_number").value)
+        self.scenario_number = int(self.get_parameter("scenario_number").value)
 
         header_file = os.path.join(
             get_package_share_directory("record_node"), "config", "column_headers.txt"
@@ -113,7 +113,7 @@ class RecordingOrchestrator(Node):
         target_dir = ["Documents", "MATLAB", "test_data"]
         filename = "p{:02}_n{:02}-{}.csv".format(
             self.participant_number,
-            self.test_number,
+            self.scenario_number,
             datetime.datetime.now().strftime("%m_%d"),
         )
         filename = os.path.join(home_dir, *target_dir, filename)
