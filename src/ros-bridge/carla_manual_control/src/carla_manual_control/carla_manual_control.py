@@ -353,7 +353,8 @@ class JoystickControl(object):
 
         self.pubsub = PubSub(self)
 
-        self.manual_override = False
+        # Spawn in manual
+        self.manual_override = True
         self.set_manual_override(self.manual_override)
 
     def set_manual_override(self, enable):
