@@ -137,8 +137,8 @@ class RecordingOrchestrator(Node):
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_r:
+            self.get_logger().info("\n Recording Begins \n")
             self.start = time.time()
-
 
     def _record_next_waypoint(self, data):
         self.next_row[self.headers["next_waypoint_x (m)"]] = data.poses[0].position.x
@@ -154,39 +154,35 @@ class RecordingOrchestrator(Node):
 
         self._record_ped_object()
 
-    def _record_vehicle_object(self, obj):
+    def _record_vehicle_object(self, obj: Object):
         self.next_row[self.headers["car_x (m)"]] = obj.pose.position.x
         self.next_row[self.headers["car_y (m)"]] = -obj.pose.position.y
 
-        quaternion = (
-            obj.pose.orientation.w,
-            obj.pose.orientation.x,
-            obj.pose.orientation.y,
-            obj.pose.orientation.z,
-        )
-        _, _, yaw = quat2euler(quaternion)
-        self.next_row[self.headers["car_yaw (degrees)"]] = math.degrees(yaw)
+        self.next_row[self.headers["car_yaw (degrees)"]] = get_yaw(obj)
         self.next_row[self.headers["car_w (m/s)"]] = obj.twist.angular.z
 
     def _store_ped_object(self, obj: Object):
-        if len(self.ped_locations) == 0:
-            self.ped_locations.append((obj.pose.position.x, obj.pose.position.y))
-            return
+        i = 0
 
-        for i in range(len(self.ped_locations) - 1, -1, -1):
-            # TODO-KM: This is a placeholder comparison. The best way is to check y in car frame
-            if self.ped_locations[i][1] < obj.pose.position.y:
-                self.ped_locations.insert(
-                    i + 1, (obj.pose.position.x, obj.pose.position.y)
-                )
-                return
+        x = obj.pose.position.x
+        y = obj.pose.position.y
+        vel = math.sqrt(obj.twist.linear.x ** 2 + obj.twist.linear.y ** 2)
 
-        self.ped_locations.insert(0, (obj.pose.position.x, obj.pose.position.y))
+        if len(self.ped_locations) > 0:
+            for i in range(len(self.ped_locations) - 1, -1, -1):
+                # TODO-KM: This is a placeholder comparison. The best way is to check y in car frame
+                if self.ped_locations[i][1] < obj.pose.position.y:
+                    i += 1
+                    break
+
+        self.ped_locations.insert(i, (x, y, vel, get_yaw(obj)))
 
     def _record_ped_object(self):
         for i, loc in enumerate(self.ped_locations):
             self.next_row[self.headers[f"ped{i}_x (m)"]] = loc[0]
             self.next_row[self.headers[f"ped{i}_y (m)"]] = loc[1]
+            self.next_row[self.headers[f"ped{i}_v (m/s)"]] = loc[2]
+            self.next_row[self.headers[f"ped{i}_yaw (degrees)"]] = loc[3]
 
     def _record_vehicle_status(self, data):
         self.next_row[self.headers["car_v (m/s)"]] = data.velocity
@@ -224,6 +220,13 @@ class RecordingOrchestrator(Node):
             bbox: CarlaBoundingBox
             self.next_row[self.headers[f"ped{i}_cx"]] = bbox.center.x
             self.next_row[self.headers[f"ped{i}_cy"]] = bbox.center.y
+
+
+def get_yaw(obj: Object):
+    orient = obj.pose.orientation
+    quaternion = (orient.w, orient.x, orient.y, orient.z)
+    _, _, yaw = quat2euler(quaternion)
+    return math.degrees(yaw)
 
 
 def main(args=None):
