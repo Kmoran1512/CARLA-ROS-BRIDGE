@@ -72,6 +72,11 @@ def generate_launch_description():
                 remappings=[("image", "/driver_img_view")],
             ),
             Node(
+                package="image_view",
+                executable="image_view",
+                remappings=[("image", "/debug_img_view")],
+            ),
+            Node(
                 package="test_scenarios",
                 namespace="test_scenarios1",
                 executable="test_scenarios",

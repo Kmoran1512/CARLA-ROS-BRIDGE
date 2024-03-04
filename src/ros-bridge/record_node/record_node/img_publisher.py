@@ -21,7 +21,6 @@ class ImageView(Node):
 
         self._init_pubsub()
 
-        self.image = Image()
         self.bridge = CvBridge()
         self.manctrl_status = "enabled"
 
@@ -41,6 +40,7 @@ class ImageView(Node):
 
     def _init_pubsub(self):
         self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
+        self.debug_pub = self.create_publisher(Image, "/debug_img_view", 10)
 
         self.create_subscription(
             Image, "/carla/ego_vehicle/rgb_front/image", self.on_view_img, 10
@@ -58,17 +58,21 @@ class ImageView(Node):
     def on_view_img(self, data):
         self._update_gaze()
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
+        cv_img2 = cv_image.copy()
 
         if self.show_man_ctrl:
             self._draw_manctrl_status(cv_image)
+            self._draw_manctrl_status(cv_img2)
         if self.show_gaze:
-            self._draw_gaze(cv_image)
+            self._draw_gaze(cv_img2)
         if self.show_outline:
-            self._draw_outlines(cv_image)
+            self._draw_outlines(cv_img2)
         # Draw route
 
-        self.image = self.bridge.cv2_to_imgmsg(cv_image, encoding="rgb8")
-        self.img_pub.publish(self.image)
+        display_image = self.bridge.cv2_to_imgmsg(cv_image, encoding="rgb8")
+        debug_image = self.bridge.cv2_to_imgmsg(cv_img2, encoding="rgb8")
+        self.img_pub.publish(display_image)
+        self.debug_pub.publish(debug_image)
 
     def _set_manctrl_status(self, data):
         self.manctrl_status = data.data
