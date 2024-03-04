@@ -20,6 +20,7 @@ from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from std_msgs.msg import Bool, Float32
+from typing import List, Tuple
 
 
 class RecordingOrchestrator(Node):
@@ -135,16 +136,17 @@ class RecordingOrchestrator(Node):
         self.next_row[self.headers["next_waypoint_x (m)"]] = data.poses[0].position.x
         self.next_row[self.headers["next_waypoint_y (m)"]] = data.poses[0].position.y
 
-    def _record_object_status(self, data):
-        ped_i = 0
+    def _record_object_status(self, data: ObjectArray):
+        self.ped_locations: List[Tuple[float]] = []
         for obj in data.objects:
             if obj.classification == Object.CLASSIFICATION_CAR:
                 if self.start is None:
                     self.start = time.time()
                 self._record_vehicle_object(obj)
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
-                self._record_ped_object(obj, ped_i)
-                ped_i += 1
+                self._store_ped_object(obj)
+
+        self._record_ped_object()
 
     def _record_vehicle_object(self, obj):
         self.next_row[self.headers["car_x (m)"]] = obj.pose.position.x
@@ -160,9 +162,25 @@ class RecordingOrchestrator(Node):
         self.next_row[self.headers["car_yaw (degrees)"]] = math.degrees(yaw)
         self.next_row[self.headers["car_w (m/s)"]] = obj.twist.angular.z
 
-    def _record_ped_object(self, obj, n):
-        self.next_row[self.headers[f"ped{n}_x (m)"]] = obj.pose.position.x
-        self.next_row[self.headers[f"ped{n}_y (m)"]] = obj.pose.position.y
+    def _store_ped_object(self, obj: Object):
+        if len(self.ped_locations) == 0:
+            self.ped_locations.append((obj.pose.position.x, obj.pose.position.y))
+            return
+
+        for i in range(len(self.ped_locations) - 1, -1, -1):
+            # TODO-KM: This is a placeholder comparison. The best way is to check y in car frame
+            if self.ped_locations[i][1] < obj.pose.position.y:
+                self.ped_locations.insert(
+                    i + 1, (obj.pose.position.x, obj.pose.position.y)
+                )
+                return
+
+        self.ped_locations.insert(0, (obj.pose.position.x, obj.pose.position.y))
+
+    def _record_ped_object(self):
+        for i, loc in enumerate(self.ped_locations):
+            self.next_row[self.headers[f"ped{i}_x (m)"]] = loc[0]
+            self.next_row[self.headers[f"ped{i}_y (m)"]] = loc[1]
 
     def _record_vehicle_status(self, data):
         self.next_row[self.headers["car_v (m/s)"]] = data.velocity
@@ -194,12 +212,12 @@ class RecordingOrchestrator(Node):
         ] = data.data  # true steer
 
     def _record_ped_2d_transform(self, data: CarlaBoundingBoxArray):
-        ped_id = 0
-        for bbox in data.boxes:
+        sorted_objects = sorted(data.boxes, key=lambda bbox: bbox.center.x)
+
+        for i, bbox in enumerate(sorted_objects):
             bbox: CarlaBoundingBox
-            self.next_row[self.headers[f"ped{ped_id}_cx"]] = bbox.center.x
-            self.next_row[self.headers[f"ped{ped_id}_cy"]] = bbox.center.y
-            ped_id += 1
+            self.next_row[self.headers[f"ped{i}_cx"]] = bbox.center.x
+            self.next_row[self.headers[f"ped{i}_cy"]] = bbox.center.y
 
 
 def main(args=None):
