@@ -376,8 +376,8 @@ class JoystickControl(object):
             if event.type == pygame.QUIT:
                 return True
             elif event.type == pygame.KEYUP:
-                key_message = String()
-                key_message.data = str(event.key)
+                key_message = Int8()
+                key_message.data = event.key
                 self.pubsub.key_press_pub.publish(key_message)
 
                 if event.key == K_b:

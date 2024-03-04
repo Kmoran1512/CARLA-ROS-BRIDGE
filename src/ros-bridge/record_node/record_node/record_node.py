@@ -58,7 +58,7 @@ class RecordingOrchestrator(Node):
                 self.headers[line] = i
 
     def _init_pub_sub(self):
-        self.create_subscription(Int8, "/key_press", self.on_key_press, 10)
+        self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
 
         # Records velocity, steering, throttle, brake
         self.create_subscription(
