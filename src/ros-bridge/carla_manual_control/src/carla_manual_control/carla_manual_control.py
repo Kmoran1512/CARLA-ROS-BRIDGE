@@ -77,7 +77,7 @@ from ros_g29_force_feedback.msg import ForceControl
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import NavSatFix
-from std_msgs.msg import Bool, Float32, String
+from std_msgs.msg import Bool, Float32, Int8
 
 # ==============================================================================
 # -- World ---------------------------------------------------------------------
@@ -530,7 +530,7 @@ class PubSub(object):
         )
         self.true_steer_publisher = node.new_publisher(Float32, "/ts_pub", 10)
         self.sim_steer_publisher = node.new_publisher(Float32, "/sim_pub", 10)
-        self.key_press_pub = node.new_publisher(String, "/key_press", 10)
+        self.key_press_pub = node.new_publisher(Int8, "/key_press", 10)
 
         node.new_subscription(
             CarlaStatus, "/carla/status", parent.on_new_carla_frame, qos_profile=10
