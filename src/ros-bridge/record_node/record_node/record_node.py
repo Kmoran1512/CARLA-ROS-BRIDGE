@@ -18,8 +18,9 @@ from carla_msgs.msg import (
 )
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
+from pygame.locals import K_r
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
-from std_msgs.msg import Bool, Float32
+from std_msgs.msg import Bool, Float32, Int8
 from typing import List, Tuple
 
 
@@ -57,6 +58,8 @@ class RecordingOrchestrator(Node):
                 self.headers[line] = i
 
     def _init_pub_sub(self):
+        self.create_subscription(Int8, "/key_press", self.on_key_press, 10)
+
         # Records velocity, steering, throttle, brake
         self.create_subscription(
             CarlaEgoVehicleStatus,
@@ -132,6 +135,11 @@ class RecordingOrchestrator(Node):
         self.next_row[self.headers["gaze_x"]] = self.gaze_x
         self.next_row[self.headers["gaze_y"]] = self.gaze_y
 
+    def _on_key_press(self, data: Int8):
+        if self.start is None and data.data == K_r:
+            self.start = time.time()
+
+
     def _record_next_waypoint(self, data):
         self.next_row[self.headers["next_waypoint_x (m)"]] = data.poses[0].position.x
         self.next_row[self.headers["next_waypoint_y (m)"]] = data.poses[0].position.y
@@ -140,8 +148,6 @@ class RecordingOrchestrator(Node):
         self.ped_locations: List[Tuple[float]] = []
         for obj in data.objects:
             if obj.classification == Object.CLASSIFICATION_CAR:
-                if self.start is None:
-                    self.start = time.time()
                 self._record_vehicle_object(obj)
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
                 self._store_ped_object(obj)
