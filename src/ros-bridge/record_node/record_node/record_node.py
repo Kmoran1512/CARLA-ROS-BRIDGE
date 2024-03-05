@@ -88,8 +88,10 @@ class RecordingOrchestrator(Node):
         self.create_subscription(
             PoseArray, "/carla/ego_vehicle/next_50", self._record_next_waypoint, 10
         )
-        self.create_subscription(Float32, "/ts_pub", self._record_ts_number, 10)
-        self.create_subscription(Float32, "/sim_pub", self._record_sim_number, 10)
+        self.create_subscription(Float32, "/wheel_value", self._record_ts_number, 10)
+        self.create_subscription(
+            Float32, "/to_simulator_steer", self._record_sim_number, 10
+        )
         self.create_subscription(
             CarlaBoundingBoxArray,
             "/carla/bounding_boxes",
@@ -210,12 +212,12 @@ class RecordingOrchestrator(Node):
 
     def _record_sim_number(self, data):
         self.next_row[
-            self.headers["sim_theta  (±turn % max 200)"]
+            self.headers["to_sim_theta  (±turn % max 200)"]
         ] = data.data  # sent to simulator
 
     def _record_ts_number(self, data):
         self.next_row[
-            self.headers["true_theta (±turn % max 100)"]
+            self.headers["contoller_value_theta (±turn % max 100)"]
         ] = data.data  # true steer
 
     def _record_ped_2d_transform(self, data: CarlaBoundingBoxArray):

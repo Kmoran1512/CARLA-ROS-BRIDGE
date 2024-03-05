@@ -345,7 +345,7 @@ class JoystickControl(object):
         self._a_steer_cache = 0.0
 
         self._steer_cache = 0.0
-        self._true_steer = 0.0
+        self._wheel_value = 0.0
         self._key_cache = False
 
         pygame.joystick.init()
@@ -449,8 +449,8 @@ class JoystickControl(object):
             for i in range(self._joystick.get_numbuttons())
         ]
 
-        self._true_steer = jsInputs[self._steer_idx]
-        self._steer_cache = 1.0 * math.tan(1.1 * self._true_steer)  ## 1.0 -> 0.55
+        self._wheel_value = jsInputs[self._steer_idx]
+        self._steer_cache = 0.55 * math.tan(1.1 * self._wheel_value)  ## 1.0 -> 0.55
 
         self.m_ctrl.throttle = max(
             0.0,
@@ -482,11 +482,12 @@ class JoystickControl(object):
         self.pubsub.force_feedback_publisher.publish(feedback_msg)
 
     # TODO: Create and Change subscriber
-    def auton_ctrl(self, data):
+    def auton_ctrl(self, data: CarlaEgoVehicleControl):
         if self.manual_override:
             return
 
         self.pubsub.a_vc.publish(data)
+        self.pubsub.scaled_steer_publisher.publish(Float32(data=data.steer))
         self._adjust_force_feedback(data.steer)
 
     def force_ctrl(self, data: ForceControl):
@@ -495,10 +496,13 @@ class JoystickControl(object):
             self.set_manual_override(self.manual_override)
 
     def _publish_control(self):
+        self.pubsub.wheel_value_publisher.publish(Float32(data=self._wheel_value))
+
         if not self.manual_override:
             return
 
         self.m_ctrl.steer = self._steer_cache
+        self.pubsub.scaled_steer_publisher.publish(Float32(data=self._steer_cache))
         self.pubsub.m_vc.publish(self.m_ctrl)
 
 
@@ -529,8 +533,10 @@ class PubSub(object):
         self.force_feedback_publisher = node.new_publisher(
             ForceFeedback, "/ff_target", qos_profile=fast_qos
         )
-        self.true_steer_publisher = node.new_publisher(Float32, "/ts_pub", 10)
-        self.sim_steer_publisher = node.new_publisher(Float32, "/sim_pub", 10)
+        self.wheel_value_publisher = node.new_publisher(Float32, "/wheel_value", 10)
+        self.scaled_steer_publisher = node.new_publisher(
+            Float32, "/to_simulator_steer", 10
+        )
         self.key_press_pub = node.new_publisher(Int8, "/key_press", 10)
 
         node.new_subscription(
