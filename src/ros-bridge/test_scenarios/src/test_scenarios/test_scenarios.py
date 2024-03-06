@@ -1,11 +1,11 @@
-from typing import List
+import math
 import rclpy
-import re
 
 from carla_msgs.srv import SpawnObject
 from rclpy.node import Node, Parameter
 from rclpy.task import Future
 from transforms3d.euler import euler2quat
+from typing import List
 
 
 RIGHT = -191.0
@@ -38,18 +38,18 @@ class TestScenarios(Node):
         self.declare_parameter("mdelays", "")
 
         self.peds = get_list(self.get_parameter("peds"))
-        bp = int(self.get_parameter("bp").value)
-        self.bps = get_list(self.get_parameter("bps")) or [bp]
+        self.bp = int(self.get_parameter("bp").value)
+        self.bps = get_list(self.get_parameter("bps"))
 
-        direction = get_float(self.get_parameter("direction"))
-        speed = get_float(self.get_parameter("speed"))
-        tdelay = get_float(self.get_parameter("tdelay"))
-        mdelay = get_float(self.get_parameter("mdelay"))
+        self.direction = get_float(self.get_parameter("direction"))
+        self.speed = get_float(self.get_parameter("speed"))
+        self.tdelay = get_float(self.get_parameter("tdelay"))
+        self.mdelay = get_float(self.get_parameter("mdelay"))
 
-        self.dirs = get_list(self.get_parameter("directions")) or [direction]
-        self.speeds = get_list(self.get_parameter("speeds")) or [speed]
-        self.tdelays = get_list(self.get_parameter("tdelays")) or [tdelay]
-        self.mdelays = get_list(self.get_parameter("mdelays")) or [mdelay]
+        self.dirs = get_list(self.get_parameter("directions"))
+        self.speeds = get_list(self.get_parameter("speeds"))
+        self.tdelays = get_list(self.get_parameter("tdelays"))
+        self.mdelays = get_list(self.get_parameter("mdelays"))
 
     def _init_pub_sub(self):
         self.spawn_actors_service = self.create_client(
@@ -57,16 +57,16 @@ class TestScenarios(Node):
         )
 
     def spawn_pedestrians(self):
-        # if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
-        #     self.get_logger().error("Service spawn_actors not available after waiting")
-        #     return
+        if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
+            self.get_logger().error("Service spawn_actors not available after waiting")
+            return
 
         self.requests: List[Future] = []
-        lanes = [RIGHT, CENTER, LEFT]
+        lanes = [LEFT, CENTER, RIGHT]
 
         n_spawned = 0
         for i, lane in enumerate(lanes):
-            print(self.peds)
+            print(self.peds[i])
             self.position_orchestrator(self.peds[i], lane, n_spawned)
             n_spawned += self.peds[i]
 
@@ -77,15 +77,22 @@ class TestScenarios(Node):
                 self.pedestrian_ids.append(walker_id)
 
     def position_orchestrator(self, num, lane, spawned):
+        offsets = [(PEDESTRIAN + num // 3, lane)]
+
+        for n in range(1, num):
+            prev_x, prev_y = offsets[n - (((n - 1) % 3) + 1)]
+            off_x = prev_x - (1 if n % 3 else 2.5)
+            off_y = prev_y + (1 if n % 3 == 2 else -1 if n % 3 == 1 else 0)
+            offsets.append((off_x, off_y))
+
         for n in range(num):
-            y_offset = 0.0  # TODO: later
-            x_offset = 0.0  # TODO: later
+            bp = self.bps[spawned + n] if self.bps else self.bp
+            direction = self.dirs[spawned + n] if self.dirs else self.direction
 
-            self.spawn_call(
-                self.bps[spawned + n], self.dirs[spawned + n], lane + y_offset, x_offset
-            )
+            x, y = offsets[n]
+            self.spawn_call(bp, x, y, direction)
 
-    def spawn_call(self, ped_num, yaw, y, x=PEDESTRIAN):
+    def spawn_call(self, ped_num, x, y, yaw):
         walker_request = SpawnObject.Request(
             type=f"walker.pedestrian.{ped_num:04}", id=f"walker{ped_num:04}"
         )
@@ -93,15 +100,14 @@ class TestScenarios(Node):
         walker_request.transform.position.y = y
         walker_request.transform.position.z = 1.0
 
-        a, b, c, d = euler2quat(0, 0, yaw)
+        a, b, c, d = euler2quat(math.radians(yaw) + math.pi, math.pi, 0)
 
         walker_request.transform.orientation.x = a
         walker_request.transform.orientation.y = b
         walker_request.transform.orientation.z = c
         walker_request.transform.orientation.w = d
 
-        print(walker_request)
-        #self.requests.append(self.spawn_actors_service.call_async(walker_request))
+        self.requests.append(self.spawn_actors_service.call_async(walker_request))
 
 
 def get_float(param: Parameter):
@@ -111,10 +117,14 @@ def get_float(param: Parameter):
         return float(val)
     except:
         return None
-    
-def get_list(param: Parameter):
+
+
+def get_list(param: Parameter) -> list:
     val = param.value
+    if type(val) is list:
+        return val
     return eval(val) if not val == "" else []
+
 
 def main():
     rclpy.init()
