@@ -1,7 +1,11 @@
 import os
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    ExecuteProcess,
+)
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
@@ -10,12 +14,12 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    with_driver_test = True
+    with_driver_test = False
+
+    sun_azimuth = 60.0
+    sun_elevation = 5.0
 
     descriptions = [
-        # Weather Information
-        DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
-        DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
         # Spawn Settings
         DeclareLaunchArgument(name="ego_side", default_value="right"),
         DeclareLaunchArgument(name="scenario_number", default_value="3"),
@@ -77,14 +81,25 @@ def generate_launch_description():
             output="screen",
             name="test",
             parameters=[
-                {"sun_azimuth": LaunchConfiguration("sun_azimuth")},
-                {"sun_elevation": LaunchConfiguration("sun_elevation")},
                 {"ego_side": LaunchConfiguration("ego_side")},
                 {"scenario_number": LaunchConfiguration("scenario_number")},
                 {"avoid_pedestrian": LaunchConfiguration("avoid_pedestrian")},
             ],
         ),
     ]
+
+    descriptions.append(
+        ExecuteProcess(
+            cmd=[
+                "ros2",
+                "topic",
+                "pub",
+                "/carla/weather_control",
+                "carla_msgs/msg/CarlaWeatherParameters",
+                f"{{sun_azimuth_angle: {sun_azimuth}, sun_altitude_angle: {sun_elevation}}}",
+            ]
+        )
+    )
 
     if with_driver_test:
         descriptions.append(
