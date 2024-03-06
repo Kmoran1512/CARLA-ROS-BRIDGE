@@ -21,12 +21,20 @@ def generate_launch_description():
 
     descriptions = [
         # Spawn Settings
-        DeclareLaunchArgument(name="ego_side", default_value="right"),
-        DeclareLaunchArgument(name="scenario_number", default_value="3"),
-        DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
+        DeclareLaunchArgument(name="peds", default_value="[0,1,0]"),
+        DeclareLaunchArgument(name="bp", default_value="1"),
+        DeclareLaunchArgument(name="bps", default_value=""),
+        DeclareLaunchArgument(name="direction", default_value="0.0"),
+        DeclareLaunchArgument(name="directions", default_value=""),
+        DeclareLaunchArgument(name="speed", default_value="0.0"),
+        DeclareLaunchArgument(name="speeds", default_value=""),
+        DeclareLaunchArgument(name="tdelay", default_value="0.0"),
+        DeclareLaunchArgument(name="tdelays", default_value=""),
+        DeclareLaunchArgument(name="mdelay", default_value="-1.0"),
+        DeclareLaunchArgument(name="mdelays", default_value=""),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
-        DeclareLaunchArgument(name="goal", default_value="0.0,0.0,0.0,0,0,90"),
+        DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
         # Recorder Settings
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
@@ -65,7 +73,6 @@ def generate_launch_description():
                 "record_gaze": LaunchConfiguration("record_gaze"),
                 "draw_gaze": LaunchConfiguration("draw_gaze"),
                 "draw_outline": LaunchConfiguration("draw_outline"),
-                "scenario_number": LaunchConfiguration("scenario_number"),
             }.items(),
         ),
         # Run Node
@@ -81,9 +88,17 @@ def generate_launch_description():
             output="screen",
             name="test",
             parameters=[
-                {"ego_side": LaunchConfiguration("ego_side")},
-                {"scenario_number": LaunchConfiguration("scenario_number")},
-                {"avoid_pedestrian": LaunchConfiguration("avoid_pedestrian")},
+                {"peds": LaunchConfiguration("peds")},
+                {"bp": LaunchConfiguration("bp")},
+                {"bps": LaunchConfiguration("bps")},
+                {"direction": LaunchConfiguration("direction")},
+                {"directions": LaunchConfiguration("directions")},
+                {"speed": LaunchConfiguration("speed")},
+                {"speeds": LaunchConfiguration("speeds")},
+                {"tdelay": LaunchConfiguration("tdelay")},
+                {"tdelays": LaunchConfiguration("tdelays")},
+                {"mdelay": LaunchConfiguration("mdelay")},
+                {"mdelays": LaunchConfiguration("mdelays")},
             ],
         ),
     ]
