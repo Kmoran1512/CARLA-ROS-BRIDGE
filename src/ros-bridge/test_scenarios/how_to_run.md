@@ -31,7 +31,7 @@ _Note_: `bps` (plural) is used in the latter `bp` (singular) is used in the form
 
 ## Movement
 
-Using the two commands `direction` (yaw in degrees) and `speed` (m/s) you can control which pedestrians move and how quickly. Similarly, you can set a delay either based on time in seconds: `tdelay` or distance from the ego_vehicle in meters `mdelay`. So if you want a single pedesrian that walks from right to left when the ego_vehicle is 10m away it would look like the following.
+Using the two commands `direction` (yaw in degrees) and `speed` (m/s) you can control which pedestrians move and how quickly. Similarly, you can set a delay either based on time in seconds: `tdelay` or distance from the ego_vehicle in meters `mdelay`. So if you want a single pedestrian that walks from right to left when the ego_vehicle is 10m away it would look like the following.
 _Note_: These commands can be pluralized in the same way as `bp`.
 
 `ros2 launch test_scenarios test_scenarios.launch.py peds:='[0,0,1]' direction:=90 speed:=1.7`
