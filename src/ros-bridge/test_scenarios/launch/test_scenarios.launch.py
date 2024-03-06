@@ -10,7 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    with_driver_test = False
+    with_driver_test = True
 
     descriptions = [
         # Weather Information

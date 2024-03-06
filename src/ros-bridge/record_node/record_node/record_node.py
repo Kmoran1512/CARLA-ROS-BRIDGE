@@ -29,7 +29,7 @@ class RecordingOrchestrator(Node):
         super().__init__("recording_orchestrator")
 
         self.headers = {}
-        self._init_parmas()
+        self._init_params()
         self.gaze_reader = GazeReader() if self.record_gaze else None
         self.gaze_x = self.gaze_y = 0.0
 
@@ -40,7 +40,7 @@ class RecordingOrchestrator(Node):
 
         self.start = None
 
-    def _init_parmas(self):
+    def _init_params(self):
         self.declare_parameter("record_gaze", "False")
         self.declare_parameter("participant_number", "1")
         self.declare_parameter("scenario_number", "1")
@@ -217,7 +217,7 @@ class RecordingOrchestrator(Node):
 
     def _record_ts_number(self, data):
         self.next_row[
-            self.headers["contoller_value_theta (±turn % max 100)"]
+            self.headers["controller_value_theta (±turn % max 100)"]
         ] = data.data  # true steer
 
     def _record_ped_2d_transform(self, data: CarlaBoundingBoxArray):

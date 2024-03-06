@@ -8,7 +8,7 @@ throttle (%)
 break (%)
 torque (N)
 response_theta (±turn % max 200)
-contoller_value_theta (±turn % max 100)
+controller_value_theta (±turn % max 100)
 command_theta  (±turn % max 100)
 to_sim_theta  (±turn % max 200)
 is_autonomous
