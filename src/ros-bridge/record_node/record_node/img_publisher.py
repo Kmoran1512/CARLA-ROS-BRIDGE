@@ -16,7 +16,7 @@ class ImageView(Node):
     def __init__(self):
         super().__init__("image_view")
 
-        self._init_parmas()
+        self._init_params()
         self.gaze_reader = GazeReader() if self.show_gaze else None
 
         self._init_pubsub()
@@ -27,7 +27,7 @@ class ImageView(Node):
         self.gaze_x, self.gaze_y = (0, 0)
         self.boxes: List[CarlaBoundingBox] = []
 
-    def _init_parmas(self):
+    def _init_params(self):
         self.declare_parameter("draw_manctrl", "True")
         self.declare_parameter("draw_gaze", "False")
         self.declare_parameter("draw_outline", "False")
