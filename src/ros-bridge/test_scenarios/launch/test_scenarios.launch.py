@@ -109,6 +109,8 @@ def generate_launch_description():
                 "ros2",
                 "topic",
                 "pub",
+                "-t",
+                "5",
                 "/carla/weather_control",
                 "carla_msgs/msg/CarlaWeatherParameters",
                 f"{{sun_azimuth_angle: {sun_azimuth}, sun_altitude_angle: {sun_elevation}}}",
