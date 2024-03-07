@@ -4,7 +4,10 @@ import rclpy
 
 from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import SpawnObject
+from pygame.locals import K_s
+from std_msgs.msg import Int8
 from rclpy.node import Node, Parameter
+from rclpy.publisher import Publisher
 from rclpy.task import Future
 from transforms3d.euler import euler2quat
 from typing import List
@@ -20,6 +23,8 @@ VEHICLE = 312.0
 class TestScenarios(Node):
     def __init__(self):
         super(TestScenarios, self).__init__("TestScenarios")
+
+        self.start = None
 
         self._init_params()
         self._init_pub_sub()
@@ -57,6 +62,43 @@ class TestScenarios(Node):
         self.spawn_actors_service = self.create_client(
             SpawnObject, "/carla/spawn_object"
         )
+
+        self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
+
+        self.control_publishers: List[Publisher] = []
+        for id in range(sum(self.peds)):
+            self.control_publishers.append(
+                self.create_publisher(
+                    CarlaWalkerControl, f"/carla/walker{id:04}/walker_control_cmd", 10
+                )
+            )
+
+    def run_step(self):
+        if self.start is None:
+            return
+
+        for id in range(sum(self.peds)):
+            mdelay = (
+                self.mdelay[id]
+                if self.mdelays
+                else self.mdelay)
+            tdelay = (self.tdelays[id]
+                if self.tdelays
+                else self.tdelay
+            )
+            direction = self.dirs[id] if self.dirs else self.direction
+
+            if not math.isclose(time.time() - self.start, tdelay , abs_tol=0.1):
+                return
+
+            msg = CarlaWalkerControl()
+            msg.direction.x = math.cos(direction)
+            msg.direction.y = math.sin(direction)
+            msg.speed = self.speed
+            self.control_publishers[id].publish(msg)
+            self._logger.info(
+                f"ids {self.pedestrian_ids} :: time {time.time() - self.start}"
+            )
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
@@ -112,6 +154,11 @@ class TestScenarios(Node):
 
         self.requests.append(self.spawn_actors_service.call_async(walker_request))
 
+    def _on_key_press(self, data: Int8):
+        if self.start is None and data.data == K_s:
+            self.get_logger().info("\n Playing Scenario \n")
+            self.start = time.time()
+
 
 def get_float(param: Parameter):
     val = param.value
@@ -136,7 +183,9 @@ def main():
     ts.spawn_pedestrians()
 
     try:
-        rclpy.spin(ts)
+        ts.create_timer(0.1, lambda _=None: ts.run_step())
+
+        rclpy.spin(ts, ts.executor)
     except KeyboardInterrupt:
         pass
 
