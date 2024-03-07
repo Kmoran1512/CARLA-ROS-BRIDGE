@@ -1,0 +1,22 @@
+{
+  "num": 1,
+  "pedestrians": [
+    {
+      "spawn": "left",
+      "blueprint": 1,
+      "yaw": 90.0,
+      "actions": [
+        {
+          "mdelay": 20,
+          "speed": 1.1,
+          "yaw": -90.0
+        },
+        {
+          "tdelay": 3.0,
+          "speed": 0.0
+        },
+        { "tdelay": 1.0, "speed": 1.1, "yaw": 90 }
+      ]
+    }
+  ]
+}

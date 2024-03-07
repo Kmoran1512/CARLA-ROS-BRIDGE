@@ -32,6 +32,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="tdelays", default_value=""),
         DeclareLaunchArgument(name="mdelay", default_value="-1.0"),
         DeclareLaunchArgument(name="mdelays", default_value=""),
+        DeclareLaunchArgument(name="scenario_config", default_value=""),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
@@ -99,6 +100,7 @@ def generate_launch_description():
                 {"tdelays": LaunchConfiguration("tdelays")},
                 {"mdelay": LaunchConfiguration("mdelay")},
                 {"mdelays": LaunchConfiguration("mdelays")},
+                {"scenario_config": LaunchConfiguration("scenario_config")},
             ],
         ),
     ]
