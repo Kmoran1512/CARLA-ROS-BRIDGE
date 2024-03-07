@@ -29,7 +29,7 @@ class TestScenarios(Node):
         super(TestScenarios, self).__init__("TestScenarios")
 
         self.start = None
-        self.actions: List[List[PedestrianAction | None]] = []
+        self.actions: List[List[PedestrianAction]] = []
 
         self._init_params()
         self._init_pub_sub()
@@ -51,16 +51,13 @@ class TestScenarios(Node):
         filename = self.get_parameter("scenario_config").value
         if filename:
             file_path = os.path.join(
-                    get_package_share_directory("test_scenarios"),
-                    "scenarios",
-                    filename,
-                )
+                get_package_share_directory("test_scenarios"), "scenarios", filename
+            )
             with open(file_path) as f:
                 self.config = json.load(f)
-        
+
         else:
             self.config = None
-        
 
         if self.config is None:
             self.peds = get_list(self.get_parameter("peds"))
@@ -105,7 +102,7 @@ class TestScenarios(Node):
         if self.start is None:
             return
         elif self.actions:
-            self._logger.info("action mode")
+            return self.run_actions()
 
         for n, (p_x, _) in enumerate(self.ped_locs):
             mdelay = self.mdelays[n] if self.mdelays else self.mdelay
@@ -128,6 +125,24 @@ class TestScenarios(Node):
             msg.speed = self.speed
             self.control_publishers[n].publish(msg)
 
+    def run_actions(self):
+        for n, actions in enumerate(self.actions):
+            if not actions or not actions[0].should_run((self.v_x, self.v_y)):
+                continue
+
+            msg = CarlaWalkerControl()
+            msg.direction.x = actions[0].x_dir
+            msg.direction.y = actions[0].y_dir
+            msg.speed = actions[0].speed
+            self.control_publishers[n].publish(msg)
+
+            prev_action = actions.pop(0)
+            if not actions:
+                continue
+
+            actions[0].set_location((prev_action.x_coord, prev_action.y_coord))
+            actions[0].set_previous_time(time.time())
+
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
             self.get_logger().error("Service spawn_actors not available after waiting")
@@ -138,7 +153,6 @@ class TestScenarios(Node):
 
         n_spawned = 0
         for i, lane in enumerate(lanes):
-            print(self.peds[i])
             self.position_orchestrator(self.peds[i], lane, n_spawned)
             n_spawned += self.peds[i]
 
@@ -184,30 +198,36 @@ class TestScenarios(Node):
 
     def _set_params_from_config_file(self):
         self.peds = [0, 0, 0]
-        n = self.config.get('num', 0)
+        n = self.config.get("num", 0)
 
         self.bps = [0] * n
         self.dirs = [0.0] * n
 
-        for i, p in enumerate(self.config.get('pedestrians')):
-            if p.get('spawn') == 'left':
+        for i, p in enumerate(self.config.get("pedestrians")):
+            if p.get("spawn") == "left":
                 self.peds[0] += 1
-            elif p.get('spawn') == 'right':
+            elif p.get("spawn") == "right":
                 self.peds[2] += 1
             else:
                 self.peds[1] += 1
 
-            self.bps[i] = p.get('blueprint', 0)
-            self.dirs[i] = p.get('yaw', 0.0)
+            self.bps[i] = p.get("blueprint", 0)
+            self.dirs[i] = p.get("yaw", 0.0)
 
-            self._logger.info(f"before parsing")
-
-            self.actions.append([PedestrianAction(act) for act in p.get('actions', [])])
+            self.actions.append([PedestrianAction(act) for act in p.get("actions", [])])
 
     def _on_key_press(self, data: Int8):
-        if self.start is None and data.data == K_s:
-            self.get_logger().info("\n Playing Scenario \n")
-            self.start = time.time()
+        if not self.start is None or not data.data == K_s:
+            return
+
+        self.get_logger().info("\n Playing Scenario \n")
+        self.start = time.time()
+
+        for actions in self.actions:
+            if not actions:
+                continue
+
+            actions[0].set_previous_time(self.start)
 
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:
@@ -219,6 +239,10 @@ class TestScenarios(Node):
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
                 i = self.pedestrian_ids.index(obj.id)
                 self.ped_locs[i] = (x, y)
+
+                if len(self.actions) > i and self.actions[i]:
+                    self.actions[i][0].set_location((x, y))
+
 
 class PedestrianAction:
     def __init__(self, action):
@@ -242,17 +266,18 @@ class PedestrianAction:
     def _is_in_triggering_distance(self, v_loc) -> bool:
         if not self.mdelay:
             return False
-        
+
         v_x, _ = v_loc
         distance = v_x - self.x_coord  # TODO: This needs to be waypoint dist
-        return abs(distance - self.mdelay) > 0.5
-    
+        return distance < self.mdelay
+
     def _is_in_triggering_time(self) -> bool:
         if not self.tdelay:
             return False
 
         time_passed = time.time() - self.start_time
-        return abs(time_passed - self.tdelay) > 0.1
+        return time_passed > self.tdelay
+
 
 def get_float(param: Parameter):
     val = param.value
