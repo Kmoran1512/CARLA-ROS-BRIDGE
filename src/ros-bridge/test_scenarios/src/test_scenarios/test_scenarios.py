@@ -1,6 +1,8 @@
 import math
+import time
 import rclpy
 
+from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import SpawnObject
 from rclpy.node import Node, Parameter
 from rclpy.task import Future
@@ -46,10 +48,10 @@ class TestScenarios(Node):
         self.tdelay = get_float(self.get_parameter("tdelay"))
         self.mdelay = get_float(self.get_parameter("mdelay"))
 
-        self.dirs = get_list(self.get_parameter("directions"))
-        self.speeds = get_list(self.get_parameter("speeds"))
-        self.tdelays = get_list(self.get_parameter("tdelays"))
-        self.mdelays = get_list(self.get_parameter("mdelays"))
+        self.dirs: List[float] = get_list(self.get_parameter("directions"))
+        self.speeds: List[float] = get_list(self.get_parameter("speeds"))
+        self.tdelays: List[float] = get_list(self.get_parameter("tdelays"))
+        self.mdelays: List[float] = get_list(self.get_parameter("mdelays"))
 
     def _init_pub_sub(self):
         self.spawn_actors_service = self.create_client(
@@ -86,15 +88,16 @@ class TestScenarios(Node):
             offsets.append((off_x, off_y))
 
         for n in range(num):
-            bp = self.bps[spawned + n] if self.bps else self.bp
-            direction = self.dirs[spawned + n] if self.dirs else self.direction
+            total = spawned + n
+            bp = self.bps[total] if self.bps else self.bp
+            direction = self.dirs[total] if self.dirs else self.direction
 
             x, y = offsets[n]
-            self.spawn_call(bp, x, y, direction)
+            self.spawn_call(total, bp, x, y, direction)
 
-    def spawn_call(self, ped_num, x, y, yaw):
+    def spawn_call(self, i, ped_num, x, y, yaw):
         walker_request = SpawnObject.Request(
-            type=f"walker.pedestrian.{ped_num:04}", id=f"walker{ped_num:04}"
+            type=f"walker.pedestrian.{ped_num:04}", id=f"walker{i:04}"
         )
         walker_request.transform.position.x = x
         walker_request.transform.position.y = y
