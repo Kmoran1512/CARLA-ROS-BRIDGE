@@ -1,7 +1,10 @@
+import json
 import math
+import os
 import time
 import rclpy
 
+from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
@@ -26,6 +29,7 @@ class TestScenarios(Node):
         super(TestScenarios, self).__init__("TestScenarios")
 
         self.start = None
+        self.actions: List[List[PedestrianAction | None]] = []
 
         self._init_params()
         self._init_pub_sub()
@@ -42,20 +46,38 @@ class TestScenarios(Node):
         self.declare_parameter("tdelays", "")
         self.declare_parameter("mdelay", "")
         self.declare_parameter("mdelays", "")
+        self.declare_parameter("scenario_config", "")
 
-        self.peds = get_list(self.get_parameter("peds"))
-        self.bp = int(self.get_parameter("bp").value)
-        self.bps = get_list(self.get_parameter("bps"))
+        filename = self.get_parameter("scenario_config").value
+        if filename:
+            file_path = os.path.join(
+                    get_package_share_directory("test_scenarios"),
+                    "scenarios",
+                    filename,
+                )
+            with open(file_path) as f:
+                self.config = json.load(f)
+        
+        else:
+            self.config = None
+        
 
-        self.direction = get_float(self.get_parameter("direction"))
-        self.speed = get_float(self.get_parameter("speed"))
-        self.tdelay = get_float(self.get_parameter("tdelay"))
-        self.mdelay = get_float(self.get_parameter("mdelay"))
+        if self.config is None:
+            self.peds = get_list(self.get_parameter("peds"))
+            self.bp = int(self.get_parameter("bp").value)
+            self.bps = get_list(self.get_parameter("bps"))
 
-        self.dirs: List[float] = get_list(self.get_parameter("directions"))
-        self.speeds: List[float] = get_list(self.get_parameter("speeds"))
-        self.tdelays: List[float] = get_list(self.get_parameter("tdelays"))
-        self.mdelays: List[float] = get_list(self.get_parameter("mdelays"))
+            self.direction = get_float(self.get_parameter("direction"))
+            self.speed = get_float(self.get_parameter("speed"))
+            self.tdelay = get_float(self.get_parameter("tdelay"))
+            self.mdelay = get_float(self.get_parameter("mdelay"))
+
+            self.dirs: List[float] = get_list(self.get_parameter("directions"))
+            self.speeds: List[float] = get_list(self.get_parameter("speeds"))
+            self.tdelays: List[float] = get_list(self.get_parameter("tdelays"))
+            self.mdelays: List[float] = get_list(self.get_parameter("mdelays"))
+        else:
+            self._set_params_from_config_file()
 
         self.v_x = 0.0
         self.v_y = 0.0
@@ -82,6 +104,8 @@ class TestScenarios(Node):
     def run_step(self):
         if self.start is None:
             return
+        elif self.actions:
+            self._logger.info("action mode")
 
         for n, (p_x, _) in enumerate(self.ped_locs):
             mdelay = self.mdelays[n] if self.mdelays else self.mdelay
@@ -158,6 +182,28 @@ class TestScenarios(Node):
 
         self.requests.append(self.spawn_actors_service.call_async(walker_request))
 
+    def _set_params_from_config_file(self):
+        self.peds = [0, 0, 0]
+        n = self.config.get('num', 0)
+
+        self.bps = [0] * n
+        self.dirs = [0.0] * n
+
+        for i, p in enumerate(self.config.get('pedestrians')):
+            if p.get('spawn') == 'left':
+                self.peds[0] += 1
+            elif p.get('spawn') == 'right':
+                self.peds[2] += 1
+            else:
+                self.peds[1] += 1
+
+            self.bps[i] = p.get('blueprint', 0)
+            self.dirs[i] = p.get('yaw', 0.0)
+
+            self._logger.info(f"before parsing")
+
+            self.actions.append([PedestrianAction(act) for act in p.get('actions', [])])
+
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_s:
             self.get_logger().info("\n Playing Scenario \n")
@@ -174,6 +220,39 @@ class TestScenarios(Node):
                 i = self.pedestrian_ids.index(obj.id)
                 self.ped_locs[i] = (x, y)
 
+class PedestrianAction:
+    def __init__(self, action):
+        self.speed = action.get("speed", 0.0)
+
+        yaw = math.radians(action.get("yaw", 0.0))
+        self.x_dir, self.y_dir = math.cos(yaw), math.sin(yaw)
+
+        self.mdelay = action.get("mdelay", 0.0)
+        self.tdelay = action.get("tdelay", 0.0)
+
+    def set_previous_time(self, prev_time):
+        self.start_time = prev_time
+
+    def set_location(self, loc):
+        self.x_coord, self.y_coord = loc
+
+    def should_run(self, v_loc):
+        return self._is_in_triggering_distance(v_loc) or self._is_in_triggering_time()
+
+    def _is_in_triggering_distance(self, v_loc) -> bool:
+        if not self.mdelay:
+            return False
+        
+        v_x, _ = v_loc
+        distance = v_x - self.x_coord  # TODO: This needs to be waypoint dist
+        return abs(distance - self.mdelay) > 0.5
+    
+    def _is_in_triggering_time(self) -> bool:
+        if not self.tdelay:
+            return False
+
+        time_passed = time.time() - self.start_time
+        return abs(time_passed - self.tdelay) > 0.1
 
 def get_float(param: Parameter):
     val = param.value
