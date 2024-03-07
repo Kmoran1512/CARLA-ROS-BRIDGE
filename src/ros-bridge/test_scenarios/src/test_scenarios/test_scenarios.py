@@ -4,6 +4,7 @@ import rclpy
 
 from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import SpawnObject
+from derived_object_msgs.msg import ObjectArray, Object
 from pygame.locals import K_s
 from std_msgs.msg import Int8
 from rclpy.node import Node, Parameter
@@ -28,8 +29,6 @@ class TestScenarios(Node):
 
         self._init_params()
         self._init_pub_sub()
-
-        self.pedestrian_ids = []
 
     def _init_params(self):
         self.declare_parameter("peds", "[0,1,0]")
@@ -58,18 +57,25 @@ class TestScenarios(Node):
         self.tdelays: List[float] = get_list(self.get_parameter("tdelays"))
         self.mdelays: List[float] = get_list(self.get_parameter("mdelays"))
 
+        self.v_x = 0.0
+        self.v_y = 0.0
+
+        self.pedestrian_ids = [0] * sum(self.peds)
+        self.ped_locs = [(0.0, 0.0)] * sum(self.peds)
+
     def _init_pub_sub(self):
         self.spawn_actors_service = self.create_client(
             SpawnObject, "/carla/spawn_object"
         )
 
         self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
+        self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
         self.control_publishers: List[Publisher] = []
-        for id in range(sum(self.peds)):
+        for n in range(sum(self.peds)):
             self.control_publishers.append(
                 self.create_publisher(
-                    CarlaWalkerControl, f"/carla/walker{id:04}/walker_control_cmd", 10
+                    CarlaWalkerControl, f"/carla/walker{n:04}/walker_control_cmd", 10
                 )
             )
 
@@ -77,28 +83,26 @@ class TestScenarios(Node):
         if self.start is None:
             return
 
-        for id in range(sum(self.peds)):
-            mdelay = (
-                self.mdelay[id]
-                if self.mdelays
-                else self.mdelay)
-            tdelay = (self.tdelays[id]
-                if self.tdelays
-                else self.tdelay
-            )
-            direction = self.dirs[id] if self.dirs else self.direction
+        for n, (p_x, _) in enumerate(self.ped_locs):
+            mdelay = self.mdelays[n] if self.mdelays else self.mdelay
+            tdelay = self.tdelays[n] if self.tdelays else self.tdelay
+            direction = self.dirs[n] if self.dirs else self.direction
 
-            if not math.isclose(time.time() - self.start, tdelay , abs_tol=0.1):
-                return
+            distance = self.v_x - p_x  # TODO: This needs to be waypoint dist
+            time_passed = time.time() - self.start
+
+            if not mdelay and not tdelay:
+                continue
+            elif mdelay and abs(distance - mdelay) > 0.5:
+                continue
+            elif not mdelay and abs(time_passed - tdelay) > 0.1:
+                continue
 
             msg = CarlaWalkerControl()
             msg.direction.x = math.cos(direction)
             msg.direction.y = math.sin(direction)
             msg.speed = self.speed
-            self.control_publishers[id].publish(msg)
-            self._logger.info(
-                f"ids {self.pedestrian_ids} :: time {time.time() - self.start}"
-            )
+            self.control_publishers[n].publish(msg)
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
@@ -114,11 +118,11 @@ class TestScenarios(Node):
             self.position_orchestrator(self.peds[i], lane, n_spawned)
             n_spawned += self.peds[i]
 
-        for future in self.requests:
+        for i, future in enumerate(self.requests):
             rclpy.spin_until_future_complete(self, future)
             walker_id = future.result().id
             if walker_id > 0:
-                self.pedestrian_ids.append(walker_id)
+                self.pedestrian_ids[i] = walker_id
 
     def position_orchestrator(self, num, lane, spawned):
         offsets = [(PEDESTRIAN + num // 3, lane)]
@@ -158,6 +162,17 @@ class TestScenarios(Node):
         if self.start is None and data.data == K_s:
             self.get_logger().info("\n Playing Scenario \n")
             self.start = time.time()
+
+    def _update_obj(self, data: ObjectArray):
+        for obj in data.objects:
+            obj: Object
+            x, y = obj.pose.position.x, -obj.pose.position.y
+
+            if obj.classification == Object.CLASSIFICATION_CAR:
+                self.v_x, self.v_y = x, y
+            elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
+                i = self.pedestrian_ids.index(obj.id)
+                self.ped_locs[i] = (x, y)
 
 
 def get_float(param: Parameter):
