@@ -36,6 +36,9 @@ def generate_launch_description():
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
+        DeclareLaunchArgument(
+            name="spawn_point", default_value="312.0,-198.7,2.0,0,0,180"
+        ),
         # Recorder Settings
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
@@ -51,6 +54,7 @@ def generate_launch_description():
             launch_arguments={
                 "role_name": "ego_vehicle",
                 "avoid_pedestrian": LaunchConfiguration("avoid_pedestrian"),
+                "spawn_point": LaunchConfiguration("spawn_point"),
                 "synchronous_mode_wait_for_vehicle_control_command": "True",
                 "target_speed": LaunchConfiguration("target_speed"),
             }.items(),

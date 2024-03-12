@@ -11,7 +11,10 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        ("share/" + package_name + "/scenarios", ["scenarios/crossing.json", "scenarios/crossing_copy.json"]),
+        (
+            "share/" + package_name + "/scenarios",
+            ["scenarios/crossing.json", "scenarios/crossing_copy.json"],
+        ),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
     ],
     install_requires=["setuptools"],
