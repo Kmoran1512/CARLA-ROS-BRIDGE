@@ -8,7 +8,8 @@ from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
-from pygame.locals import K_s
+from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
+from pygame.locals import K_s, K_z
 from std_msgs.msg import Int8
 from rclpy.node import Node, Parameter
 from rclpy.publisher import Publisher
@@ -35,6 +36,9 @@ class TestScenarios(Node):
         self._init_pub_sub()
 
     def _init_params(self):
+        self.declare_parameter("spawn_point", "")
+        self.spawn_point = string_to_pose(self.get_parameter("spawn_point").value)
+
         self.declare_parameter("peds", "[0,1,0]")
         self.declare_parameter("bp", "1")
         self.declare_parameter("bps", "")
@@ -89,6 +93,10 @@ class TestScenarios(Node):
 
         self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
+
+        self.pose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, "/initialpose", 1
+        )
 
         self.control_publishers: List[Publisher] = []
         for n in range(sum(self.peds)):
@@ -217,17 +225,21 @@ class TestScenarios(Node):
             self.actions.append([PedestrianAction(act) for act in p.get("actions", [])])
 
     def _on_key_press(self, data: Int8):
-        if not self.start is None or not data.data == K_s:
-            return
+        if self.start is None and data.data == K_s:
+            self.get_logger().info("\n Playing Scenario \n")
+            self.start = time.time()
 
-        self.get_logger().info("\n Playing Scenario \n")
-        self.start = time.time()
+            for actions in self.actions:
+                if not actions:
+                    continue
 
-        for actions in self.actions:
-            if not actions:
-                continue
+                actions[0].set_previous_time(self.start)
+        elif data.data == K_z:
+            self.pose_pub.publish(self.spawn_point)
+            self.start = None
 
-            actions[0].set_previous_time(self.start)
+            # Work on restarting recording
+            # Work on clearing and re-spawning pedestrians
 
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:
@@ -293,6 +305,23 @@ def get_list(param: Parameter) -> list:
     if type(val) is list:
         return val
     return eval(val) if not val == "" else []
+
+
+def string_to_pose(input: str) -> PoseWithCovarianceStamped:
+    p = list(map(float, input.split(",")))
+
+    a, b, c, d = euler2quat(
+        math.radians(p[3]) + math.pi, math.radians(p[4]), math.radians(p[5])
+    )
+
+    s = Pose(
+        position=Point(x=p[0], y=p[1], z=p[2]),
+        orientation=Quaternion(x=a, y=b, z=c, w=d),
+    )
+
+    out = PoseWithCovarianceStamped()
+    out.pose.pose = s
+    return out
 
 
 def main():

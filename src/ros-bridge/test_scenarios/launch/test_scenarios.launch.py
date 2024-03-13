@@ -105,6 +105,7 @@ def generate_launch_description():
                 {"mdelay": LaunchConfiguration("mdelay")},
                 {"mdelays": LaunchConfiguration("mdelays")},
                 {"scenario_config": LaunchConfiguration("scenario_config")},
+                {"spawn_point": LaunchConfiguration("spawn_point")},
             ],
         ),
     ]
