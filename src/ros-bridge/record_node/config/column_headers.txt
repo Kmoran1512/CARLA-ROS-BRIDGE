@@ -12,6 +12,8 @@ controller_value_theta (±turn % max 100)
 command_theta  (±turn % max 100)
 to_sim_theta  (±turn % max 200)
 is_autonomous
+cam_flx
+cam_fly
 gaze_x
 gaze_y
 next_waypoint_x (m)

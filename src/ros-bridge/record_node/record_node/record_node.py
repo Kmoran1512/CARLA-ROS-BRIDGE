@@ -20,6 +20,7 @@ from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
 from pygame.locals import K_r
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
+from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import Bool, Float32, Int8
 from typing import List, Tuple
 
@@ -98,6 +99,13 @@ class RecordingOrchestrator(Node):
             self._record_ped_2d_transform,
             10,
         )
+        self.create_subscription(
+            CameraInfo,
+            f"/carla/ego_vehicle/rgb_front/camera_info",
+            self._record_fov,
+            1,
+        )
+
 
     def write(self):
         if self.start is None:
@@ -201,6 +209,13 @@ class RecordingOrchestrator(Node):
 
     def _record_auton_status(self, data):
         self.next_row[self.headers["is_autonomous"]] = float(not data.data)
+
+    def _record_fov(self, data: CameraInfo):
+        # FOCAL_LENGTH = IMAGE_WIDTH / (2.0 * np.tan(FIELD_OF_VIEW * np.pi / 360.0))
+
+
+        self.next_row[self.headers["cam_flx"]] = data.k[0]
+        self.next_row[self.headers["cam_fly"]] = data.k[4]
 
     def _record_torque(self, data):
         self.next_row[self.headers["torque (N)"]] = data.torque
