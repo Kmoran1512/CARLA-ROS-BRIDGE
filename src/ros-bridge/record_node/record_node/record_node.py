@@ -18,7 +18,7 @@ from carla_msgs.msg import (
 )
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
-from pygame.locals import K_r
+from pygame.locals import K_e, K_r, K_z
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from sensor_msgs.msg import CameraInfo
 from std_msgs.msg import Bool, Float32, Int8
@@ -148,6 +148,11 @@ class RecordingOrchestrator(Node):
         if self.start is None and data.data == K_r:
             self.get_logger().info("\n Recording Begins \n")
             self.start = time.time()
+        elif self.start and (data.data == K_z or data.data == K_e):
+            self.get_logger().info("\n End Recording \n")
+            self.scenario_number += 1
+            self.complete()
+            self.start = None
 
     def _record_next_waypoint(self, data):
         self.next_row[self.headers["next_waypoint_x (m)"]] = data.poses[0].position.x
