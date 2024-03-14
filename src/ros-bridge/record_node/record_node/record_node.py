@@ -100,12 +100,8 @@ class RecordingOrchestrator(Node):
             10,
         )
         self.create_subscription(
-            CameraInfo,
-            f"/carla/ego_vehicle/rgb_front/camera_info",
-            self._record_fov,
-            1,
+            CameraInfo, f"/carla/ego_vehicle/rgb_front/camera_info", self._record_fov, 1
         )
-
 
     def write(self):
         if self.start is None:
@@ -212,7 +208,6 @@ class RecordingOrchestrator(Node):
 
     def _record_fov(self, data: CameraInfo):
         # FOCAL_LENGTH = IMAGE_WIDTH / (2.0 * np.tan(FIELD_OF_VIEW * np.pi / 360.0))
-
 
         self.next_row[self.headers["cam_flx"]] = data.k[0]
         self.next_row[self.headers["cam_fly"]] = data.k[4]
