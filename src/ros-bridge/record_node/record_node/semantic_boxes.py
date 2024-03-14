@@ -50,12 +50,18 @@ class SemanticBoxes(Node):
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        if not contours:
+            return
+
+        max_w = max([cv2.boundingRect(contour)[2] for contour in contours])
+        max_h = max([cv2.boundingRect(contour)[3] for contour in contours])
+
         boxes = CarlaBoundingBoxArray()
         for contour in contours:
             single_box = CarlaBoundingBox()
             x, y, w, h = cv2.boundingRect(contour)
 
-            if w + h < 5:
+            if w + h < (max_w + max_h) // 2:
                 continue
 
             single_box.center.x = float(x + w // 2)
