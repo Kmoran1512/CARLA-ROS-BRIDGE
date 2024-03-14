@@ -90,6 +90,9 @@ class TestScenarios(Node):
         self.spawn_actors_service = self.create_client(
             SpawnObject, "/carla/spawn_object"
         )
+        self.destroy_actors_service = self.create_client(
+            DestroyObject, "/carla/destroy_object"
+        )
 
         self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
@@ -150,6 +153,10 @@ class TestScenarios(Node):
 
             actions[0].set_location((prev_action.x_coord, prev_action.y_coord))
             actions[0].set_previous_time(time.time())
+
+    def clean_up(self):
+        for id in self.pedestrian_ids:
+            self.destroy_actors_service.call(DestroyObject.Request(id=id))
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
