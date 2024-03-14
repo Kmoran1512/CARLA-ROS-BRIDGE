@@ -156,7 +156,7 @@ class TestScenarios(Node):
 
     def clean_up(self):
         for id in self.pedestrian_ids:
-            self.destroy_actors_service.call(DestroyObject.Request(id=id))
+            self.destroy_actors_service.call_async(DestroyObject.Request(id=id))
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
@@ -238,10 +238,8 @@ class TestScenarios(Node):
         elif data.data == K_z:
             self.pose_pub.publish(self.spawn_point)
             self.clean_up()
+            self.spawn_pedestrians()
             self.start = None
-
-            # Work on restarting recording
-            # Work on clearing and re-spawning pedestrians
 
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:

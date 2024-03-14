@@ -37,7 +37,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
         DeclareLaunchArgument(
-            name="spawn_point", default_value="312.0,-198.7,2.0,0,0,180"
+            name="spawn_point", default_value="312.0,-195.2,2.0,0,0,180"
         ),
         # Recorder Settings
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
