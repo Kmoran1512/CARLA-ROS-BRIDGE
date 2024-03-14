@@ -6,7 +6,7 @@ import rclpy
 
 from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaWalkerControl
-from carla_msgs.srv import SpawnObject
+from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
 from pygame.locals import K_s, K_z
@@ -188,20 +188,14 @@ class TestScenarios(Node):
             self.spawn_call(total, bp, x, y, direction)
 
     def spawn_call(self, i, ped_num, x, y, yaw):
-        walker_request = SpawnObject.Request(
-            type=f"walker.pedestrian.{ped_num:04}", id=f"walker{i:04}"
-        )
-        walker_request.transform.position.x = x
-        walker_request.transform.position.y = y
-        walker_request.transform.position.z = 1.0
-
         a, b, c, d = euler2quat(math.radians(yaw) + math.pi, math.pi, 0)
+        s = Pose(
+            position=Point(x=x, y=y, z=1.0), orientation=Quaternion(x=a, y=b, z=c, w=d)
+        )
 
-        walker_request.transform.orientation.x = a
-        walker_request.transform.orientation.y = b
-        walker_request.transform.orientation.z = c
-        walker_request.transform.orientation.w = d
-
+        walker_request = SpawnObject.Request(
+            type=f"walker.pedestrian.{ped_num:04}", id=f"walker{i:04}", transform=s
+        )
         self.requests.append(self.spawn_actors_service.call_async(walker_request))
 
     def _set_params_from_config_file(self):
@@ -236,6 +230,7 @@ class TestScenarios(Node):
                 actions[0].set_previous_time(self.start)
         elif data.data == K_z:
             self.pose_pub.publish(self.spawn_point)
+            self.clean_up()
             self.start = None
 
             # Work on restarting recording
