@@ -8,6 +8,7 @@ from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
+from diagnostic_msgs.msg import KeyValue
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
 from pygame.locals import K_s, K_z
 from std_msgs.msg import Int8
@@ -203,6 +204,7 @@ class TestScenarios(Node):
         walker_request = SpawnObject.Request(
             type=f"walker.pedestrian.{ped_num:04}", id=f"walker{i:04}", transform=s
         )
+        walker_request.attributes = [KeyValue(key="is_invincible", value="false")]
         self.requests.append(self.spawn_actors_service.call_async(walker_request))
 
     def _set_params_from_config_file(self):
