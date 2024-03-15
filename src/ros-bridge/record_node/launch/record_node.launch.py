@@ -20,6 +20,7 @@ def generate_launch_description():
             DeclareLaunchArgument(name="draw_gaze", default_value="False"),
             DeclareLaunchArgument(name="draw_outline", default_value="False"),
             DeclareLaunchArgument(name="draw_route", default_value="False"),
+            DeclareLaunchArgument(name="labels", default_value="[]]"),
             # Run Node
             Node(
                 package="record_node",
@@ -32,6 +33,7 @@ def generate_launch_description():
                     {"draw_gaze": LaunchConfiguration("draw_gaze")},
                     {"draw_outline": LaunchConfiguration("draw_outline")},
                     {"draw_route": LaunchConfiguration("draw_route")},
+                    {"labels": LaunchConfiguration("labels")},                    
                 ],
             ),
             Node(

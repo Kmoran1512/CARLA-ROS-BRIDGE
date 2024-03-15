@@ -43,6 +43,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_outline", default_value="False"),
+        DeclareLaunchArgument(name="labels", default_value="[]"),
         # Additional Nodes
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -78,6 +79,7 @@ def generate_launch_description():
                 "record_gaze": LaunchConfiguration("record_gaze"),
                 "draw_gaze": LaunchConfiguration("draw_gaze"),
                 "draw_outline": LaunchConfiguration("draw_outline"),
+                "labels": LaunchConfiguration("labels"),
             }.items(),
         ),
         # Run Node

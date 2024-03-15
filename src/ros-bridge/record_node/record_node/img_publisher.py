@@ -32,11 +32,13 @@ class ImageView(Node):
         self.declare_parameter("draw_gaze", "False")
         self.declare_parameter("draw_outline", "False")
         self.declare_parameter("draw_route", "False")
+        self.declare_parameter("labels", [])
 
         self.show_man_ctrl = bool(self.get_parameter("draw_manctrl").value)
         self.show_gaze = bool(self.get_parameter("draw_gaze").value)
         self.show_outline = bool(self.get_parameter("draw_outline").value)
         self.show_route = bool(self.get_parameter("draw_route").value)
+        self.labels = self.get_parameter("labels").value
 
     def _init_pubsub(self):
         self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
@@ -67,7 +69,9 @@ class ImageView(Node):
             self._draw_gaze(cv_img2)
         if self.show_outline:
             self._draw_outlines(cv_img2)
-        # Draw route
+        if self.labels:
+            self._draw_labels(cv_image)
+            self._draw_labels(cv_img2)
 
         display_image = self.bridge.cv2_to_imgmsg(cv_image, encoding="rgb8")
         debug_image = self.bridge.cv2_to_imgmsg(cv_img2, encoding="rgb8")
@@ -86,6 +90,25 @@ class ImageView(Node):
         cv2.drawMarker(
             image, (x, y), point_color, thickness=7, markerType=cv2.MARKER_CROSS
         )
+
+    def _draw_labels(self, img):
+        if not self.labels:
+            return
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        color = (0, 0, 255)
+
+        for bbox, label in zip(self.boxes, self.labels):
+
+            font_scale = min(0.15 * bbox.size.x, 3.0)
+
+            thickness = 2 if font_scale == 3 else 1
+            text_size = cv2.getTextSize(label, font, font_scale, thickness)[0][0] // 2
+
+            cx = int(bbox.center.x - text_size)
+            cy = int(bbox.center.y - bbox.size.y // 2)
+
+            cv2.putText(img, label, (cx, cy), font, font_scale, color, thickness)
 
     def _draw_manctrl_status(self, image):
         text = "M" if self.manctrl_status else "A"
