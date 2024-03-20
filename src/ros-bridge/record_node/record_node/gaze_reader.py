@@ -11,6 +11,9 @@ class GazeReader:
         self._server_connection()
         self.data = []
 
+    def close(self):
+        self._server.close()
+
     def get_gaze(self):
         self._request_gaze_data()
         self._ignore_x_msgs(2)
@@ -43,8 +46,8 @@ class GazeReader:
             pass
 
     def _server_connection(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self._server:
-            self._server.connect((IP_ADDRESS, TARGET_PORT))
+        self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server.connect((IP_ADDRESS, TARGET_PORT))
 
     def _ignore_x_msgs(self, num):
         for _ in range(num):
