@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import carla
 import csv
 import os
 import time, datetime
@@ -38,6 +39,7 @@ class RecordingOrchestrator(Node):
         self.next_row = [0.0] * len(self.headers)
 
         self._init_pub_sub()
+        self._init_carla()
 
         self.start = None
 
@@ -102,6 +104,11 @@ class RecordingOrchestrator(Node):
         self.create_subscription(
             CameraInfo, f"/carla/ego_vehicle/rgb_front/camera_info", self._record_fov, 1
         )
+
+    def _init_carla(self):
+        client = carla.Client("localhost", 2000)
+        client.set_timeout(5.0)
+        self.world = client.get_world()
 
     def write(self):
         if self.start is None:
@@ -180,16 +187,17 @@ class RecordingOrchestrator(Node):
 
         x = obj.pose.position.x
         y = obj.pose.position.y
+        type_id = self.world.get_actor(int(obj.id)).type_id[-2:]
         vel = math.sqrt(obj.twist.linear.x ** 2 + obj.twist.linear.y ** 2)
 
         if len(self.ped_locations) > 0:
             for i in range(len(self.ped_locations) - 1, -1, -1):
-                # TODO-KM: This is a placeholder comparison. The best way is to check y in car frame
+                # TODO-KM: This is a placeholder comparison. The best way is to just transform based on id
                 if self.ped_locations[i][1] < obj.pose.position.y:
                     i += 1
                     break
 
-        self.ped_locations.insert(i, (x, y, vel, get_yaw(obj)))
+        self.ped_locations.insert(i, (x, y, vel, get_yaw(obj), type_id))
 
     def _record_ped_object(self):
         for i, loc in enumerate(self.ped_locations):
@@ -199,6 +207,7 @@ class RecordingOrchestrator(Node):
             self.next_row[self.headers[f"ped{i}_y (m)"]] = loc[1]
             self.next_row[self.headers[f"ped{i}_v (m/s)"]] = loc[2]
             self.next_row[self.headers[f"ped{i}_yaw (degrees)"]] = loc[3]
+            self.next_row[self.headers[f"ped{i}_id"]] = loc[4]
 
     def _record_vehicle_status(self, data):
         self.next_row[self.headers["car_v (m/s)"]] = data.velocity
