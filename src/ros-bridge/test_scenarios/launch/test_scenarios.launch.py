@@ -32,7 +32,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="tdelays", default_value=""),
         DeclareLaunchArgument(name="mdelay", default_value="-1.0"),
         DeclareLaunchArgument(name="mdelays", default_value=""),
-        DeclareLaunchArgument(name="scenario_config", default_value=""),
+        DeclareLaunchArgument(name="config", default_value=""),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
@@ -40,10 +40,11 @@ def generate_launch_description():
             name="spawn_point", default_value="312.0,-195.2,2.0,0,0,180"
         ),
         # Recorder Settings
+        DeclareLaunchArgument(name="n", default_value="1"),
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_outline", default_value="False"),
-        DeclareLaunchArgument(name="labels", default_value="[]"),
+        DeclareLaunchArgument(name="labels", default_value="['child', 'terrorist']"),
         # Additional Nodes
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -76,6 +77,7 @@ def generate_launch_description():
                 )
             ),
             launch_arguments={
+                "scenario_number": LaunchConfiguration("n"),
                 "record_gaze": LaunchConfiguration("record_gaze"),
                 "draw_gaze": LaunchConfiguration("draw_gaze"),
                 "draw_outline": LaunchConfiguration("draw_outline"),
@@ -106,7 +108,7 @@ def generate_launch_description():
                 {"tdelays": LaunchConfiguration("tdelays")},
                 {"mdelay": LaunchConfiguration("mdelay")},
                 {"mdelays": LaunchConfiguration("mdelays")},
-                {"scenario_config": LaunchConfiguration("scenario_config")},
+                {"scenario_config": LaunchConfiguration("config")},
                 {"spawn_point": LaunchConfiguration("spawn_point")},
             ],
         ),

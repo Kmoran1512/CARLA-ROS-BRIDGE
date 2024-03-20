@@ -13,7 +13,12 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (
             "share/" + package_name + "/scenarios",
-            ["scenarios/crossing.json", "scenarios/crossing_copy.json"],
+            [
+                "scenarios/judge-judge.json",
+                "scenarios/judge-judge(cross).json",
+                "scenarios/kid-terrorist.json",
+                "scenarios/terrorist-kid.json",
+            ],
         ),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
     ],

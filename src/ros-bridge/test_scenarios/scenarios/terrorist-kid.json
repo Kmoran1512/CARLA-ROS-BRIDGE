@@ -1,0 +1,27 @@
+{
+  "num": 2,
+  "pedestrians": [
+    {
+      "spawn": "left",
+      "blueprint": 34,
+      "yaw": 90.0,
+      "actions": [
+        { "mdelay": 30.0, "speed": 2.0, "yaw": 90.0 },
+        { "tdelay": 2.0, "speed": 0.0 },
+        { "tdelay": 1.0, "speed": 1.5, "yaw": 90 },
+        { "tdelay": 5.0, "speed": 0.0 }
+      ]
+    },
+    {
+      "spawn": "right",
+      "blueprint": 13,
+      "yaw": -90.0,
+      "actions": [
+        { "mdelay": 30.0, "speed": 2.0, "yaw": -95.0 },
+        { "tdelay": 2.5, "speed": 0.0 },
+        { "tdelay": 0.5, "speed": 1.5, "yaw": 90 },
+        { "tdelay": 3.0, "speed": 0.0 }
+      ]
+    }
+  ]
+}

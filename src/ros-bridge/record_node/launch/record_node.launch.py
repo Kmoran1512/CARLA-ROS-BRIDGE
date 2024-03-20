@@ -33,7 +33,7 @@ def generate_launch_description():
                     {"draw_gaze": LaunchConfiguration("draw_gaze")},
                     {"draw_outline": LaunchConfiguration("draw_outline")},
                     {"draw_route": LaunchConfiguration("draw_route")},
-                    {"labels": LaunchConfiguration("labels")},                    
+                    {"labels": LaunchConfiguration("labels")},
                 ],
             ),
             Node(
