@@ -10,20 +10,14 @@ from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
 from diagnostic_msgs.msg import KeyValue
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
+from nav_msgs.msg import Path
 from pygame.locals import K_s, K_z
 from std_msgs.msg import Int8
-from rclpy.node import Node, Parameter
+from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.task import Future
-from transforms3d.euler import euler2quat
+from transforms3d.euler import euler2quat, quat2euler
 from typing import List
-
-
-RIGHT = -191.0
-CENTER = -195.2
-LEFT = -198.7
-PEDESTRIAN = 222.0
-VEHICLE = 312.0
 
 
 class TestScenarios(Node):
@@ -39,20 +33,7 @@ class TestScenarios(Node):
     def _init_params(self):
         self.declare_parameter("spawn_point", "")
         self.spawn_point = string_to_pose(self.get_parameter("spawn_point").value)
-
-        self.declare_parameter("peds", "[0,1,0]")
-        self.declare_parameter("bp", "1")
-        self.declare_parameter("bps", "")
-        self.declare_parameter("direction", "0.0")
-        self.declare_parameter("directions", "")
-        self.declare_parameter("speed", "0.0")
-        self.declare_parameter("speeds", "")
-        self.declare_parameter("tdelay", "0.0")
-        self.declare_parameter("tdelays", "")
-        self.declare_parameter("mdelay", "")
-        self.declare_parameter("mdelays", "")
         self.declare_parameter("scenario_config", "")
-
         filename = self.get_parameter("scenario_config").value
         if filename:
             file_path = os.path.join(
@@ -65,19 +46,7 @@ class TestScenarios(Node):
             self.config = None
 
         if self.config is None:
-            self.peds = get_list(self.get_parameter("peds"))
-            self.bp = int(self.get_parameter("bp").value)
-            self.bps = get_list(self.get_parameter("bps"))
-
-            self.direction = get_float(self.get_parameter("direction"))
-            self.speed = get_float(self.get_parameter("speed"))
-            self.tdelay = get_float(self.get_parameter("tdelay"))
-            self.mdelay = get_float(self.get_parameter("mdelay"))
-
-            self.dirs: List[float] = get_list(self.get_parameter("directions"))
-            self.speeds: List[float] = get_list(self.get_parameter("speeds"))
-            self.tdelays: List[float] = get_list(self.get_parameter("tdelays"))
-            self.mdelays: List[float] = get_list(self.get_parameter("mdelays"))
+            raise NotImplementedError("You must provide a config file")
         else:
             self._set_params_from_config_file()
 
@@ -96,11 +65,10 @@ class TestScenarios(Node):
         )
 
         self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
-        self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
-
-        self.pose_pub = self.create_publisher(
-            PoseWithCovarianceStamped, "/initialpose", 1
+        self.create_subscription(
+            Path, "/carla/ego_vehicle/waypoints", self._set_lanes, 10
         )
+        self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
         self.control_publishers: List[Publisher] = []
         for n in range(sum(self.peds)):
@@ -113,40 +81,11 @@ class TestScenarios(Node):
     def run_step(self):
         if self.start is None:
             return
-        elif self.actions:
-            return self.run_actions()
 
-        for n, (p_x, _) in enumerate(self.ped_locs):
-            mdelay = self.mdelays[n] if self.mdelays else self.mdelay
-            tdelay = self.tdelays[n] if self.tdelays else self.tdelay
-            direction = self.dirs[n] if self.dirs else self.direction
-
-            distance = self.v_x - p_x  # TODO: This needs to be waypoint dist
-            time_passed = time.time() - self.start
-
-            if not mdelay and not tdelay:
-                continue
-            elif mdelay and abs(distance - mdelay) > 0.5:
-                continue
-            elif not mdelay and abs(time_passed - tdelay) > 0.1:
-                continue
-
-            msg = CarlaWalkerControl()
-            msg.direction.x = math.cos(direction)
-            msg.direction.y = math.sin(direction)
-            msg.speed = self.speed
-            self.control_publishers[n].publish(msg)
-
-    def run_actions(self):
         for n, actions in enumerate(self.actions):
             if not actions or not actions[0].should_run((self.v_x, self.v_y)):
                 continue
-
-            msg = CarlaWalkerControl()
-            msg.direction.x = actions[0].x_dir
-            msg.direction.y = actions[0].y_dir
-            msg.speed = actions[0].speed
-            self.control_publishers[n].publish(msg)
+            self.publish_action(actions[0], n)
 
             prev_action = actions.pop(0)
             if not actions:
@@ -155,9 +94,12 @@ class TestScenarios(Node):
             actions[0].set_location((prev_action.x_coord, prev_action.y_coord))
             actions[0].set_previous_time(time.time())
 
-    def clean_up(self):
-        for id in self.pedestrian_ids:
-            self.destroy_actors_service.call_async(DestroyObject.Request(id=id))
+    def publish_action(self, action, n):
+        msg = CarlaWalkerControl()
+        msg.direction.x = action.x_dir
+        msg.direction.y = action.y_dir
+        msg.speed = action.speed
+        self.control_publishers[n].publish(msg)
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
@@ -165,7 +107,7 @@ class TestScenarios(Node):
             return
 
         self.requests: List[Future] = []
-        lanes = [LEFT, CENTER, RIGHT]
+        lanes = [self.left, self.center, self.right]
 
         n_spawned = 0
         for i, lane in enumerate(lanes):
@@ -179,7 +121,7 @@ class TestScenarios(Node):
                 self.pedestrian_ids[i] = walker_id
 
     def position_orchestrator(self, num, lane, spawned):
-        offsets = [(PEDESTRIAN + num // 3, lane)]
+        offsets = [(self.pedestrian_x + num // 3, lane)]
 
         for n in range(1, num):
             prev_x, prev_y = offsets[n - (((n - 1) % 3) + 1)]
@@ -196,7 +138,7 @@ class TestScenarios(Node):
             self.spawn_call(total, bp, x, y, direction)
 
     def spawn_call(self, i, ped_num, x, y, yaw):
-        a, b, c, d = euler2quat(math.radians(yaw) + math.pi, math.pi, 0)
+        a, b, c, d = euler2quat(math.radians(yaw) - self.point_yaw, math.pi, 0)
         s = Pose(
             position=Point(x=x, y=y, z=1.0), orientation=Quaternion(x=a, y=b, z=c, w=d)
         )
@@ -206,6 +148,19 @@ class TestScenarios(Node):
         )
         walker_request.attributes = [KeyValue(key="is_invincible", value="false")]
         self.requests.append(self.spawn_actors_service.call_async(walker_request))
+
+    def _set_lanes(self, data: Path):
+        if len(data.poses) < 90:
+            raise Exception("The path for the vehicle needs to be longer")
+        pedestrian_pose: Pose = data.poses[70].pose
+        self.pedestrian_x, self.center, self.point_yaw = calculate_position(
+            pedestrian_pose
+        )
+
+        self.left = self.center - 3.5
+        self.right = self.center + 4.2
+
+        self.spawn_pedestrians()
 
     def _set_params_from_config_file(self):
         self.peds = [0, 0, 0]
@@ -237,11 +192,6 @@ class TestScenarios(Node):
                     continue
 
                 actions[0].set_previous_time(self.start)
-        elif data.data == K_z:
-            self.pose_pub.publish(self.spawn_point)
-            self.clean_up()
-            self.spawn_pedestrians()
-            self.start = None
 
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:
@@ -293,22 +243,6 @@ class PedestrianAction:
         return time_passed > self.tdelay
 
 
-def get_float(param: Parameter):
-    val = param.value
-
-    try:
-        return float(val)
-    except:
-        return None
-
-
-def get_list(param: Parameter) -> list:
-    val = param.value
-    if type(val) is list:
-        return val
-    return eval(val) if not val == "" else []
-
-
 def string_to_pose(input: str) -> PoseWithCovarianceStamped:
     p = list(map(float, input.split(",")))
 
@@ -326,11 +260,20 @@ def string_to_pose(input: str) -> PoseWithCovarianceStamped:
     return out
 
 
+def calculate_position(goal_pose: Pose):
+    o = goal_pose.orientation
+    _, _, yaw = quat2euler((o.x, o.y, o.z, o.w))
+
+    x = goal_pose.position.x + 2 * math.cos(yaw)
+    y = goal_pose.position.y + 2 * math.sin(yaw)
+
+    return (x, y, yaw)
+
+
 def main():
     rclpy.init()
 
     ts = TestScenarios()
-    ts.spawn_pedestrians()
 
     try:
         ts.create_timer(0.1, lambda _=None: ts.run_step())
