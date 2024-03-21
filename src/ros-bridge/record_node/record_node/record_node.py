@@ -137,6 +137,9 @@ class RecordingOrchestrator(Node):
             w.writerow(self.headers.keys())
             w.writerows(self.all_data)
 
+        if self.record_gaze:
+            self.gaze_reader.close()
+
     def _get_gaze(self):
         gaze_x, gaze_y = (
             self.gaze_reader.get_gaze() if self.gaze_reader is not None else (0.0, 0.0)
