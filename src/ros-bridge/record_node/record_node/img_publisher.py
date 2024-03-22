@@ -98,6 +98,7 @@ class ImageView(Node):
         font = cv2.FONT_HERSHEY_SIMPLEX
         color = (255, 255, 255)
 
+        occupied_areas = []
         for bbox, label in zip(self.boxes, self.labels):
             if bbox.size.x <= 6 :
                 continue
@@ -109,6 +110,16 @@ class ImageView(Node):
 
             cx = int(bbox.center.x - text_size[0] // 2)
             cy = int(bbox.center.y - bbox.size.y // 2)
+
+            offset_x = 0
+            offset_y = 0
+            for area in occupied_areas:
+                if cx + offset_x < area[2] and cx + text_size[0] + offset_x > area[0] and cy + offset_y < area[3] and cy + text_size[1] + offset_y > area[1]:
+                    offset_x += text_size[0]
+                    offset_y += text_size[1]
+
+            cx += offset_x
+            cy += offset_y
 
             cv2.rectangle(img, (cx, cy-text_size[1]), (cx + text_size[0], cy + text_size[1] // 2), (0,0,0), -1)
             cv2.putText(img, label, (cx, cy), font, font_scale, color, thickness)
