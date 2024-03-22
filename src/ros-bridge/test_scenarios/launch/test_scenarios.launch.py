@@ -21,6 +21,17 @@ def generate_launch_description():
 
     descriptions = [
         # Spawn Settings
+        DeclareLaunchArgument(name="peds", default_value="[0,1,0]"),
+        DeclareLaunchArgument(name="bp", default_value="1"),
+        DeclareLaunchArgument(name="bps", default_value=""),
+        DeclareLaunchArgument(name="direction", default_value="0.0"),
+        DeclareLaunchArgument(name="directions", default_value=""),
+        DeclareLaunchArgument(name="speed", default_value="0.0"),
+        DeclareLaunchArgument(name="speeds", default_value=""),
+        DeclareLaunchArgument(name="tdelay", default_value="0.0"),
+        DeclareLaunchArgument(name="tdelays", default_value=""),
+        DeclareLaunchArgument(name="mdelay", default_value="-1.0"),
+        DeclareLaunchArgument(name="mdelays", default_value=""),
         DeclareLaunchArgument(name="config", default_value=""),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
@@ -86,6 +97,17 @@ def generate_launch_description():
             output="screen",
             name="test",
             parameters=[
+                {"peds": LaunchConfiguration("peds")},
+                {"bp": LaunchConfiguration("bp")},
+                {"bps": LaunchConfiguration("bps")},
+                {"direction": LaunchConfiguration("direction")},
+                {"directions": LaunchConfiguration("directions")},
+                {"speed": LaunchConfiguration("speed")},
+                {"speeds": LaunchConfiguration("speeds")},
+                {"tdelay": LaunchConfiguration("tdelay")},
+                {"tdelays": LaunchConfiguration("tdelays")},
+                {"mdelay": LaunchConfiguration("mdelay")},
+                {"mdelays": LaunchConfiguration("mdelays")},
                 {"scenario_config": LaunchConfiguration("config")},
                 {"spawn_point": LaunchConfiguration("spawn_point")},
             ],
