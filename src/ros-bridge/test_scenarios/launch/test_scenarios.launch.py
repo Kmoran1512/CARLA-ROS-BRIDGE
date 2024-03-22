@@ -33,7 +33,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_outline", default_value="False"),
-        DeclareLaunchArgument(name="labels", default_value="['child', 'terrorist']"),
+        DeclareLaunchArgument(name="labels", default_value="['']"),
         # Additional Nodes
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
