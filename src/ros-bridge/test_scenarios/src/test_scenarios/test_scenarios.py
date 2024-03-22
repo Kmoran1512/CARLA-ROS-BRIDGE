@@ -10,20 +10,14 @@ from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
 from diagnostic_msgs.msg import KeyValue
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
+from nav_msgs.msg import Path
 from pygame.locals import K_s
 from std_msgs.msg import Int8
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.task import Future
-from transforms3d.euler import euler2quat
+from transforms3d.euler import euler2quat, quat2euler
 from typing import List
-
-
-RIGHT = -191.0
-CENTER = -195.2
-LEFT = -198.7
-PEDESTRIAN = 222.0
-VEHICLE = 312.0
 
 
 class TestScenarios(Node):
@@ -37,8 +31,6 @@ class TestScenarios(Node):
         self._init_pub_sub()
 
     def _init_params(self):
-        self.pedestrian_x = 222.0
-
         self.declare_parameter("spawn_point", "")
         self.spawn_point = string_to_pose(self.get_parameter("spawn_point").value)
 
@@ -62,7 +54,7 @@ class TestScenarios(Node):
         self.v_x = 0.0
         self.v_y = 0.0
 
-        self.pedestrian_ids = [0] * sum(self.peds)
+        self.pedestrian_ids = [-1] * sum(self.peds)
         self.ped_locs = [(0.0, 0.0)] * sum(self.peds)
 
     def _init_pub_sub(self):
@@ -74,6 +66,9 @@ class TestScenarios(Node):
         )
 
         self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
+        self.create_subscription(
+            Path, "/carla/ego_vehicle/waypoints", self._set_lanes, 10
+        )
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
         self.control_publishers: List[Publisher] = []
@@ -85,11 +80,9 @@ class TestScenarios(Node):
             )
 
     def run_step(self):
-        self._logger.info(f"start :: {self.start}")
-        self._logger.info(f"px = {self.pedestrian_x}")
         if self.start is None:
             return
-        
+
         for n, actions in enumerate(self.actions):
             if not actions or not actions[0].should_run((self.v_x, self.v_y)):
                 continue
@@ -116,21 +109,15 @@ class TestScenarios(Node):
             return
 
         self.requests: List[Future] = []
-        lanes = [LEFT, CENTER, RIGHT]
+        lanes = [self.left, self.center, self.right]
 
         n_spawned = 0
         for i, lane in enumerate(lanes):
             self.position_orchestrator(self.peds[i], lane, n_spawned)
             n_spawned += self.peds[i]
 
-        for i, future in enumerate(self.requests):
-            rclpy.spin_until_future_complete(self, future)
-            walker_id = future.result().id
-            if walker_id > 0:
-                self.pedestrian_ids[i] = walker_id
-
     def position_orchestrator(self, num, lane, spawned):
-        offsets = [(PEDESTRIAN + num // 3, lane)]
+        offsets = [(self.pedestrian_x + num // 3, lane)]
 
         for n in range(1, num):
             prev_x, prev_y = offsets[n - (((n - 1) % 3) + 1)]
@@ -147,7 +134,7 @@ class TestScenarios(Node):
             self.spawn_call(total, bp, x, y, direction)
 
     def spawn_call(self, i, ped_num, x, y, yaw):
-        a, b, c, d = euler2quat(math.radians(yaw) + math.pi, math.pi, 0)
+        a, b, c, d = euler2quat(math.radians(yaw) - self.point_yaw, math.pi, 0)
         s = Pose(
             position=Point(x=x, y=y, z=1.0), orientation=Quaternion(x=a, y=b, z=c, w=d)
         )
@@ -197,11 +184,26 @@ class TestScenarios(Node):
             if obj.classification == Object.CLASSIFICATION_CAR:
                 self.v_x, self.v_y = x, y
             elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
+                if obj.id not in self.pedestrian_ids:
+                    self.pedestrian_ids[self.pedestrian_ids.index(-1)] = obj.id
                 i = self.pedestrian_ids.index(obj.id)
                 self.ped_locs[i] = (x, y)
 
                 if len(self.actions) > i and self.actions[i]:
                     self.actions[i][0].set_location((x, y))
+
+    def _set_lanes(self, data: Path):
+        if len(data.poses) < 90:
+            raise Exception("The path for the vehicle needs to be longer")
+        pedestrian_pose: Pose = data.poses[70].pose
+        self.pedestrian_x, self.center, self.point_yaw = calculate_position(
+            pedestrian_pose
+        )
+
+        self.left = self.center - 3.5
+        self.right = self.center + 4.2
+
+        self.spawn_pedestrians()
 
 
 class PedestrianAction:
@@ -239,7 +241,6 @@ class PedestrianAction:
         return time_passed > self.tdelay
 
 
-
 def string_to_pose(input: str) -> PoseWithCovarianceStamped:
     p = list(map(float, input.split(",")))
 
@@ -257,11 +258,20 @@ def string_to_pose(input: str) -> PoseWithCovarianceStamped:
     return out
 
 
+def calculate_position(goal_pose: Pose):
+    o = goal_pose.orientation
+    _, _, yaw = quat2euler((o.x, o.y, o.z, o.w))
+
+    x = goal_pose.position.x + 2 * math.cos(yaw)
+    y = goal_pose.position.y + 2 * math.sin(yaw)
+
+    return (x, y, yaw)
+
+
 def main():
     rclpy.init()
 
     ts = TestScenarios()
-    ts.spawn_pedestrians()
 
     try:
         ts.create_timer(0.1, lambda _=None: ts.run_step())
