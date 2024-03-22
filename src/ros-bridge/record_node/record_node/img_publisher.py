@@ -99,6 +99,9 @@ class ImageView(Node):
         color = (0, 0, 255)
 
         for bbox, label in zip(self.boxes, self.labels):
+            if bbox.size.x <= 6 :
+                continue
+            self._logger.info(f"size : {bbox.size.x}")
 
             font_scale = min(0.15 * bbox.size.x, 3.0)
 
