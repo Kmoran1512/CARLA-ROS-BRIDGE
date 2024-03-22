@@ -96,7 +96,7 @@ class ImageView(Node):
             return
 
         font = cv2.FONT_HERSHEY_SIMPLEX
-        color = (0, 0, 255)
+        color = (255, 255, 255)
 
         for bbox, label in zip(self.boxes, self.labels):
             if bbox.size.x <= 6 :
@@ -105,11 +105,12 @@ class ImageView(Node):
             font_scale = min(0.15 * bbox.size.x, 3.0)
 
             thickness = 2 if font_scale == 3 else 1
-            text_size = cv2.getTextSize(label, font, font_scale, thickness)[0][0] // 2
+            text_size = cv2.getTextSize(label, font, font_scale, thickness)[0]
 
-            cx = int(bbox.center.x - text_size)
+            cx = int(bbox.center.x - text_size[0] // 2)
             cy = int(bbox.center.y - bbox.size.y // 2)
 
+            cv2.rectangle(img, (cx, cy-text_size[1]), (cx + text_size[0], cy + text_size[1] // 2), (0,0,0), -1)
             cv2.putText(img, label, (cx, cy), font, font_scale, color, thickness)
 
     def _draw_manctrl_status(self, image):
