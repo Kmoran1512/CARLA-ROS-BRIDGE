@@ -10,9 +10,9 @@ from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
 from diagnostic_msgs.msg import KeyValue
 from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
-from pygame.locals import K_s, K_z
+from pygame.locals import K_s
 from std_msgs.msg import Int8
-from rclpy.node import Node, Parameter
+from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.task import Future
 from transforms3d.euler import euler2quat
@@ -37,22 +37,12 @@ class TestScenarios(Node):
         self._init_pub_sub()
 
     def _init_params(self):
+        self.pedestrian_x = 222.0
+
         self.declare_parameter("spawn_point", "")
         self.spawn_point = string_to_pose(self.get_parameter("spawn_point").value)
 
-        self.declare_parameter("peds", "[0,1,0]")
-        self.declare_parameter("bp", "1")
-        self.declare_parameter("bps", "")
-        self.declare_parameter("direction", "0.0")
-        self.declare_parameter("directions", "")
-        self.declare_parameter("speed", "0.0")
-        self.declare_parameter("speeds", "")
-        self.declare_parameter("tdelay", "0.0")
-        self.declare_parameter("tdelays", "")
-        self.declare_parameter("mdelay", "")
-        self.declare_parameter("mdelays", "")
         self.declare_parameter("scenario_config", "")
-
         filename = self.get_parameter("scenario_config").value
         if filename:
             file_path = os.path.join(
@@ -65,19 +55,7 @@ class TestScenarios(Node):
             self.config = None
 
         if self.config is None:
-            self.peds = get_list(self.get_parameter("peds"))
-            self.bp = int(self.get_parameter("bp").value)
-            self.bps = get_list(self.get_parameter("bps"))
-
-            self.direction = get_float(self.get_parameter("direction"))
-            self.speed = get_float(self.get_parameter("speed"))
-            self.tdelay = get_float(self.get_parameter("tdelay"))
-            self.mdelay = get_float(self.get_parameter("mdelay"))
-
-            self.dirs: List[float] = get_list(self.get_parameter("directions"))
-            self.speeds: List[float] = get_list(self.get_parameter("speeds"))
-            self.tdelays: List[float] = get_list(self.get_parameter("tdelays"))
-            self.mdelays: List[float] = get_list(self.get_parameter("mdelays"))
+            raise NotImplementedError("You must provide a config file")
         else:
             self._set_params_from_config_file()
 
@@ -108,42 +86,15 @@ class TestScenarios(Node):
 
     def run_step(self):
         self._logger.info(f"start :: {self.start}")
+        self._logger.info(f"px = {self.pedestrian_x}")
         if self.start is None:
             return
-        elif self.actions:
-            return self.run_actions()
-
-        for n, (p_x, _) in enumerate(self.ped_locs):
-            mdelay = self.mdelays[n] if self.mdelays else self.mdelay
-            tdelay = self.tdelays[n] if self.tdelays else self.tdelay
-            direction = self.dirs[n] if self.dirs else self.direction
-
-            distance = self.v_x - p_x  # TODO: This needs to be waypoint dist
-            time_passed = time.time() - self.start
-
-            if not mdelay and not tdelay:
-                continue
-            elif mdelay and abs(distance - mdelay) > 0.5:
-                continue
-            elif not mdelay and abs(time_passed - tdelay) > 0.1:
-                continue
-
-            msg = CarlaWalkerControl()
-            msg.direction.x = math.cos(direction)
-            msg.direction.y = math.sin(direction)
-            msg.speed = self.speed
-            self.control_publishers[n].publish(msg)
-
-    def run_actions(self):
+        
         for n, actions in enumerate(self.actions):
             if not actions or not actions[0].should_run((self.v_x, self.v_y)):
                 continue
 
-            msg = CarlaWalkerControl()
-            msg.direction.x = actions[0].x_dir
-            msg.direction.y = actions[0].y_dir
-            msg.speed = actions[0].speed
-            self.control_publishers[n].publish(msg)
+            self.publish_action(actions[0], n)
 
             prev_action = actions.pop(0)
             if not actions:
@@ -151,6 +102,13 @@ class TestScenarios(Node):
 
             actions[0].set_location((prev_action.x_coord, prev_action.y_coord))
             actions[0].set_previous_time(time.time())
+
+    def publish_action(self, action, n):
+        msg = CarlaWalkerControl()
+        msg.direction.x = action.x_dir
+        msg.direction.y = action.y_dir
+        msg.speed = action.speed
+        self.control_publishers[n].publish(msg)
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
@@ -280,21 +238,6 @@ class PedestrianAction:
         time_passed = time.time() - self.start_time
         return time_passed > self.tdelay
 
-
-def get_float(param: Parameter):
-    val = param.value
-
-    try:
-        return float(val)
-    except:
-        return None
-
-
-def get_list(param: Parameter) -> list:
-    val = param.value
-    if type(val) is list:
-        return val
-    return eval(val) if not val == "" else []
 
 
 def string_to_pose(input: str) -> PoseWithCovarianceStamped:
