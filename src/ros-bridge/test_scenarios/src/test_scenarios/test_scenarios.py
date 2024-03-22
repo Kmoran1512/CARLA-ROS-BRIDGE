@@ -98,10 +98,6 @@ class TestScenarios(Node):
         self.create_subscription(Int8, "/key_press", self._on_key_press, 10)
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
-        self.pose_pub = self.create_publisher(
-            PoseWithCovarianceStamped, "/initialpose", 1
-        )
-
         self.control_publishers: List[Publisher] = []
         for n in range(sum(self.peds)):
             self.control_publishers.append(
@@ -111,6 +107,7 @@ class TestScenarios(Node):
             )
 
     def run_step(self):
+        self._logger.info(f"start :: {self.start}")
         if self.start is None:
             return
         elif self.actions:
@@ -154,10 +151,6 @@ class TestScenarios(Node):
 
             actions[0].set_location((prev_action.x_coord, prev_action.y_coord))
             actions[0].set_previous_time(time.time())
-
-    def clean_up(self):
-        for id in self.pedestrian_ids:
-            self.destroy_actors_service.call_async(DestroyObject.Request(id=id))
 
     def spawn_pedestrians(self):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
@@ -237,11 +230,6 @@ class TestScenarios(Node):
                     continue
 
                 actions[0].set_previous_time(self.start)
-        elif data.data == K_z:
-            self.pose_pub.publish(self.spawn_point)
-            self.clean_up()
-            self.spawn_pedestrians()
-            self.start = None
 
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:
