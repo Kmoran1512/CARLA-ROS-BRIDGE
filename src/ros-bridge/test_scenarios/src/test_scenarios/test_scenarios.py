@@ -9,7 +9,13 @@ from carla_msgs.msg import CarlaWalkerControl
 from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
 from diagnostic_msgs.msg import KeyValue
-from geometry_msgs.msg import PoseWithCovarianceStamped, Point, Pose, Quaternion
+from geometry_msgs.msg import (
+    Point,
+    Pose,
+    PoseStamped,
+    PoseWithCovarianceStamped,
+    Quaternion,
+)
 from nav_msgs.msg import Path
 from pygame.locals import K_s
 from std_msgs.msg import Int8
@@ -18,6 +24,8 @@ from rclpy.publisher import Publisher
 from rclpy.task import Future
 from transforms3d.euler import euler2quat, quat2euler
 from typing import List
+
+SPAWN_DISTANCE = 70
 
 
 class TestScenarios(Node):
@@ -31,9 +39,6 @@ class TestScenarios(Node):
         self._init_pub_sub()
 
     def _init_params(self):
-        self.declare_parameter("spawn_point", "")
-        self.spawn_point = string_to_pose(self.get_parameter("spawn_point").value)
-
         self.declare_parameter("scenario_config", "")
         filename = self.get_parameter("scenario_config").value
         if filename:
@@ -55,7 +60,6 @@ class TestScenarios(Node):
         self.v_y = 0.0
 
         self.pedestrian_ids = [-1] * sum(self.peds)
-        self.ped_locs = [(0.0, 0.0)] * sum(self.peds)
 
     def _init_pub_sub(self):
         self.spawn_actors_service = self.create_client(
@@ -84,16 +88,15 @@ class TestScenarios(Node):
             return
 
         for n, actions in enumerate(self.actions):
-            if not actions or not actions[0].should_run((self.v_x, self.v_y)):
+            if not actions or not actions[0].should_run((self.v_x, self.v_y), self):
                 continue
 
             self.publish_action(actions[0], n)
 
-            prev_action = actions.pop(0)
+            actions.pop(0)
             if not actions:
                 continue
 
-            actions[0].set_location((prev_action.x_coord, prev_action.y_coord))
             actions[0].set_previous_time(time.time())
 
     def publish_action(self, action, n):
@@ -179,29 +182,24 @@ class TestScenarios(Node):
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:
             obj: Object
-            x, y = obj.pose.position.x, -obj.pose.position.y
-
             if obj.classification == Object.CLASSIFICATION_CAR:
-                self.v_x, self.v_y = x, y
-            elif obj.classification == Object.CLASSIFICATION_PEDESTRIAN:
-                if obj.id not in self.pedestrian_ids:
-                    self.pedestrian_ids[self.pedestrian_ids.index(-1)] = obj.id
-                i = self.pedestrian_ids.index(obj.id)
-                self.ped_locs[i] = (x, y)
-
-                if len(self.actions) > i and self.actions[i]:
-                    self.actions[i][0].set_location((x, y))
+                self.v_x, self.v_y = obj.pose.position.x, obj.pose.position.y
 
     def _set_lanes(self, data: Path):
         if len(data.poses) < 90:
             raise Exception("The path for the vehicle needs to be longer")
-        pedestrian_pose: Pose = data.poses[70].pose
+
+        pedestrian_pose: Pose = data.poses[SPAWN_DISTANCE].pose
         self.pedestrian_x, self.center, self.point_yaw = calculate_position(
             pedestrian_pose
         )
 
         self.left = self.center - 3.5
         self.right = self.center + 4.2
+
+        for actions in self.actions:
+            action = actions[0]
+            action.set_dist(data.poses)
 
         self.spawn_pedestrians()
 
@@ -219,19 +217,35 @@ class PedestrianAction:
     def set_previous_time(self, prev_time):
         self.start_time = prev_time
 
-    def set_location(self, loc):
-        self.x_coord, self.y_coord = loc
+    def set_dist(self, waypoints: List[PoseStamped]):
+        if not self.mdelay:
+            return
 
-    def should_run(self, v_loc):
-        return self._is_in_triggering_distance(v_loc) or self._is_in_triggering_time()
+        begin_loc = waypoints[SPAWN_DISTANCE - int(self.mdelay)].pose.position
+        next_loc = waypoints[SPAWN_DISTANCE - int(self.mdelay) + 1].pose.position
+        self.begin_x, self.begin_y = begin_loc.x, begin_loc.y
+        self.next_x, self.next_y = next_loc.x, next_loc.y
 
-    def _is_in_triggering_distance(self, v_loc) -> bool:
+    def should_run(self, v_loc, node):
+        return (
+            self._is_in_triggering_distance(v_loc, node)
+            or self._is_in_triggering_time()
+        )
+
+    def _is_in_triggering_distance(self, v_loc, node: Node) -> bool:
         if not self.mdelay:
             return False
 
-        v_x, _ = v_loc
-        distance = v_x - self.x_coord  # TODO: This needs to be waypoint dist
-        return distance < self.mdelay
+        v_x, v_y = v_loc
+
+        dist_to_trigger = math.sqrt(
+            (v_x - self.begin_x) ** 2 + (v_y - self.begin_y) ** 2
+        )
+        dist_after_trigger = math.sqrt(
+            (v_x - self.next_x) ** 2 + (v_y - self.next_y) ** 2
+        )
+
+        return dist_to_trigger > dist_after_trigger
 
     def _is_in_triggering_time(self) -> bool:
         if not self.tdelay:
