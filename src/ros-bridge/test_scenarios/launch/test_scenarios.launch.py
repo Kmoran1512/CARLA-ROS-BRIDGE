@@ -26,7 +26,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name="spawn_point", default_value="-110.2,17.6,2.0,0,0,270"
         ),
-        DeclareLaunchArgument(name="goal", default_value="-37.3,-24.3,2.0,0,0,0"),
+        DeclareLaunchArgument(name="goal", default_value="-37.3,-24.6,2.0,0,0,0"),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
