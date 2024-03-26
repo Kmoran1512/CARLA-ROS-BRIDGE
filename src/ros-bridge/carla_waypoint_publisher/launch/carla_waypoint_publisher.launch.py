@@ -6,6 +6,9 @@ def generate_launch_description():
     ld = launch.LaunchDescription(
         [
             launch.actions.DeclareLaunchArgument(
+                name="goal", default_value="-37.3,-24.3,2.0,0,0,0"
+            ),
+            launch.actions.DeclareLaunchArgument(
                 name="host", default_value="localhost"
             ),
             launch.actions.DeclareLaunchArgument(name="port", default_value="2000"),
@@ -20,6 +23,7 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty="True",
                 parameters=[
+                    {"goal": launch.substitutions.LaunchConfiguration("goal")},
                     {"host": launch.substitutions.LaunchConfiguration("host")},
                     {"port": launch.substitutions.LaunchConfiguration("port")},
                     {"timeout": launch.substitutions.LaunchConfiguration("timeout")},

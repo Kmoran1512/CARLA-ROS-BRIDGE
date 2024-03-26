@@ -85,6 +85,7 @@ def generate_launch_description():
             launch.actions.DeclareLaunchArgument(
                 name="spawn_point", default_value="312.0,-195.16,2.0,0,0,180"
             ),
+            launch.actions.DeclareLaunchArgument(name="goal", default_value=""),
             launch.actions.DeclareLaunchArgument(
                 name="target_speed", default_value="8.33"  # in m/s
             ),
@@ -144,6 +145,7 @@ def generate_launch_description():
                     )
                 ),
                 launch_arguments={
+                    "goal": launch.substitutions.LaunchConfiguration("goal"),
                     "host": launch.substitutions.LaunchConfiguration("host"),
                     "port": launch.substitutions.LaunchConfiguration("port"),
                     "timeout": launch.substitutions.LaunchConfiguration("timeout"),
