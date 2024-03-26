@@ -32,8 +32,9 @@ from ros_compatibility.qos import QoSProfile, DurabilityPolicy
 
 from carla_msgs.msg import CarlaWorldInfo
 from carla_waypoint_types.srv import GetWaypoint, GetActorWaypoint
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from nav_msgs.msg import Path
+from transforms3d.euler import euler2quat
 
 
 class CarlaToRosWaypointConverter(CompatibleNode):
@@ -78,7 +79,16 @@ class CarlaToRosWaypointConverter(CompatibleNode):
         )
 
         # set initial goal
-        self.goal = self.world.get_map().get_spawn_points()[0]
+        self.goal = self.get_param("goal", None)
+        if self.goal is not None:
+            self.loginfo(f"goal ::: {self.goal}")
+            self.goal = check_spawn_point_param(self.goal)
+            if self.goal is None:
+                self.logwarn('incorrect goal sent, default will be used')
+                self.goal = self.world.get_map().get_spawn_points()[0]
+        else:
+            self.logwarn(f"using default goal")
+            self.goal = self.world.get_map().get_spawn_points()[0]
 
         self.current_route = None
         self.goal_subscriber = self.new_subscription(
@@ -277,6 +287,35 @@ class CarlaToRosWaypointConverter(CompatibleNode):
             raise e
 
         self.loginfo("Connected to Carla.")
+
+
+def create_spawn_point(x, y, z, roll, pitch, yaw):
+    spawn_point = Pose()
+    spawn_point.position.x = x
+    spawn_point.position.y = y
+    spawn_point.position.z = z
+    quat = euler2quat(math.radians(roll), math.radians(pitch), math.radians(yaw))
+
+    spawn_point.orientation.w = quat[0]
+    spawn_point.orientation.x = quat[1]
+    spawn_point.orientation.y = quat[2]
+    spawn_point.orientation.z = quat[3]
+
+    return trans.ros_pose_to_carla_transform(spawn_point)
+
+def check_spawn_point_param(spawn_point_parameter):
+    components = spawn_point_parameter.split(",")
+    if len(components) != 6:
+        return None
+    spawn_point = create_spawn_point(
+        float(components[0]),
+        float(components[1]),
+        float(components[2]),
+        float(components[3]),
+        float(components[4]),
+        float(components[5]),
+    )
+    return spawn_point
 
 
 def main(args=None):
