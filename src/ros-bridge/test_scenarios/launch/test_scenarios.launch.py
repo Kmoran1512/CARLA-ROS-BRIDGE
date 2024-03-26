@@ -24,7 +24,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="config", default_value=""),
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
         DeclareLaunchArgument(
-            name="spawn_point", default_value="-111.0,-23.4,2.0,0,0,0"
+            name="spawn_point", default_value="-110.2,17.6,2.0,0,0,270"
         ),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
