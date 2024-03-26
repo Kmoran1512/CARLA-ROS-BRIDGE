@@ -84,7 +84,7 @@ class CarlaToRosWaypointConverter(CompatibleNode):
             self.loginfo(f"goal ::: {self.goal}")
             self.goal = check_spawn_point_param(self.goal)
             if self.goal is None:
-                self.logwarn('incorrect goal sent, default will be used')
+                self.logwarn("incorrect goal sent, default will be used")
                 self.goal = self.world.get_map().get_spawn_points()[0]
         else:
             self.logwarn(f"using default goal")
@@ -302,6 +302,7 @@ def create_spawn_point(x, y, z, roll, pitch, yaw):
     spawn_point.orientation.z = quat[3]
 
     return trans.ros_pose_to_carla_transform(spawn_point)
+
 
 def check_spawn_point_param(spawn_point_parameter):
     components = spawn_point_parameter.split(",")
