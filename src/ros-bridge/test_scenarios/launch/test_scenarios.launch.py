@@ -17,17 +17,18 @@ def generate_launch_description():
     with_driver_test = False
 
     sun_azimuth = 60.0
-    sun_elevation = 5.0
+    sun_elevation = 15.0
 
     descriptions = [
         # Spawn Settings
         DeclareLaunchArgument(name="config", default_value=""),
+        DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
+        DeclareLaunchArgument(
+            name="spawn_point", default_value="-111.0,-23.4,2.0,0,0,0"
+        ),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
-        DeclareLaunchArgument(
-            name="spawn_point", default_value="312.0,-195.2,2.0,0,0,180"
-        ),
         # Recorder Settings
         DeclareLaunchArgument(name="n", default_value="1"),
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
@@ -48,6 +49,7 @@ def generate_launch_description():
                 "spawn_point": LaunchConfiguration("spawn_point"),
                 "synchronous_mode_wait_for_vehicle_control_command": "True",
                 "target_speed": LaunchConfiguration("target_speed"),
+                "town": LaunchConfiguration("town"),
             }.items(),
         ),
         IncludeLaunchDescription(
