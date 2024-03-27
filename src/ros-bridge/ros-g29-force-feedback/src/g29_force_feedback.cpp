@@ -101,6 +101,7 @@ G29ForceFeedback::G29ForceFeedback()
     initDevice();
 
     rclcpp::sleep_for(std::chrono::seconds(1));
+    // TODO-KM: Reduce rate
     timer = this->create_wall_timer(std::chrono::milliseconds((int)m_loop_rate*1000), 
             std::bind(&G29ForceFeedback::loop,this));
 }
@@ -143,7 +144,7 @@ void G29ForceFeedback::loop() {
         double torque_compensation = prev_torque / 1000;
         double combined = fabs(torque_compensation + prev_position);
 
-        double threshold = 0.0004;
+        double threshold = 0.0005;
         bool human_ctrl = (abs_position - combined) > threshold;
 
         force_publisher->publish(buildMessage(false, human_ctrl, m_torque));
