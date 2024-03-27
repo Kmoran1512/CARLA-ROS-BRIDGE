@@ -72,8 +72,7 @@ from carla_msgs.msg import CarlaEgoVehicleStatus
 from carla_msgs.msg import CarlaEgoVehicleControl
 from carla_msgs.msg import CarlaLaneInvasionEvent
 from carla_msgs.msg import CarlaCollisionEvent
-from ros_g29_force_feedback.msg import ForceFeedback
-from ros_g29_force_feedback.msg import ForceControl
+from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import NavSatFix
@@ -491,7 +490,8 @@ class JoystickControl(object):
         self._adjust_force_feedback(data.steer)
 
     def force_ctrl(self, data: ForceControl):
-        if not data.is_centering and data.torque >= 0.2:
+        if data.human_control:
+            self.node.loginfo(f"in here")
             self.manual_override = True
             self.set_manual_override(self.manual_override)
 

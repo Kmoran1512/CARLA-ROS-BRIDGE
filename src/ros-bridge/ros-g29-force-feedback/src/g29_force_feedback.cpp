@@ -60,7 +60,7 @@ private:
     void calcCenteringForce(double &torque, const ros_g29_force_feedback::msg::ForceFeedback &target, const double &current_position);
     void uploadForce(const double &force, const double &attack_length);
 
-    ros_g29_force_feedback::msg::ForceControl buildMessage(bool is_centering, double torque);
+    ros_g29_force_feedback::msg::ForceControl buildMessage(bool is_centering, bool human_ctrl, double torque);
 };
 
 
@@ -120,8 +120,10 @@ G29ForceFeedback::~G29ForceFeedback() {
 
 // update input event with timer callback
 void G29ForceFeedback::loop() {
-
     struct input_event event;
+    double prev_torque = m_torque;
+    double prev_position = m_position;
+
     // get current state
     while (read(m_device_handle, &event, sizeof(event)) == sizeof(event)) {
         if (event.type == EV_ABS && event.code == m_axis_code) {
@@ -137,7 +139,15 @@ void G29ForceFeedback::loop() {
         calcRotateForce(m_torque, m_attack_length, m_target, m_position);
         m_is_target_updated = false;
 
-        force_publisher->publish(buildMessage(false, m_torque));
+        double abs_position = fabs(m_position);
+        double torque_compensation = prev_torque / 1000;
+        double combined = fabs(torque_compensation + prev_position);
+
+        double threshold = 0.0004;
+        bool human_ctrl = (abs_position - combined) > threshold;
+
+        force_publisher->publish(buildMessage(false, human_ctrl, m_torque));
+        
     }
 
     uploadForce(m_torque, m_attack_length);
@@ -149,8 +159,8 @@ void G29ForceFeedback::calcRotateForce(double &torque,
                                        const ros_g29_force_feedback::msg::ForceFeedback &target,
                                        const double &current_position) {
 
-    double k_p = 8.0;
-    double k_d = 0.0;
+    double k_p = 4.5;
+    double k_d = 2.0;
     double k_i = 0.0;
 
     double prev_err = m_err;
@@ -182,7 +192,7 @@ void G29ForceFeedback::calcCenteringForce(double &torque,
         torque = std::min(buf_torque, m_auto_centering_max_torque) * direction;
     }
 
-    force_publisher->publish(buildMessage(true, torque));
+    force_publisher->publish(buildMessage(true, false, torque));
 }
 
 
@@ -324,9 +334,10 @@ int G29ForceFeedback::testBit(int bit, unsigned char *array) {
     return ((array[bit / (sizeof(unsigned char) * 8)] >> (bit % (sizeof(unsigned char) * 8))) & 1);
 }
 
-ros_g29_force_feedback::msg::ForceControl G29ForceFeedback::buildMessage(bool is_centering, double torque) {
+ros_g29_force_feedback::msg::ForceControl G29ForceFeedback::buildMessage(bool is_centering, bool human_ctrl, double torque) {
     auto message = ros_g29_force_feedback::msg::ForceControl();
     message.is_centering = is_centering;
+    message.human_control = human_ctrl;
     message.torque = torque;
 
     return message;
