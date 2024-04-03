@@ -460,7 +460,7 @@ class JoystickControl(object):
                 / 0.92,
             ),
         )
-        self.m_ctrl.brake = 0.5 *  max(
+        self.m_ctrl.brake = 0.5 * max(
             0.0,
             min(
                 1.0,

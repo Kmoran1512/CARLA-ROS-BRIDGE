@@ -1,9 +1,10 @@
-import carla 
+import carla
 
-from rclpy.node import Node 
+from rclpy.node import Node
 from carla_msgs.msg import CarlaTrafficLightStatusList
 
-class CarlaNode():
+
+class CarlaNode:
     def __init__(self, node: Node) -> None:
         self.client = carla.Client("localhost", 2000)
         self.client.set_timeout(5.0)
