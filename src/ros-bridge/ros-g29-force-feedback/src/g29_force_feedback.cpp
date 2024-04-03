@@ -102,7 +102,7 @@ G29ForceFeedback::G29ForceFeedback()
 
     rclcpp::sleep_for(std::chrono::seconds(1));
     // TODO-KM: Reduce rate
-    timer = this->create_wall_timer(std::chrono::milliseconds((int)m_loop_rate*1000), 
+    timer = this->create_wall_timer(std::chrono::milliseconds((int)m_loop_rate*10), 
             std::bind(&G29ForceFeedback::loop,this));
 }
 
