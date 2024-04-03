@@ -25,6 +25,8 @@ from rclpy.task import Future
 from transforms3d.euler import euler2quat, quat2euler
 from typing import List
 
+from .carla_node import CarlaNode
+
 SPAWN_DISTANCE = 70
 
 
@@ -34,6 +36,8 @@ class TestScenarios(Node):
 
         self.start = None
         self.actions: List[List[PedestrianAction]] = []
+
+        self.carla = CarlaNode(self)
 
         self._init_params()
         self._init_pub_sub()
