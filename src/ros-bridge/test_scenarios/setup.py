@@ -18,6 +18,7 @@ setup(
                 "scenarios/judge-judge(cross).json",
                 "scenarios/kid-terrorist.json",
                 "scenarios/terrorist-kid.json",
+                "scenarios/walk_away.json",
             ],
         ),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
