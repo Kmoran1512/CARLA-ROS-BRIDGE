@@ -24,11 +24,17 @@ def generate_launch_description():
         DeclareLaunchArgument(name="config", default_value=""),
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
         DeclareLaunchArgument(
-            name="spawn_point", default_value="-110.2,17.6,2.0,0,0,270"
-            #name="spawn_point", default_value="-113.8,17.6,2.0,0,0,270"
+            name="spawn_point", default_value="4.9,-16.6,2.0,0,0,180"
+            #Left-Lane Curve = "-110.2,17.6,2.0,0,0,270"
+            ##Right-Lane Curve = "-113.8,17.6,2.0,0,0,270"
+            #Left-Lane Straight = "4.9,-16.6,2.0,0,0,180"
+            #Right-Lane Straight = "4.9,-13.2,2.0,0,0,180"
         ),
-        DeclareLaunchArgument(name="goal", default_value="-37.3,-24.6,2.0,0,0,0"),
-        #DeclareLaunchArgument(name="goal", default_value="-37.3,-28.2,2.0,0,0,0"),
+        DeclareLaunchArgument(name="goal", default_value="-90.5,-16.6,2.0,0,0,180"),
+        #Left-Lane Curve "-37.3,-24.6,2.0,0,0,0"
+        ##Right-Lane Curve "-37.3,-28.2,2.0,0,0,0"
+        #Left-Lane Straight = "-90.5,-16.6,2.0,0,0,180"
+        #Right-Lane Straight = "-90.5,-13.2,2.0,0,0,180"
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
