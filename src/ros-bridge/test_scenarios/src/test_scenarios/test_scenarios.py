@@ -116,7 +116,7 @@ class TestScenarios(Node):
             return
 
         self.requests: List[Future] = []
-        lanes = [self.left, self.center, self.right]
+        lanes = [self.far_left, self.left, self.center, self.right, self.far_right]
 
         n_spawned = 0
         for i, lane in enumerate(lanes):
@@ -153,19 +153,26 @@ class TestScenarios(Node):
         self.requests.append(self.spawn_actors_service.call_async(walker_request))
 
     def _set_params_from_config_file(self):
-        self.peds = [0, 0, 0]
+        self.peds = [0, 0, 0, 0, 0]
         n = self.config.get("num", 0)
 
         self.bps = [0] * n
         self.dirs = [0.0] * n
 
         for i, p in enumerate(self.config.get("pedestrians")):
-            if p.get("spawn") == "left":
+            spawn = p.get("spawn", None)
+            if spawn is None:
+                continue
+            elif spawn == "far_left":
                 self.peds[0] += 1
-            elif p.get("spawn") == "right":
-                self.peds[2] += 1
-            else:
+            elif p.get("spawn") == "left":
                 self.peds[1] += 1
+            elif p.get("spawn") == "right":
+                self.peds[3] += 1
+            elif spawn == "far_right":
+                self.peds[4] += 1
+            else:
+                self.peds[2] += 1
 
             self.bps[i] = p.get("blueprint", 0)
             self.dirs[i] = p.get("yaw", 0.0)
@@ -198,8 +205,10 @@ class TestScenarios(Node):
             pedestrian_pose
         )
 
+        self.far_left = self.center - 9.2
         self.left = self.center - 3.5
         self.right = self.center + 4.2
+        self.far_right = self.center + 7.7
 
         for actions in self.actions:
             action = actions[0]
