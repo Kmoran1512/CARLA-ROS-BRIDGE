@@ -33,7 +33,6 @@ def generate_launch_description():
 
     good_coverage_straight_goal = "-41.7, -47.8, 0.0, 0, 0, 90"
 
-
     descriptions = [
         # Spawn Settings
         DeclareLaunchArgument(name="config", default_value=""),

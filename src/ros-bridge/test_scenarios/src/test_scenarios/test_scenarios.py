@@ -5,7 +5,7 @@ import time
 import rclpy
 
 from ament_index_python import get_package_share_directory
-from carla_msgs.msg import CarlaWalkerControl
+from carla_msgs.msg import CarlaEgoVehicleControl, CarlaWalkerControl
 from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
 from diagnostic_msgs.msg import KeyValue
@@ -81,6 +81,16 @@ class TestScenarios(Node):
 
         self.control_publishers: List[Publisher] = []
         for n in range(sum(self.peds)):
+            if self.bps[n] >= 100:
+                self.control_publishers.append(
+                    self.create_publisher(
+                        CarlaEgoVehicleControl,
+                        f"/carla/bike{n:04}/secondary_vehicle_control",
+                        10,
+                    )
+                )
+                continue
+
             self.control_publishers.append(
                 self.create_publisher(
                     CarlaWalkerControl, f"/carla/walker{n:04}/walker_control_cmd", 10
@@ -104,10 +114,16 @@ class TestScenarios(Node):
             actions[0].set_previous_time(time.time())
 
     def publish_action(self, action, n):
-        msg = CarlaWalkerControl()
-        msg.direction.x = action.x_dir
-        msg.direction.y = action.y_dir
-        msg.speed = action.speed
+        msg = None
+        if self.bps[n] < 100:
+            msg = CarlaWalkerControl()
+            msg.direction.x = action.x_dir
+            msg.direction.y = action.y_dir
+            msg.speed = action.speed
+        else:
+            msg = CarlaEgoVehicleControl()
+            msg.throttle = 1.0 if abs(action.speed) > 0 else 0.0
+            msg.brake = 1.0 if action.speed == 0 else 0.0
         self.control_publishers[n].publish(msg)
 
     def spawn_pedestrians(self):
@@ -145,6 +161,14 @@ class TestScenarios(Node):
         s = Pose(
             position=Point(x=x, y=y, z=1.0), orientation=Quaternion(x=a, y=b, z=c, w=d)
         )
+
+        if ped_num >= 100:
+            biker_request = SpawnObject.Request(
+                type="vehicle.bh.crossbike", id=f"bike{i:04}", transform=s
+            )
+            biker_request.attributes = [KeyValue(key="role_name", value=f"bike{i:04}")]
+            self.requests.append(self.spawn_actors_service.call_async(biker_request))
+            return
 
         walker_request = SpawnObject.Request(
             type=f"walker.pedestrian.{ped_num:04}", id=f"walker{i:04}", transform=s
