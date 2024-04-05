@@ -122,8 +122,8 @@ G29ForceFeedback::~G29ForceFeedback() {
 // update input event with timer callback
 void G29ForceFeedback::loop() {
     struct input_event event;
-    double prev_torque = m_torque;
-    double prev_position = m_position;
+    double prev_torque = fabs(m_torque);
+    double prev_position = fabs(m_position);
 
     // get current state
     while (read(m_device_handle, &event, sizeof(event)) == sizeof(event)) {
@@ -141,11 +141,11 @@ void G29ForceFeedback::loop() {
         m_is_target_updated = false;
 
         double abs_position = fabs(m_position);
-        double torque_compensation = prev_torque / 1000;
+        double torque_compensation = fabs(prev_torque) / 1000;
         double combined = fabs(torque_compensation + prev_position);
 
         double threshold = 0.0005;
-        bool human_ctrl = (abs_position - combined) > threshold;
+        bool human_ctrl = fabs(abs_position - combined) > threshold;
 
         force_publisher->publish(buildMessage(false, human_ctrl, m_torque));
         
