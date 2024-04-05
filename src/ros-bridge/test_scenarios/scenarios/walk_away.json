@@ -2,9 +2,9 @@
   "num": 2,
   "pedestrians": [
     {
-      "spawn": "far_left",
-      "blueprint": 101,
-      "yaw": 90.0,
+      "spawn": "far_left_margin",
+      "blueprint": 7,
+      "yaw": -90.0,
       "actions": [
         { "mdelay": 50.0, "speed": 5.0, "yaw": 90.0 },
         { "tdelay": 1.5, "speed": 0.0 },
@@ -13,9 +13,9 @@
       ]
     },
     {
-      "spawn": "center",
+      "spawn": "far_right",
       "blueprint": 5,
-      "yaw": -90.0,
+      "yaw": 90.0,
       "actions": [
         { "mdelay": 30.0, "speed": 2.0, "yaw": -95.0 },
         { "tdelay": 1.5, "speed": 0.0 },
