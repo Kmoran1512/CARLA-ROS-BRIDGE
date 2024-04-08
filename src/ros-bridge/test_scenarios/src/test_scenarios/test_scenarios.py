@@ -8,26 +8,24 @@ from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaEgoVehicleControl, CarlaWalkerControl
 from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
-from diagnostic_msgs.msg import KeyValue
-from geometry_msgs.msg import (
-    Point,
-    Pose,
-    PoseStamped,
-    PoseWithCovarianceStamped,
-    Quaternion,
-)
+from geometry_msgs.msg import Point, Pose, Quaternion
 from nav_msgs.msg import Path
 from pygame.locals import K_s
 from std_msgs.msg import Int8
 from rclpy.node import Node
-from rclpy.publisher import Publisher
 from rclpy.task import Future
-from transforms3d.euler import euler2quat, quat2euler
-from typing import List
+from transforms3d.euler import euler2quat
+from typing import Dict, List, Tuple
 
 from .carla_node import CarlaNode
+from .pedestrian_actions import PedestrianAction
+from .pedestrian_spawn_helper import (
+    calculate_position,
+    create_request,
+    map_control_publisher,
+)
 
-SPAWN_DISTANCE = 70
+SPAWN_DISTANCE = 7
 
 
 class TestScenarios(Node):
@@ -35,7 +33,6 @@ class TestScenarios(Node):
         super(TestScenarios, self).__init__("TestScenarios")
 
         self.start = None
-        self.actions: List[List[PedestrianAction]] = []
 
         self.carla = CarlaNode(self)
 
@@ -51,18 +48,12 @@ class TestScenarios(Node):
             )
             with open(file_path) as f:
                 self.config = json.load(f)
-
         else:
-            self.config = None
-
-        if self.config is None:
             raise NotImplementedError("You must provide a config file")
-        else:
-            self._set_params_from_config_file()
 
-        self.v_x = 0.0
-        self.v_y = 0.0
+        self._set_params_from_config_file()
 
+        self.v_x, self.v_y = 0.0, 0.0
         self.pedestrian_ids = [-1] * sum(self.peds)
 
     def _init_pub_sub(self):
@@ -79,30 +70,16 @@ class TestScenarios(Node):
         )
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
-        self.control_publishers: List[Publisher] = []
-        for n in range(sum(self.peds)):
-            if self.bps[n] >= 100:
-                self.control_publishers.append(
-                    self.create_publisher(
-                        CarlaEgoVehicleControl,
-                        f"/carla/bike{n:04}/secondary_vehicle_control",
-                        10,
-                    )
-                )
-                continue
-
-            self.control_publishers.append(
-                self.create_publisher(
-                    CarlaWalkerControl, f"/carla/walker{n:04}/walker_control_cmd", 10
-                )
-            )
+        self.control_publishers = [
+            map_control_publisher(self, n, self.bps[n]) for n in range(sum(self.peds))
+        ]
 
     def run_step(self):
         if self.start is None:
             return
 
         for n, actions in enumerate(self.actions):
-            if not actions or not actions[0].should_run((self.v_x, self.v_y), self):
+            if not actions or not actions[0].should_run((self.v_x, self.v_y)):
                 continue
 
             self.publish_action(actions[0], n)
@@ -113,7 +90,7 @@ class TestScenarios(Node):
 
             actions[0].set_previous_time(time.time())
 
-    def publish_action(self, action, n):
+    def publish_action(self, action: PedestrianAction, n):
         msg = None
         if self.bps[n] < 100:
             msg = CarlaWalkerControl()
@@ -132,12 +109,20 @@ class TestScenarios(Node):
             return
 
         self.requests: List[Future] = []
-        lanes = [self.far_left, self.left, self.center, self.right, self.far_right]
 
         n_spawned = 0
-        for i, lane in enumerate(lanes):
-            self.position_orchestrator(self.peds[i], lane, n_spawned)
-            n_spawned += self.peds[i]
+        for lane_name, lane in lanes.items():
+
+            self._logger.info(f"name ::: {lane_name}")
+            self._logger.info(f"lane ::: {lane}")
+            self._logger.info(f"bp ::: {self.bps}")
+            self._logger.info(f"yaws ::: {self.dirs}")
+
+
+            self.position_orchestrator(
+                lane["number"], self.center + lane["offset"], n_spawned
+            )
+            n_spawned += lane["number"]
 
     def position_orchestrator(self, num, lane, spawned):
         offsets = [(self.pedestrian_x + num // 3, lane)]
@@ -150,8 +135,8 @@ class TestScenarios(Node):
 
         for n in range(num):
             total = spawned + n
-            bp = self.bps[total] if self.bps else self.bp
-            direction = self.dirs[total] if self.dirs else self.direction
+            bp = self.bps[total]
+            direction = self.dirs[total]
 
             x, y = offsets[n]
             self.spawn_call(total, bp, x, y, direction)
@@ -162,46 +147,31 @@ class TestScenarios(Node):
             position=Point(x=x, y=y, z=1.0), orientation=Quaternion(x=a, y=b, z=c, w=d)
         )
 
-        if ped_num >= 100:
-            biker_request = SpawnObject.Request(
-                type="vehicle.bh.crossbike", id=f"bike{i:04}", transform=s
-            )
-            biker_request.attributes = [KeyValue(key="role_name", value=f"bike{i:04}")]
-            self.requests.append(self.spawn_actors_service.call_async(biker_request))
-            return
 
-        walker_request = SpawnObject.Request(
-            type=f"walker.pedestrian.{ped_num:04}", id=f"walker{i:04}", transform=s
-        )
-        walker_request.attributes = [KeyValue(key="is_invincible", value="false")]
-        self.requests.append(self.spawn_actors_service.call_async(walker_request))
+        request = create_request(ped_num, i, s)
+        self.requests.append(self.spawn_actors_service.call_async(request))
 
     def _set_params_from_config_file(self):
-        self.peds = [0, 0, 0, 0, 0]
+        self.peds = [0] * len(lanes)
         n = self.config.get("num", 0)
 
         self.bps = [0] * n
         self.dirs = [0.0] * n
+        self.actions: List[List[PedestrianAction]] = [0] * n
+
 
         for i, p in enumerate(self.config.get("pedestrians")):
             spawn = p.get("spawn", None)
             if spawn is None:
                 continue
-            elif spawn == "far_left":
-                self.peds[0] += 1
-            elif p.get("spawn") == "left":
-                self.peds[1] += 1
-            elif p.get("spawn") == "right":
-                self.peds[3] += 1
-            elif spawn == "far_right":
-                self.peds[4] += 1
-            else:
-                self.peds[2] += 1
+
+            lanes[spawn]["number"] += 1
 
             self.bps[i] = p.get("blueprint", 0)
             self.dirs[i] = p.get("yaw", 0.0)
 
-            self.actions.append([PedestrianAction(act) for act in p.get("actions", [])])
+            self.actions[i] =    [PedestrianAction(SPAWN_DISTANCE, act) for act in p.get("actions", [])]
+            
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_s:
@@ -217,22 +187,19 @@ class TestScenarios(Node):
     def _update_obj(self, data: ObjectArray):
         for obj in data.objects:
             obj: Object
-            if obj.classification == Object.CLASSIFICATION_CAR:
-                self.v_x, self.v_y = obj.pose.position.x, obj.pose.position.y
+            if not obj.classification == Object.CLASSIFICATION_CAR:
+                continue
+
+            self.v_x, self.v_y = obj.pose.position.x, obj.pose.position.y
 
     def _set_lanes(self, data: Path):
-        if len(data.poses) < 90:
+        if len(data.poses) < SPAWN_DISTANCE + 10:
             raise Exception("The path for the vehicle needs to be longer")
 
         pedestrian_pose: Pose = data.poses[SPAWN_DISTANCE].pose
         self.pedestrian_x, self.center, self.point_yaw = calculate_position(
             pedestrian_pose
         )
-
-        self.far_left = self.center - 9.2
-        self.left = self.center - 3.5
-        self.right = self.center + 4.2
-        self.far_right = self.center + 7.7
 
         for actions in self.actions:
             action = actions[0]
@@ -241,82 +208,15 @@ class TestScenarios(Node):
         self.spawn_pedestrians()
 
 
-class PedestrianAction:
-    def __init__(self, action):
-        self.speed = action.get("speed", 0.0)
-
-        yaw = math.radians(action.get("yaw", 0.0))
-        self.x_dir, self.y_dir = math.cos(yaw), math.sin(yaw)
-
-        self.mdelay = action.get("mdelay", 0.0)
-        self.tdelay = action.get("tdelay", 0.0)
-
-    def set_previous_time(self, prev_time):
-        self.start_time = prev_time
-
-    def set_dist(self, waypoints: List[PoseStamped]):
-        if not self.mdelay:
-            return
-
-        begin_loc = waypoints[SPAWN_DISTANCE - int(self.mdelay)].pose.position
-        next_loc = waypoints[SPAWN_DISTANCE - int(self.mdelay) + 1].pose.position
-        self.begin_x, self.begin_y = begin_loc.x, begin_loc.y
-        self.next_x, self.next_y = next_loc.x, next_loc.y
-
-    def should_run(self, v_loc, node):
-        return (
-            self._is_in_triggering_distance(v_loc, node)
-            or self._is_in_triggering_time()
-        )
-
-    def _is_in_triggering_distance(self, v_loc, node: Node) -> bool:
-        if not self.mdelay:
-            return False
-
-        v_x, v_y = v_loc
-
-        dist_to_trigger = math.sqrt(
-            (v_x - self.begin_x) ** 2 + (v_y - self.begin_y) ** 2
-        )
-        dist_after_trigger = math.sqrt(
-            (v_x - self.next_x) ** 2 + (v_y - self.next_y) ** 2
-        )
-
-        return dist_to_trigger > dist_after_trigger
-
-    def _is_in_triggering_time(self) -> bool:
-        if not self.tdelay:
-            return False
-
-        time_passed = time.time() - self.start_time
-        return time_passed > self.tdelay
-
-
-def string_to_pose(input: str) -> PoseWithCovarianceStamped:
-    p = list(map(float, input.split(",")))
-
-    a, b, c, d = euler2quat(
-        math.radians(p[3]) + math.pi, math.radians(p[4]), math.radians(p[5])
-    )
-
-    s = Pose(
-        position=Point(x=p[0], y=p[1], z=p[2]),
-        orientation=Quaternion(x=a, y=b, z=c, w=d),
-    )
-
-    out = PoseWithCovarianceStamped()
-    out.pose.pose = s
-    return out
-
-
-def calculate_position(goal_pose: Pose):
-    o = goal_pose.orientation
-    _, _, yaw = quat2euler((o.x, o.y, o.z, o.w))
-
-    x = goal_pose.position.x + 2 * math.cos(yaw)
-    y = goal_pose.position.y + 2 * math.sin(yaw)
-
-    return (x, y, yaw)
+lanes = {
+    "center": {"number": 0, "offset": 0.0},
+    "right": {"number": 0, "offset": 4.2},
+    "left": {"number": 0, "offset": -3.5},
+    "far_right": {"number": 0, "offset": 3.5},
+    "far_left": {"number": 0, "offset": -5.7},
+    "near_left_margin": {"number": 0, "offset": -2.2},
+    "far_left_margin": {"number": 0, "offset": -5.7},
+}
 
 
 def main():
