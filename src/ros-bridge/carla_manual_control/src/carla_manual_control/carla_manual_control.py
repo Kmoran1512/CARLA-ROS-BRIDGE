@@ -491,7 +491,6 @@ class JoystickControl(object):
 
     def force_ctrl(self, data: ForceControl):
         if data.human_control:
-            self.node.loginfo(f"in here")
             self.manual_override = True
             self.set_manual_override(self.manual_override)
 
