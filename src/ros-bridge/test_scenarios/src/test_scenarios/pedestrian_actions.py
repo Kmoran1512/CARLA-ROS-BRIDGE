@@ -5,10 +5,10 @@ from typing import List
 from geometry_msgs.msg import PoseStamped
 
 
-SPAWN_DISTANCE = 70
-
 class PedestrianAction:
-    def __init__(self, action):
+    def __init__(self, spawn_distance: int, action):
+        self.spawn_distance = spawn_distance
+
         self.speed = action.get("speed", 0.0)
 
         yaw = math.radians(action.get("yaw", 0.0))
@@ -24,16 +24,13 @@ class PedestrianAction:
         if not self.mdelay:
             return
 
-        begin_loc = waypoints[SPAWN_DISTANCE - int(self.mdelay)].pose.position
-        next_loc = waypoints[SPAWN_DISTANCE - int(self.mdelay) + 1].pose.position
+        begin_loc = waypoints[self.spawn_distance - int(self.mdelay)].pose.position
+        next_loc = waypoints[self.spawn_distance - int(self.mdelay) + 1].pose.position
         self.begin_x, self.begin_y = begin_loc.x, begin_loc.y
         self.next_x, self.next_y = next_loc.x, next_loc.y
 
     def should_run(self, v_loc):
-        return (
-            self.is_in_triggering_distance(v_loc)
-            or self.is_in_triggering_time()
-        )
+        return self.is_in_triggering_distance(v_loc) or self.is_in_triggering_time()
 
     def is_in_triggering_distance(self, v_loc) -> bool:
         if not self.mdelay:
@@ -50,7 +47,7 @@ class PedestrianAction:
 
         time_passed = time.time() - self.start_time
         return time_passed > self.tdelay
-    
+
+
 def distance(x0, y0, x1, y1):
     return math.sqrt((x0 - x1) ** 2 + (y0 - y1) ** 2)
-
