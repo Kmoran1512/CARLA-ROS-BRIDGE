@@ -8,24 +8,24 @@ from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaEgoVehicleControl, CarlaWalkerControl
 from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
-from geometry_msgs.msg import Point, Pose, Quaternion
+from geometry_msgs.msg import Pose
 from nav_msgs.msg import Path
 from pygame.locals import K_s
 from std_msgs.msg import Int8
 from rclpy.node import Node
 from rclpy.task import Future
 from transforms3d.euler import euler2quat
-from typing import Dict, List, Tuple
+from typing import List
 
 from .carla_node import CarlaNode
-from .pedestrian_actions import PedestrianAction
+from .pedestrian_actions import Pedestrian, PedestrianAction
 from .pedestrian_spawn_helper import (
     calculate_position,
     create_request,
     map_control_publisher,
 )
 
-SPAWN_DISTANCE = 7
+SPAWN_DISTANCE = 70
 
 
 class TestScenarios(Node):
@@ -54,7 +54,6 @@ class TestScenarios(Node):
         self._set_params_from_config_file()
 
         self.v_x, self.v_y = 0.0, 0.0
-        self.pedestrian_ids = [-1] * sum(self.peds)
 
     def _init_pub_sub(self):
         self.spawn_actors_service = self.create_client(
@@ -71,7 +70,7 @@ class TestScenarios(Node):
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
         self.control_publishers = [
-            map_control_publisher(self, n, self.bps[n]) for n in range(sum(self.peds))
+            map_control_publisher(self, n, p) for n, p in enumerate(self.pedestrians)
         ]
 
     def run_step(self):
@@ -92,7 +91,7 @@ class TestScenarios(Node):
 
     def publish_action(self, action: PedestrianAction, n):
         msg = None
-        if self.bps[n] < 100:
+        if self.pedestrians[n].bp < 100:
             msg = CarlaWalkerControl()
             msg.direction.x = action.x_dir
             msg.direction.y = action.y_dir
@@ -110,68 +109,31 @@ class TestScenarios(Node):
 
         self.requests: List[Future] = []
 
-        n_spawned = 0
-        for lane_name, lane in lanes.items():
+        for i, ped in enumerate(self.pedestrians):
+            s = ped.get_spawn(self.pedestrian_x, self.center, self.point_yaw)
 
-            self._logger.info(f"name ::: {lane_name}")
-            self._logger.info(f"lane ::: {lane}")
-            self._logger.info(f"bp ::: {self.bps}")
-            self._logger.info(f"yaws ::: {self.dirs}")
-
-
-            self.position_orchestrator(
-                lane["number"], self.center + lane["offset"], n_spawned
-            )
-            n_spawned += lane["number"]
-
-    def position_orchestrator(self, num, lane, spawned):
-        offsets = [(self.pedestrian_x + num // 3, lane)]
-
-        for n in range(1, num):
-            prev_x, prev_y = offsets[n - (((n - 1) % 3) + 1)]
-            off_x = prev_x - (1 if n % 3 else 2.5)
-            off_y = prev_y + (1 if n % 3 == 2 else -1 if n % 3 == 1 else 0)
-            offsets.append((off_x, off_y))
-
-        for n in range(num):
-            total = spawned + n
-            bp = self.bps[total]
-            direction = self.dirs[total]
-
-            x, y = offsets[n]
-            self.spawn_call(total, bp, x, y, direction)
-
-    def spawn_call(self, i, ped_num, x, y, yaw):
-        a, b, c, d = euler2quat(math.radians(yaw) - self.point_yaw, math.pi, 0)
-        s = Pose(
-            position=Point(x=x, y=y, z=1.0), orientation=Quaternion(x=a, y=b, z=c, w=d)
-        )
-
-
-        request = create_request(ped_num, i, s)
-        self.requests.append(self.spawn_actors_service.call_async(request))
+            request = create_request(ped.bp, i, s)
+            self.requests.append(self.spawn_actors_service.call_async(request))
 
     def _set_params_from_config_file(self):
-        self.peds = [0] * len(lanes)
         n = self.config.get("num", 0)
 
-        self.bps = [0] * n
-        self.dirs = [0.0] * n
+        self.pedestrians: List[Pedestrian] = [Pedestrian()] * n
         self.actions: List[List[PedestrianAction]] = [0] * n
-
 
         for i, p in enumerate(self.config.get("pedestrians")):
             spawn = p.get("spawn", None)
             if spawn is None:
                 continue
 
-            lanes[spawn]["number"] += 1
+            self.pedestrians[i] = Pedestrian(
+                p.get("blueprint", 0), p.get("yaw", 0.0), spawn, lanes[spawn]
+            )
+            self.actions[i] = [
+                PedestrianAction(SPAWN_DISTANCE, act) for act in p.get("actions", [])
+            ]
 
-            self.bps[i] = p.get("blueprint", 0)
-            self.dirs[i] = p.get("yaw", 0.0)
-
-            self.actions[i] =    [PedestrianAction(SPAWN_DISTANCE, act) for act in p.get("actions", [])]
-            
+            lanes[spawn] += 1
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_s:
@@ -209,13 +171,13 @@ class TestScenarios(Node):
 
 
 lanes = {
-    "center": {"number": 0, "offset": 0.0},
-    "right": {"number": 0, "offset": 4.2},
-    "left": {"number": 0, "offset": -3.5},
-    "far_right": {"number": 0, "offset": 3.5},
-    "far_left": {"number": 0, "offset": -5.7},
-    "near_left_margin": {"number": 0, "offset": -2.2},
-    "far_left_margin": {"number": 0, "offset": -5.7},
+    "center": 0,
+    "right": 0,
+    "left": 0,
+    "far_right": 0,
+    "far_left": 0,
+    "near_left_margin": 0,
+    "far_left_margin": 0,
 }
 
 

@@ -4,6 +4,7 @@ from carla_msgs.msg import CarlaEgoVehicleControl, CarlaWalkerControl
 from carla_msgs.srv import SpawnObject
 from diagnostic_msgs.msg import KeyValue
 from geometry_msgs.msg import Pose
+from .pedestrian_actions import Pedestrian
 from rclpy import node, publisher
 from transforms3d.euler import quat2euler
 from typing import Tuple
@@ -36,10 +37,10 @@ def create_request(n, i, s):
     return request
 
 
-def map_control_publisher(node: node.Node, n, bp) -> publisher.Publisher:
+def map_control_publisher(node: node.Node, n, ped: Pedestrian) -> publisher.Publisher:
     msg_type = CarlaWalkerControl
     topic = f"/carla/walker{n:04}/walker_control_cmd"
-    if bp >= 100:
+    if ped.bp >= 100:
         msg_type = CarlaEgoVehicleControl
         topic = f"/carla/bike{n:04}/secondary_vehicle_control"
 

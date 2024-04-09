@@ -1,8 +1,54 @@
 import math
 import time
 
+from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
+from transforms3d.euler import euler2quat
 from typing import List
-from geometry_msgs.msg import PoseStamped
+
+
+class Pedestrian:
+    OFFSETS = {
+        "center": 0.0,
+        "right": 4.2,
+        "left": -3.5,
+        "far_right": 3.5,
+        "far_left": -5.7,
+        "near_left_margin": -2.2,
+        "far_left_margin": -5.7,
+    }
+
+    def __init__(self, bp=0, dir=0, lane="center", pos_in_lane=0) -> None:
+        self.bp = bp
+        self.yaw = math.radians(dir)
+        self.lane = lane
+
+        self.calculate_x_offset(pos_in_lane)
+        self.calculate_y_offset(pos_in_lane)
+
+    def calculate_x_offset(self, pos_in_lane):
+        mod_3 = pos_in_lane % 3
+        divided_by_3 = pos_in_lane // 3
+
+        self.x_offset = -2.5 * divided_by_3
+
+        if mod_3 != 0:
+            self.x_offset -= 1
+
+    def calculate_y_offset(self, pos_in_lane):
+        mod_3 = pos_in_lane % 3
+        self.y_offset = self.OFFSETS[self.lane]
+
+        if mod_3 == 1:
+            self.y_offset -= 1.0
+        elif mod_3 == 2:
+            self.y_offset += 1.0
+
+    def get_spawn(self, ref_x, ref_y, ref_theta):
+        a, b, c, d = euler2quat(self.yaw - ref_theta, math.pi, 0)
+        return Pose(
+            position=Point(x=ref_x + self.x_offset, y=ref_y + self.y_offset, z=1.0),
+            orientation=Quaternion(x=a, y=b, z=c, w=d),
+        )
 
 
 class PedestrianAction:

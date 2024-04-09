@@ -19,17 +19,13 @@ def generate_launch_description():
     sun_azimuth = 60.0
     sun_elevation = 15.0
 
-    ll_c = "-110.2,17.6,2.0,0,0,270"
-    # Right-Lane Curve = "-113.8,17.6,2.0,0,0,270"
-    ll_s = "4.9,-16.6,2.0,0,0,180"
-    rl_s = "4.9,-13.2,2.0,0,0,180"
+    left_lane_straight = "88.0, -16.6, 1.0, 0, 0, 180"
+    right_lane_straight = "88.0, -13.4, 1.0, 0, 0, 180"
 
     good_coverage_straight = "39.9, -66.3, 1.0, 0, 0, 180"
 
-    g_ll_c = "-37.3,-24.6,2.0,0,0,0"
-    # Right-Lane Curve "-37.3,-28.2,2.0,0,0,0"
-    g_ll_s = "-90.5,-16.6,2.0,0,0,180"
-    g_rl_s = "-90.5,-13.2,2.0,0,0,180"
+    left_lane_straight_goal = "-5.5, -16.6, 0.0, 0, 0, 180"
+    right_lane_straight_goal = "-5.5, -13.2, 0.0, 0, 0, 180"
 
     good_coverage_straight_goal = "-41.7, -47.8, 0.0, 0, 0, 90"
 
@@ -37,8 +33,8 @@ def generate_launch_description():
         # Spawn Settings
         DeclareLaunchArgument(name="config", default_value=""),
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
-        DeclareLaunchArgument(name="spawn_point", default_value=good_coverage_straight),
-        DeclareLaunchArgument(name="goal", default_value=good_coverage_straight_goal),
+        DeclareLaunchArgument(name="spawn_point", default_value=right_lane_straight),
+        DeclareLaunchArgument(name="goal", default_value=right_lane_straight_goal),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
