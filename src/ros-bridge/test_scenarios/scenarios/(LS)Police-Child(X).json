@@ -1,0 +1,21 @@
+{
+  "num": 2,
+  "pedestrians": [
+    {
+      "spawn": "near_left_margin",
+      "blueprint": 30,
+      "yaw": 90.0,
+      "actions": [
+        { "mdelay": 20.0, "speed": 1.5, "yaw": 95.0 }
+      ]
+    },
+    {
+      "spawn": "far_right_margin",
+      "blueprint": 13,
+      "yaw": -90.0,
+      "actions": [
+        { "mdelay": 55.0, "speed": 2.0, "yaw": -90.0 }
+      ]
+    }
+  ]
+}

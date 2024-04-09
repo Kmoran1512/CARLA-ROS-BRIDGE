@@ -3,7 +3,7 @@
   "pedestrians": [
     {
       "spawn": "far_left_margin",
-      "blueprint": 30,
+      "blueprint": 38,
       "yaw": 90.0,
       "actions": [
         { "mdelay": 35.0, "speed": 1.8, "yaw": 95.0 }
@@ -11,7 +11,7 @@
     },
     {
       "spawn": "near_right_margin",
-      "blueprint": 30,
+      "blueprint": 13,
       "yaw": -90.0,
       "actions": [
         { "mdelay": 50.0, "speed": 2.0, "yaw": -90.0 }
