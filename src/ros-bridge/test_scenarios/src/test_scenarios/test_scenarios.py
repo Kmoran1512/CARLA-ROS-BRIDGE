@@ -177,7 +177,10 @@ lanes = {
     "far_right": 0,
     "far_left": 0,
     "near_left_margin": 0,
+    "near_left_bike": 0,
     "far_left_margin": 0,
+    "far_right_margin": 0,
+    "near_right_margin": 0,
 }
 
 

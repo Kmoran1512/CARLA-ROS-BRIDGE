@@ -9,12 +9,15 @@ from typing import List
 class Pedestrian:
     OFFSETS = {
         "center": 0.0,
-        "right": 4.2,
+        "right": 3.5,
         "left": -3.5,
-        "far_right": 3.5,
-        "far_left": -5.7,
+        "far_right": 6.0,
+        "far_left": -4.7,
         "near_left_margin": -2.2,
+        "near_left_bike": -1.0,
         "far_left_margin": -5.7,
+        "near_right_margin": 8.8,
+        "far_right_margin": 11.0,
     }
 
     def __init__(self, bp=0, dir=0, lane="center", pos_in_lane=0) -> None:

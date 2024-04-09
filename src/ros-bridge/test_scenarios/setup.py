@@ -14,6 +14,12 @@ setup(
         (
             "share/" + package_name + "/scenarios",
             [
+                "scenarios/(LS)Bike-Police(X).json",
+                "scenarios/(LS)Police-Bike(X).json",
+                "scenarios/(LS)Police-Police(X).json",
+                "scenarios/(RS)Bike-Police(X).json",
+                "scenarios/(RS)Police-Bike(X).json",
+                "scenarios/(RS)Police-Police(X).json",
                 "scenarios/judge-judge.json",
                 "scenarios/judge-judge(cross).json",
                 "scenarios/kid-terrorist.json",

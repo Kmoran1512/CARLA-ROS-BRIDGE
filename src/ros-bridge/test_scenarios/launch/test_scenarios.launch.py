@@ -21,20 +21,22 @@ def generate_launch_description():
 
     left_lane_straight = "88.0, -16.6, 1.0, 0, 0, 180"
     right_lane_straight = "88.0, -13.4, 1.0, 0, 0, 180"
-
     good_coverage_straight = "39.9, -66.3, 1.0, 0, 0, 180"
+    left_lane_open_turn = "105.2, 30.0, 1.0, 0, 0, 105"
+    right_lane_open_turn = "109.7, 30.0, 1.0, 0, 0, 105"
 
     left_lane_straight_goal = "-5.5, -16.6, 0.0, 0, 0, 180"
     right_lane_straight_goal = "-5.5, -13.2, 0.0, 0, 0, 180"
-
     good_coverage_straight_goal = "-41.7, -47.8, 0.0, 0, 0, 90"
+    left_lane_open_turn_goal = "30.4, 64.4, 1.0, 0, 0, 180"
+    right_lane_open_turn_goal = "30.4, 67.8, 1.0, 0, 0, 180"
 
     descriptions = [
         # Spawn Settings
         DeclareLaunchArgument(name="config", default_value=""),
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
-        DeclareLaunchArgument(name="spawn_point", default_value=right_lane_straight),
-        DeclareLaunchArgument(name="goal", default_value=right_lane_straight_goal),
+        DeclareLaunchArgument(name="spawn_point", default_value=left_lane_straight),
+        DeclareLaunchArgument(name="goal", default_value=left_lane_straight_goal),
         # Driving Settings
         DeclareLaunchArgument(name="target_speed", default_value="12.0"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
