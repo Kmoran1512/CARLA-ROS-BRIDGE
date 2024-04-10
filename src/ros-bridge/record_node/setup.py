@@ -13,7 +13,11 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (
             "share/" + package_name + "/config",
-            ["config/column_headers.txt", "config/semantic_map.json"],
+            [
+                "config/bag_config.yaml",
+                "config/column_headers.txt",
+                "config/semantic_map.json",
+            ],
         ),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
     ],
@@ -26,6 +30,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
+            "bag_remap = record_node.bag_remap:main",
             "record_node = record_node.record_node:main",
             "img_publisher = record_node.img_publisher:main",
             "semantic_boxes = record_node.semantic_boxes:main",
