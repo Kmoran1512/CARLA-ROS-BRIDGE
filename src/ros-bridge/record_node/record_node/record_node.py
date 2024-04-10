@@ -255,8 +255,8 @@ class RecordingOrchestrator(Node):
         for i, bbox in enumerate(sorted_objects):
             self._ensure_ped_headers(i)
 
-            self.next_row[self.headers[f"ped{i}_cx"]] = bbox.center.x
-            self.next_row[self.headers[f"ped{i}_cy"]] = bbox.center.y
+            self.next_row[self.headers[f"ped{i}_cx"]] = bbox.center.x / data.width
+            self.next_row[self.headers[f"ped{i}_cy"]] = bbox.center.y / data.height
 
     def _ensure_ped_headers(self, i):
         pedestrian_headers = [

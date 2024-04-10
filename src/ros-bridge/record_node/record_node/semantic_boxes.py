@@ -44,7 +44,7 @@ class SemanticBoxes(Node):
         img = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
         self._find_boxes(img)
 
-    def _find_boxes(self, img):
+    def _find_boxes(self, img: np.ndarray):
         ped_color = np.array(self.semantic_dict["Pedestrian"])
         mask = cv2.inRange(img, ped_color, ped_color)
 
@@ -57,6 +57,8 @@ class SemanticBoxes(Node):
         max_h = max([cv2.boundingRect(contour)[3] for contour in contours])
 
         boxes = CarlaBoundingBoxArray()
+        boxes.height = img.shape[0]
+        boxes.width = img.shape[1]
         for contour in contours:
             single_box = CarlaBoundingBox()
             x, y, w, h = cv2.boundingRect(contour)
