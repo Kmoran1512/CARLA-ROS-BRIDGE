@@ -42,7 +42,7 @@ setup(
                 "scenarios/(RS)Police-Child(X).json",
                 "scenarios/(RS)Police-Police(X).json",
                 "scenarios/(RS)Police-Terrorist(X).json",
-                "scenario/(RS)Terrorist-Bike(X).json",
+                "scenarios/(RS)Terrorist-Bike(X).json",
                 "scenarios/(RS)Terrorist-Child(X).json",
                 "scenarios/(RS)Terrorist-Police(X).json",
                 "scenarios/(RS)Terrorist-Terrorist(X).json",
