@@ -9,8 +9,10 @@
 Base class for agent
 """
 
+import copy
 import enum
 import math
+from typing import Dict
 import numpy as np
 
 import carla
@@ -31,8 +33,8 @@ from carla_ad_agent.misc import (
 
 from carla_msgs.msg import CarlaEgoVehicleInfo, CarlaTrafficLightStatus
 from carla_waypoint_types.srv import GetWaypoint
-from derived_object_msgs.msg import Object
-from std_msgs.msg import Float64, Int32
+from derived_object_msgs.msg import Object, ObjectArray
+from std_msgs.msg import Float64
 
 import tf2_ros
 import tf2_geometry_msgs
@@ -95,6 +97,8 @@ class Agent(CompatibleNode):
             Float64, "/carla/{}/hazard_distance".format(role_name), 10
         )
         self.desired_gap = 40.0
+
+        self.tf_pub = self.create_publisher(ObjectArray, "/transformed_pedestrians", 10)
 
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, self)
@@ -181,6 +185,30 @@ class Agent(CompatibleNode):
                 return (True, target_vehicle_id)
 
         return (False, None)
+
+    def get_ped_transform(self, objects: Dict[str, Object]):
+        ped_arr_msg = ObjectArray()
+        for _, target_pedestrian_obj in objects.items():
+            if target_pedestrian_obj.classification != Object.CLASSIFICATION_PEDESTRIAN:
+                continue
+
+            ped_pos_stamp = PoseStamped()
+            ped_pos_stamp.header.frame_id = "map"
+            ped_pos_stamp.pose = target_pedestrian_obj.pose
+
+            try:
+                pedestrian_2d = self.tf_buffer.transform(
+                    ped_pos_stamp, "ego_vehicle/rgb_front"
+                )
+            except tf2_ros.TransformException as ex:
+                self.logerr(f"Transform Exception: {ex}")
+                return
+
+            ped_msg = copy.deepcopy(target_pedestrian_obj)
+            ped_msg.pose = pedestrian_2d.pose
+            ped_arr_msg.objects.append(ped_msg)
+
+        self.tf_pub.publish(ped_arr_msg)
 
     def _is_pedestrian_hazard(
         self, ego_vehicle_pose, rotation_direction, objects, next_50

@@ -78,13 +78,14 @@ class CarlaAdAgent(Agent):
             ),
         )
 
+        self._objects_subscriber = self.new_subscription(
+            ObjectArray,
+            "/carla/{}/objects".format(role_name),
+            self.objects_cb,
+            qos_profile=10,
+        )
+
         if self._avoid_risk:
-            self._objects_subscriber = self.new_subscription(
-                ObjectArray,
-                "/carla/{}/objects".format(role_name),
-                self.objects_cb,
-                qos_profile=10,
-            )
             self._traffic_light_status_subscriber = self.new_subscription(
                 CarlaTrafficLightStatusList,
                 "/carla/traffic_lights/status",
@@ -210,6 +211,8 @@ class CarlaAdAgent(Agent):
             if light_state:
                 self._state = AgentState.BLOCKED_RED_LIGHT
                 hazard_detected = True
+
+        self.get_ped_transform(objects)
 
         speed_command = Float64()
         if hazard_detected:
