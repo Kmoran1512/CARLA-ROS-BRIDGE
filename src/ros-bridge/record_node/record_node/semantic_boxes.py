@@ -1,19 +1,12 @@
 import cv2
-import json
-import os
 import numpy as np
 import rclpy
 
-from ament_index_python.packages import get_package_share_directory
 from carla_msgs.msg import CarlaBoundingBox, CarlaBoundingBoxArray
 from cv_bridge import CvBridge
+from derived_object_msgs.msg import Object, ObjectArray
 from rclpy.node import Node
-from sensor_msgs.msg import Image
-
-
-semantic_dict_path = os.path.join(
-    get_package_share_directory("record_node"), "config", "semantic_map.json"
-)
+from sensor_msgs.msg import CameraInfo
 
 
 class SemanticBoxes(Node):
@@ -21,12 +14,10 @@ class SemanticBoxes(Node):
 
     def __init__(self):
         super().__init__("semantic_boxes")
+        self.default_camera_info()
 
         self.bridge = CvBridge()
         self._init_pubsub()
-
-        with open(semantic_dict_path, "r") as f:
-            self.semantic_dict = json.load(f)
 
     def _init_pubsub(self):
         self.box_pub = self.create_publisher(
@@ -34,47 +25,65 @@ class SemanticBoxes(Node):
         )
 
         self.create_subscription(
-            Image,
-            "/carla/ego_vehicle/semantic_segmentation_front/image",
-            self.image_callback,
-            10,
+            ObjectArray, "/transformed_pedestrians", self._tf_callback, 10
         )
 
-    def image_callback(self, data):
-        img = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
-        self._find_boxes(img)
+        self.create_subscription(
+            CameraInfo,
+            f"/carla/ego_vehicle/rgb_front/camera_info",
+            self._set_matrices,
+            1,
+        )
 
-    def _find_boxes(self, img: np.ndarray):
-        ped_color = np.array(self.semantic_dict["Pedestrian"])
-        mask = cv2.inRange(img, ped_color, ped_color)
+    def _set_matrices(self, data: CameraInfo):
+        self.D = np.array(data.d)
+        self.K = np.reshape(data.k, (3, 3))
+        self.R = np.reshape(data.r, (3, 3))
+        self.T = np.zeros((1, 3))
 
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        self.height = data.height
+        self.width = data.width
 
-        if not contours:
-            return
+    def _tf_callback(self, data: ObjectArray):
+        arr_msg = CarlaBoundingBoxArray(height=self.height, width=self.width)
+        for obj in data.objects:
+            bbox = self.compute_bounding_box(obj)
+            arr_msg.boxes.append(bbox)
 
-        max_w = max([cv2.boundingRect(contour)[2] for contour in contours])
-        max_h = max([cv2.boundingRect(contour)[3] for contour in contours])
+        self.box_pub.publish(arr_msg)
 
-        boxes = CarlaBoundingBoxArray()
-        boxes.height = img.shape[0]
-        boxes.width = img.shape[1]
-        for contour in contours:
-            single_box = CarlaBoundingBox()
-            x, y, w, h = cv2.boundingRect(contour)
+    def compute_bounding_box(self, obj: Object):
+        bbox = CarlaBoundingBox(id=obj.id)
 
-            if w + h < (max_w + max_h) // 2:
-                continue
+        x, y, z = obj.pose.position.x, obj.pose.position.y, obj.pose.position.z
 
-            single_box.center.x = float(x + w // 2)
-            single_box.center.y = float(y + h // 2)
+        bbox.center.x, bbox.center.y = self.project(x, y, z)
+        corner_x, corner_y = self.project(x + 0.5, y + 2, z + 0.7)
 
-            single_box.size.x = float(w)
-            single_box.size.y = float(h)
+        bbox.size.x = corner_x - bbox.center.x
+        bbox.size.y = corner_y - bbox.center.y
 
-            boxes.boxes.append(single_box)
+        return bbox
 
-        self.box_pub.publish(boxes)
+    def project(self, x, y, z):
+        points = np.array([x, y, z])
+
+        projection, _ = cv2.projectPoints(points, self.R, self.T, self.K, self.D)
+        return projection[0][0]
+
+    def default_camera_info(self):
+        self.width = 1920
+        self.height = 1080
+
+        fov = 110
+        fl = self.width / (2.0 * np.tan(fov * np.pi / 360.0))
+
+        self.D = np.zeros(5)
+        self.K = np.array(
+            [[fl, 0, self.width / 2], [0, fl, self.height / 2], [0, 0, 1]]
+        )
+        self.R = np.zeros(3)
+        self.T = np.zeros((1, 3))
 
 
 def main(args=None):
