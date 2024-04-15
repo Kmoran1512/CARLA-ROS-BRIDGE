@@ -91,7 +91,7 @@ def generate_launch_description():
         Node(
             package="image_view",
             executable="image_view",
-            remappings=[("image", "/debug_img_view")],
+            remappings=[("image", "/driver_img_view")],
         ),
         Node(
             package="test_scenarios",
@@ -120,15 +120,6 @@ def generate_launch_description():
             ]
         )
     )
-
-    if with_driver_test:
-        descriptions.append(
-            Node(
-                package="image_view",
-                executable="image_view",
-                remappings=[("image", "/driver_img_view")],
-            )
-        )
 
     return LaunchDescription(descriptions)
 

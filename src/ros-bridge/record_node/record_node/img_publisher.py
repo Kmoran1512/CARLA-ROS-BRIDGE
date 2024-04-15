@@ -13,6 +13,8 @@ from rclpy.node import Node
 
 
 class ImageView(Node):
+    LABELS = {13: "Child", 30: "Police", 38: "Terrorist", 101: "Bike"}
+
     def __init__(self):
         super().__init__("image_view")
 
@@ -38,11 +40,9 @@ class ImageView(Node):
         self.show_gaze = bool(self.get_parameter("draw_gaze").value)
         self.show_outline = bool(self.get_parameter("draw_outline").value)
         self.show_route = bool(self.get_parameter("draw_route").value)
-        self.labels = self.get_parameter("labels").value
 
     def _init_pubsub(self):
         self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
-        self.debug_pub = self.create_publisher(Image, "/debug_img_view", 10)
 
         self.create_subscription(
             Image, "/carla/ego_vehicle/rgb_front/image", self.on_view_img, 10
@@ -60,23 +60,18 @@ class ImageView(Node):
     def on_view_img(self, data):
         self._update_gaze()
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
-        cv_img2 = cv_image.copy()
 
         if self.show_man_ctrl:
             self._draw_manctrl_status(cv_image)
-            self._draw_manctrl_status(cv_img2)
         if self.show_gaze:
-            self._draw_gaze(cv_img2)
+            self._draw_gaze(cv_image)
         if self.show_outline:
-            self._draw_outlines(cv_img2)
-        if self.labels:
-            self._draw_labels(cv_image)
-            self._draw_labels(cv_img2)
+            self._draw_outlines(cv_image)
+
+        self._draw_labels(cv_image)
 
         display_image = self.bridge.cv2_to_imgmsg(cv_image, encoding="rgb8")
-        debug_image = self.bridge.cv2_to_imgmsg(cv_img2, encoding="rgb8")
         self.img_pub.publish(display_image)
-        self.debug_pub.publish(debug_image)
 
     def _set_manctrl_status(self, data):
         self.manctrl_status = data.data
@@ -92,20 +87,16 @@ class ImageView(Node):
         )
 
     def _draw_labels(self, img):
-        if not self.labels or self.labels[0] == "":
-            return
-
         font = cv2.FONT_HERSHEY_SIMPLEX
         color = (0, 0, 255)
 
-        for bbox, label in zip(self.boxes, self.labels):
-            if bbox.size.x <= 6:
+        for bbox in self.boxes:
+            if bbox.size.x <= 5:
                 continue
 
-            font_scale = 1
+            label = self.LABELS[bbox.type]
 
-            thickness = 1
-            text_size = cv2.getTextSize(label, font, font_scale, thickness)[0]
+            text_size = cv2.getTextSize(label, font, 1, 1)[0]
 
             cx = int(bbox.center.x - text_size[0] // 2)
             cy = int(bbox.center.y - bbox.size.y // 2)
@@ -117,7 +108,7 @@ class ImageView(Node):
                 (255, 255, 0),
                 -1,
             )
-            cv2.putText(img, label, (cx, cy), font, font_scale, color, thickness)
+            cv2.putText(img, label, (cx, cy), font, 1, color, 1)
 
     def _draw_manctrl_status(self, image):
         text = "M" if self.manctrl_status else "A"
