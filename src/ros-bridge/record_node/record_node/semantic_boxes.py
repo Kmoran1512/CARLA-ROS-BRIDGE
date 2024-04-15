@@ -1,3 +1,4 @@
+import carla
 import cv2
 import numpy as np
 import rclpy
@@ -17,7 +18,13 @@ class SemanticBoxes(Node):
         self.default_camera_info()
 
         self.bridge = CvBridge()
+        self._init_carla()
         self._init_pubsub()
+
+    def _init_carla(self):
+        client = carla.Client("localhost", 2000)
+        client.set_timeout(5.0)
+        self.world = client.get_world()
 
     def _init_pubsub(self):
         self.box_pub = self.create_publisher(
@@ -53,12 +60,14 @@ class SemanticBoxes(Node):
         self.box_pub.publish(arr_msg)
 
     def compute_bounding_box(self, obj: Object):
-        bbox = CarlaBoundingBox(id=obj.id)
+        type_id = int(self.world.get_actor(int(obj.id)).type_id[-2:])
 
+        bbox = CarlaBoundingBox(id=obj.id, type=type_id)
         x, y, z = obj.pose.position.x, obj.pose.position.y, obj.pose.position.z
 
         bbox.center.x, bbox.center.y = self.project(x, y, z)
-        corner_x, corner_y = self.project(x + 0.5, y + 2, z + 0.7)
+        dim = obj.shape.dimensions
+        corner_x, corner_y = self.project(x + dim[0], y + dim[2], z + dim[1])
 
         bbox.size.x = corner_x - bbox.center.x
         bbox.size.y = corner_y - bbox.center.y
