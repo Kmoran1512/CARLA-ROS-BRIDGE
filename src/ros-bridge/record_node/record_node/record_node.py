@@ -6,12 +6,8 @@ import time, datetime
 import math
 import rclpy
 
-from rclpy.node import Node
-from transforms3d.euler import quat2euler
+
 from ament_index_python.packages import get_package_share_directory
-
-from .gaze_reader import GazeReader
-
 from carla_msgs.msg import (
     CarlaBoundingBox,
     CarlaBoundingBoxArray,
@@ -22,11 +18,16 @@ from geometry_msgs.msg import PoseArray
 from pygame.locals import K_e, K_r, K_z
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from sensor_msgs.msg import CameraInfo
+from signal import SIGINT
 from std_msgs.msg import Bool, Float32, Int8
+from subprocess import Popen
+from transforms3d.euler import quat2euler
 from typing import List, Tuple
 
+from .gaze_reader import GazeReader
 
-class RecordingOrchestrator(Node):
+
+class RecordingOrchestrator(rclpy.node.Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 
@@ -156,13 +157,19 @@ class RecordingOrchestrator(Node):
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_r:
+
             self.get_logger().info("\n Recording Begins \n")
             self.start = time.time()
+
+            run_command = create_bag_run()
+            self.node_pid = Popen([run_command[0], *run_command[1]]).pid
+
         elif self.start and (data.data == K_z or data.data == K_e):
             self.get_logger().info("\n End Recording \n")
             self.scenario_number += 1
             self.complete()
             self.start = None
+            os.kill(self.node_pid, SIGINT)
 
     def _record_next_waypoint(self, data):
         self.next_row[self.headers["next_waypoint_x (m)"]] = data.poses[0].position.x
@@ -283,6 +290,26 @@ def get_yaw(obj: Object):
     return math.degrees(yaw)
 
 
+def create_bag_run():
+    return (
+        "ros2",
+        [
+            "bag",
+            "record",
+            "/resized_semantic",
+            "/resized_rgb",
+            "--qos-profile-overrides-path",
+            os.path.join(
+                get_package_share_directory("record_node"), "config", "bag_config.yaml"
+            ),
+            "--compression-mode",
+            "file",
+            "--compression-format",
+            "zstd",
+        ],
+    )
+
+
 def main(args=None):
     rclpy.init(args=args)
 
@@ -295,6 +322,7 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
 
+    os.kill(orchestrator.node_pid, SIGINT)
     orchestrator.complete()
     orchestrator.destroy_node()
     rclpy.shutdown()

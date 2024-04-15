@@ -58,28 +58,6 @@ def generate_launch_description():
         ),
     ]
 
-    launch_args.append(
-        ExecuteProcess(
-            cmd=[
-                "ros2",
-                "bag",
-                "record",
-                "/resized_semantic",
-                "/resized_rgb",
-                "--qos-profile-overrides-path",
-                os.path.join(
-                    get_package_share_directory("record_node"),
-                    "config",
-                    "bag_config.yaml",
-                ),
-                "--compression-mode",
-                "file",
-                "--compression-format",
-                "zstd",
-            ]
-        )
-    )
-
     ld = LaunchDescription(launch_args)
 
     return ld
