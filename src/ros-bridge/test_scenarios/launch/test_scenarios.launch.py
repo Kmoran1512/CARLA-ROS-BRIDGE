@@ -14,31 +14,19 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    with_driver_test = False
-
     sun_azimuth = 60.0
     sun_elevation = 15.0
 
-    left_lane_straight = "88.0, -16.6, 1.0, 0, 0, 180"
-    right_lane_straight = "88.0, -13.4, 1.0, 0, 0, 180"
-    good_coverage_straight = "39.9, -66.3, 1.0, 0, 0, 180"
-    left_lane_open_turn = "105.2, 30.0, 1.0, 0, 0, 105"
-    right_lane_open_turn = "109.7, 30.0, 1.0, 0, 0, 105"
-
-    left_lane_straight_goal = "-5.5, -16.6, 0.0, 0, 0, 180"
-    right_lane_straight_goal = "-5.5, -13.2, 0.0, 0, 0, 180"
-    good_coverage_straight_goal = "-41.7, -47.8, 0.0, 0, 0, 90"
-    left_lane_open_turn_goal = "30.4, 64.4, 1.0, 0, 0, 180"
-    right_lane_open_turn_goal = "30.4, 67.8, 1.0, 0, 0, 180"
+    location = 'lls'
 
     descriptions = [
         # Spawn Settings
         DeclareLaunchArgument(name="config", default_value=""),
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
-        DeclareLaunchArgument(name="spawn_point", default_value=left_lane_straight),
-        DeclareLaunchArgument(name="goal", default_value=left_lane_straight_goal),
+        DeclareLaunchArgument(name="spawn_point", default_value=side_map[location][0]),
+        DeclareLaunchArgument(name="goal", default_value=side_map[location][1]),
         # Driving Settings
-        DeclareLaunchArgument(name="target_speed", default_value="12.0"),
+        DeclareLaunchArgument(name="target_speed", default_value="14.4"),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
         # Recorder Settings
         DeclareLaunchArgument(name="n", default_value="1"),
@@ -101,7 +89,7 @@ def generate_launch_description():
             name="test",
             parameters=[
                 {"scenario_config": LaunchConfiguration("config")},
-                {"spawn_point": LaunchConfiguration("spawn_point")},
+                {"spawn_location": location},
             ],
         ),
     ]
@@ -123,6 +111,14 @@ def generate_launch_description():
 
     return LaunchDescription(descriptions)
 
+
+side_map = {
+    'lls': ("88.0, -16.6, 1.0, 0, 0, 180","-5.5, -16.6, 0.0, 0, 0, 180"),
+    'rls': ("88.0, -13.4, 1.0, 0, 0, 180", "-5.5, -13.2, 0.0, 0, 0, 180"),
+    'ccs': ("39.9, -66.3, 1.0, 0, 0, 180","-41.7, -47.8, 0.0, 0, 0, 90"),
+    'llt': ("105.2, 30.0, 1.0, 0, 0, 105","30.4, 64.4, 1.0, 0, 0, 180"),
+    'rlt': ("109.7, 30.0, 1.0, 0, 0, 105","30.4, 67.8, 1.0, 0, 0, 180"),
+}
 
 if __name__ == "__main__":
     generate_launch_description()

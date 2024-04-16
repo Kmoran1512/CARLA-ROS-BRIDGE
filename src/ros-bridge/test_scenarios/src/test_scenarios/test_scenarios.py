@@ -41,6 +41,10 @@ class TestScenarios(Node):
         self._init_pub_sub()
 
     def _init_params(self):
+        self.declare_parameter("spawn_location", "")
+        self.spawn_location = self.get_parameter("spawn_location").value
+
+
         self.declare_parameter("scenario_config", "")
         filename = self.get_parameter("scenario_config").value
         if filename:
@@ -164,6 +168,8 @@ class TestScenarios(Node):
         )
 
         self._spawn_obstacle(data.poses)
+        if self.spawn_location[-1] == 't':
+            self._spawn_obstacle(data.poses, 'left')
 
         for actions in self.actions:
             action = actions[0]
@@ -171,9 +177,9 @@ class TestScenarios(Node):
 
         self.spawn_pedestrians()
 
-    def _spawn_obstacle(self, waypts):
+    def _spawn_obstacle(self, waypts, side = 'right'):
         s: Pose = waypts[SPAWN_DISTANCE - 2].pose
-        s.position.y += Pedestrian.OFFSETS["right"] - 1
+        s.position.y += Pedestrian.OFFSETS[side] - 1
         type_id = "static.prop.container"
         id = f"obstacle"
 
