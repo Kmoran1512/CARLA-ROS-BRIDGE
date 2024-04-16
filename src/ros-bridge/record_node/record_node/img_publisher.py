@@ -91,7 +91,7 @@ class ImageView(Node):
         color = (0, 0, 255)
 
         for bbox in self.boxes:
-            if bbox.size.x <= 5:
+            if bbox.size.x <= 7:
                 continue
 
             label = self.LABELS[bbox.type]
@@ -103,12 +103,12 @@ class ImageView(Node):
 
             cv2.rectangle(
                 img,
-                (cx, cy - text_size[1]),
-                (cx + text_size[0], cy + text_size[1] // 2),
+                (cx, cy - text_size[1] - 10),
+                (cx + text_size[0], cy + text_size[1] // 2 - 10),
                 (255, 255, 0),
                 -1,
             )
-            cv2.putText(img, label, (cx, cy), font, 1, color, 1)
+            cv2.putText(img, label, (cx, cy - 10), font, 1, color, 1)
 
     def _draw_manctrl_status(self, image):
         text = "M" if self.manctrl_status else "A"
