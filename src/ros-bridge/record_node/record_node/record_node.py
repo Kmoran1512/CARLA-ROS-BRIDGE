@@ -16,6 +16,7 @@ from carla_msgs.msg import (
 from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import PoseArray
 from pygame.locals import K_e, K_r, K_z
+from rclpy.node import Node
 from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from sensor_msgs.msg import CameraInfo
 from signal import SIGINT
@@ -27,7 +28,7 @@ from typing import List, Tuple
 from .gaze_reader import GazeReader
 
 
-class RecordingOrchestrator(rclpy.node.Node):
+class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
 

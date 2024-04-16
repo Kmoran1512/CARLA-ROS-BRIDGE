@@ -1,5 +1,4 @@
 import json
-import math
 import os
 import time
 import rclpy
@@ -14,7 +13,6 @@ from pygame.locals import K_s
 from std_msgs.msg import Int8
 from rclpy.node import Node
 from rclpy.task import Future
-from transforms3d.euler import euler2quat
 from typing import List
 
 from .carla_node import CarlaNode
@@ -24,6 +22,9 @@ from .pedestrian_spawn_helper import (
     create_request,
     map_control_publisher,
 )
+
+
+from diagnostic_msgs.msg import KeyValue
 
 SPAWN_DISTANCE = 70
 
@@ -54,6 +55,7 @@ class TestScenarios(Node):
         self._set_params_from_config_file()
 
         self.v_x, self.v_y = 0.0, 0.0
+        self.requests: List[Future] = []
 
     def _init_pub_sub(self):
         self.spawn_actors_service = self.create_client(
@@ -106,8 +108,6 @@ class TestScenarios(Node):
         if not self.spawn_actors_service.wait_for_service(timeout_sec=10.0):
             self.get_logger().error("Service spawn_actors not available after waiting")
             return
-
-        self.requests: List[Future] = []
 
         for i, ped in enumerate(self.pedestrians):
             s = ped.get_spawn(self.pedestrian_x, self.center, self.point_yaw)
@@ -163,11 +163,22 @@ class TestScenarios(Node):
             pedestrian_pose
         )
 
+        self._spawn_obstacle(data.poses)
+
         for actions in self.actions:
             action = actions[0]
             action.set_dist(data.poses)
 
         self.spawn_pedestrians()
+
+    def _spawn_obstacle(self, waypts):
+        s: Pose = waypts[SPAWN_DISTANCE - 2].pose
+        s.position.y += Pedestrian.OFFSETS["right"] - 1
+        type_id = "static.prop.container"
+        id = f"obstacle"
+
+        request = SpawnObject.Request(type=type_id, id=id, transform=s)
+        self.requests.append(self.spawn_actors_service.call_async(request))
 
 
 lanes = {
