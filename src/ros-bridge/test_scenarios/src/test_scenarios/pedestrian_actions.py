@@ -25,6 +25,8 @@ class Pedestrian:
         self.yaw = math.radians(dir)
         self.lane = lane
 
+        self.has_run = False
+
         self.calculate_x_offset(pos_in_lane)
         self.calculate_y_offset(pos_in_lane)
 

@@ -10,7 +10,7 @@ from derived_object_msgs.msg import ObjectArray, Object
 from geometry_msgs.msg import Pose
 from nav_msgs.msg import Path
 from pygame.locals import K_s
-from std_msgs.msg import Int8
+from std_msgs.msg import Bool, Int8
 from rclpy.node import Node
 from rclpy.task import Future
 from typing import List
@@ -34,7 +34,7 @@ class TestScenarios(Node):
         super(TestScenarios, self).__init__("TestScenarios")
 
         self.start = None
-
+        self.running = False
         self.carla = CarlaNode(self)
 
         self._init_params()
@@ -43,7 +43,6 @@ class TestScenarios(Node):
     def _init_params(self):
         self.declare_parameter("spawn_location", "")
         self.spawn_location = self.get_parameter("spawn_location").value
-
 
         self.declare_parameter("scenario_config", "")
         filename = self.get_parameter("scenario_config").value
@@ -75,6 +74,7 @@ class TestScenarios(Node):
         )
         self.create_subscription(ObjectArray, "/carla/objects", self._update_obj, 10)
 
+        self.run_pub = self.create_publisher(Bool, "/pedestrians_moving", 1)
         self.control_publishers = [
             map_control_publisher(self, n, p) for n, p in enumerate(self.pedestrians)
         ]
@@ -94,6 +94,12 @@ class TestScenarios(Node):
                 continue
 
             actions[0].set_previous_time(time.time())
+        if self.v_x < self.pedestrian_x:
+            self.running = False
+            self.run_pub.publish(Bool(data=False))
+        elif not self.running and all(ped.has_run for ped in self.pedestrians):
+            self.running = True
+            self.run_pub.publish(Bool(data=True))
 
     def publish_action(self, action: PedestrianAction, n):
         msg = None
@@ -106,6 +112,7 @@ class TestScenarios(Node):
             msg = CarlaEgoVehicleControl()
             msg.throttle = 1.0 if abs(action.speed) > 0 else 0.0
             msg.brake = 1.0 if action.speed == 0 else 0.0
+        self.pedestrians[n].has_run = True
         self.control_publishers[n].publish(msg)
 
     def spawn_pedestrians(self):
@@ -168,8 +175,8 @@ class TestScenarios(Node):
         )
 
         self._spawn_obstacle(data.poses)
-        if self.spawn_location[-1] == 't':
-            self._spawn_obstacle(data.poses, 'left')
+        if self.spawn_location[-1] == "t":
+            self._spawn_obstacle(data.poses, "left")
 
         for actions in self.actions:
             action = actions[0]
@@ -177,7 +184,7 @@ class TestScenarios(Node):
 
         self.spawn_pedestrians()
 
-    def _spawn_obstacle(self, waypts, side = 'right'):
+    def _spawn_obstacle(self, waypts, side="right"):
         s: Pose = waypts[SPAWN_DISTANCE - 2].pose
         s.position.y += Pedestrian.OFFSETS[side] - 1
         type_id = "static.prop.container"

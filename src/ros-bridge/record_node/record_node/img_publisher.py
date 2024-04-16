@@ -25,7 +25,7 @@ class ImageView(Node):
 
         self.bridge = CvBridge()
         self.manctrl_status = "enabled"
-
+        self.labels_visible = False
         self.gaze_x, self.gaze_y = (0, 0)
         self.boxes: List[CarlaBoundingBox] = []
 
@@ -56,6 +56,9 @@ class ImageView(Node):
         self.create_subscription(
             CarlaBoundingBoxArray, "/carla/bounding_boxes", self._update_outlines, 10
         )
+        self.create_subscription(
+            Bool, "/pedestrians_moving", self._update_ped_status, 1
+        )
 
     def on_view_img(self, data):
         self._update_gaze()
@@ -65,7 +68,7 @@ class ImageView(Node):
             self._draw_manctrl_status(cv_image)
         if self.show_gaze:
             self._draw_gaze(cv_image)
-        if self.show_outline:
+        if self.show_outline and self.labels_visible:
             self._draw_outlines(cv_image)
 
         self._draw_labels(cv_image)
@@ -91,7 +94,7 @@ class ImageView(Node):
         color = (0, 0, 255)
 
         for bbox in self.boxes:
-            if bbox.size.x <= 7:
+            if not self.labels_visible:
                 continue
 
             label = self.LABELS[bbox.type]
@@ -154,6 +157,9 @@ class ImageView(Node):
 
         self.gaze_x = gaze_x
         self.gaze_y = gaze_y
+
+    def _update_ped_status(self, data: Bool):
+        self.labels_visible = data.data
 
     def _update_outlines(self, data: CarlaBoundingBoxArray):
         self.boxes = []
