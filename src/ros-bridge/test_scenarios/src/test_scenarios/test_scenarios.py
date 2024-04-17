@@ -24,8 +24,6 @@ from .pedestrian_spawn_helper import (
 )
 
 
-from diagnostic_msgs.msg import KeyValue
-
 SPAWN_DISTANCE = 70
 
 
@@ -45,15 +43,7 @@ class TestScenarios(Node):
         self.spawn_location = self.get_parameter("spawn_location").value
 
         self.declare_parameter("scenario_config", "")
-        filename = self.get_parameter("scenario_config").value
-        if filename:
-            file_path = os.path.join(
-                get_package_share_directory("test_scenarios"), "scenarios", filename
-            )
-            with open(file_path) as f:
-                self.config = json.load(f)
-        else:
-            raise NotImplementedError("You must provide a config file")
+        self.config = json.loads(self.get_parameter("scenario_config").value)
 
         self._set_params_from_config_file()
 
