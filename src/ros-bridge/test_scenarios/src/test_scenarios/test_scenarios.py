@@ -15,10 +15,11 @@ from typing import List
 
 from .carla_node import CarlaNode
 from .pedestrian_actions import Pedestrian, PedestrianAction
-from .pedestrian_spawn_helper import (
+from .spawn_helper import (
     calculate_position,
     create_request,
     map_control_publisher,
+    spawn_obstacle,
 )
 
 from transforms3d.euler import euler2quat
@@ -164,27 +165,18 @@ class TestScenarios(Node):
             pedestrian_pose
         )
 
-        self._spawn_obstacle(data.poses)
+        r = self.spawn_actors_service.call_async(spawn_obstacle(data.poses))
+        self.requests.append(r)
+
         if self.spawn_location[-1] == "t":
-            self._spawn_obstacle(data.poses, "far_left_margin", "trafficwarning", 70.0)
+            r = spawn_obstacle(data.poses, "far_left_margin", "trafficwarning", 70.0)
+            self.requests.append(self.spawn_actors_service.call_async(r))
 
         for actions in self.actions:
             action = actions[0]
             action.set_dist(data.poses)
 
         self.spawn_pedestrians()
-
-    def _spawn_obstacle(self, waypts, side="right", bp="container", yaw=0.0):
-        s: Pose = waypts[SPAWN_DISTANCE - 2].pose
-        s.position.y += Pedestrian.OFFSETS[side] - 1
-        s.orientation.x, s.orientation.y, s.orientation.z, s.orientation.w = euler2quat(
-            math.radians(yaw), math.pi, 0
-        )
-        type_id = "static.prop." + bp
-        id = f"obstacle"
-
-        request = SpawnObject.Request(type=type_id, id=id, transform=s)
-        self.requests.append(self.spawn_actors_service.call_async(request))
 
 
 lanes = {

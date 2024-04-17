@@ -6,7 +6,7 @@ from diagnostic_msgs.msg import KeyValue
 from geometry_msgs.msg import Pose
 from .pedestrian_actions import Pedestrian
 from rclpy import node, publisher
-from transforms3d.euler import quat2euler
+from transforms3d.euler import euler2quat, quat2euler
 from typing import Tuple
 
 
@@ -45,3 +45,15 @@ def map_control_publisher(node: node.Node, n, ped: Pedestrian) -> publisher.Publ
         topic = f"/carla/bike{n:04}/secondary_vehicle_control"
 
     return node.create_publisher(msg_type, topic, 10)
+
+
+def spawn_obstacle(spawn_distance, waypts, side="right", bp="container", yaw=0.0):
+    s: Pose = waypts[spawn_distance - 2].pose
+    s.position.y += Pedestrian.OFFSETS[side] - 1
+    s.orientation.x, s.orientation.y, s.orientation.z, s.orientation.w = euler2quat(
+        math.radians(yaw), math.pi, 0
+    )
+    type_id = "static.prop." + bp
+    id = f"obstacle"
+
+    return SpawnObject.Request(type=type_id, id=id, transform=s)
