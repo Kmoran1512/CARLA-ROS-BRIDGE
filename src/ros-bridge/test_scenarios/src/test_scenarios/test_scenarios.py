@@ -165,7 +165,9 @@ class TestScenarios(Node):
             pedestrian_pose
         )
 
-        r = self.spawn_actors_service.call_async(spawn_obstacle(data.poses))
+        r = self.spawn_actors_service.call_async(
+            spawn_obstacle(SPAWN_DISTANCE, data.poses) if not self.spawn_location[0] == "c" else spawn_obstacle(SPAWN_DISTANCE, data.poses, -5, yaw=-45)
+        ) 
         self.requests.append(r)
 
         if self.spawn_location[-1] == "t":

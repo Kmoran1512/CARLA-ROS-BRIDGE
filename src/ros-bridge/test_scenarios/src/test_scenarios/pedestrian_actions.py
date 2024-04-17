@@ -12,7 +12,7 @@ class Pedestrian:
         "right": 3.5,
         "left": -3.5,
         "far_right": 6.0,
-        "far_left": -4.7,
+        "far_left": -7.7,
         "near_left_margin": -2.2,
         "near_left_bike": -1.0,
         "far_left_margin": -5.7,

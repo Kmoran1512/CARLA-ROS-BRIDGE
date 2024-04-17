@@ -47,8 +47,8 @@ def map_control_publisher(node: node.Node, n, ped: Pedestrian) -> publisher.Publ
     return node.create_publisher(msg_type, topic, 10)
 
 
-def spawn_obstacle(spawn_distance, waypts, side="right", bp="container", yaw=0.0):
-    s: Pose = waypts[spawn_distance - 2].pose
+def spawn_obstacle(spawn_distance, waypts, offset = 2, side="right", bp="container", yaw=0.0):
+    s: Pose = waypts[spawn_distance - offset].pose
     s.position.y += Pedestrian.OFFSETS[side] - 1
     s.orientation.x, s.orientation.y, s.orientation.z, s.orientation.w = euler2quat(
         math.radians(yaw), math.pi, 0
