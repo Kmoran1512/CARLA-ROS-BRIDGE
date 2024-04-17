@@ -13,6 +13,13 @@ from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
+# 35 = 15.6
+# 27 = 12.0
+SPEED_MPH = 35
+SPEED_MPS = SPEED_MPH / 2.237
+LAG_FACTOR = 1.2
+ADJUSTED_SPEED = SPEED_MPS * LAG_FACTOR
+
 
 def generate_launch_description():
     sun_azimuth = 60.0
@@ -35,7 +42,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="spawn_point", default_value=location[0]),
         DeclareLaunchArgument(name="goal", default_value=location[1]),
         # Driving Settings
-        DeclareLaunchArgument(name="target_speed", default_value="14.4"),
+        DeclareLaunchArgument(name="target_speed", default_value=str(ADJUSTED_SPEED)),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
         # Recorder Settings
         DeclareLaunchArgument(name="n", default_value="1"),
@@ -132,19 +139,20 @@ def build_config(names):
 
 def build_pedestrian(side, n, kind):
     LABELS = {"child": 13, "police": 30, "terrorist": 38, "bike": 101}
+    RT = 2.0
 
     pedestrian = {"actions": [{}]}
     pedestrian["yaw"] = 90.0 if n == 0 else -90.0
-    pedestrian["actions"][0]["speed"] = 2.4
     pedestrian["actions"][0]["yaw"] = 95.0 if n == 0 else -90.0
 
     if side == "r":
-        pedestrian["spawn"] = "far_left_margin" if n == 0 else "near_right_margin"
-        pedestrian["actions"][0]["mdelay"] = 30.0 if n == 0 else 50.0
+        pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 2.0
+        pedestrian["spawn"] = "far_left_margin" if n == 0 else "right"
     elif side == "l":
-        pedestrian["spawn"] = "near_left_margin" if n == 0 else "far_right_margin"
-        pedestrian["actions"][0]["mdelay"] = 30.0 if n == 0 else 60.0
+        pedestrian["actions"][0]["speed"] = 1.7 if n == 0 else 2.0
+        pedestrian["spawn"] = "near_left_margin" if n == 0 else "far_right"
 
+    pedestrian["actions"][0]["mdelay"] = RT * ADJUSTED_SPEED
     pedestrian["blueprint"] = LABELS[kind]
 
     return pedestrian
