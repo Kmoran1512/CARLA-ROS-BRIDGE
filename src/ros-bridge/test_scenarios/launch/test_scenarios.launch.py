@@ -105,7 +105,7 @@ def generate_launch_description():
             name="test",
             parameters=[
                 {"scenario_config": json.dumps(build_config(config_param))},
-                {"spawn_location": location},
+                {"spawn_location": config_param[0]},
             ],
         ),
     ]

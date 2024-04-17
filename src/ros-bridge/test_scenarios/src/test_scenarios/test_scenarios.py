@@ -1,9 +1,7 @@
 import json
-import os
 import time
 import rclpy
 
-from ament_index_python import get_package_share_directory
 from carla_msgs.msg import CarlaEgoVehicleControl, CarlaWalkerControl
 from carla_msgs.srv import DestroyObject, SpawnObject
 from derived_object_msgs.msg import ObjectArray, Object
@@ -23,6 +21,8 @@ from .pedestrian_spawn_helper import (
     map_control_publisher,
 )
 
+from transforms3d.euler import euler2quat
+import math
 
 SPAWN_DISTANCE = 70
 
@@ -166,7 +166,7 @@ class TestScenarios(Node):
 
         self._spawn_obstacle(data.poses)
         if self.spawn_location[-1] == "t":
-            self._spawn_obstacle(data.poses, "left")
+            self._spawn_obstacle(data.poses, "far_left_margin", "trafficwarning", 70.0)
 
         for actions in self.actions:
             action = actions[0]
@@ -174,10 +174,13 @@ class TestScenarios(Node):
 
         self.spawn_pedestrians()
 
-    def _spawn_obstacle(self, waypts, side="right"):
+    def _spawn_obstacle(self, waypts, side="right", bp="container", yaw=0.0):
         s: Pose = waypts[SPAWN_DISTANCE - 2].pose
         s.position.y += Pedestrian.OFFSETS[side] - 1
-        type_id = "static.prop.container"
+        s.orientation.x, s.orientation.y, s.orientation.z, s.orientation.w = euler2quat(
+            math.radians(yaw), math.pi, 0
+        )
+        type_id = "static.prop." + bp
         id = f"obstacle"
 
         request = SpawnObject.Request(type=type_id, id=id, transform=s)
