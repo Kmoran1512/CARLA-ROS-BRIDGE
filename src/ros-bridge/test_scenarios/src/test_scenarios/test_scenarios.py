@@ -166,12 +166,16 @@ class TestScenarios(Node):
         )
 
         r = self.spawn_actors_service.call_async(
-            spawn_obstacle(SPAWN_DISTANCE, data.poses) if not self.spawn_location[0] == "c" else spawn_obstacle(SPAWN_DISTANCE, data.poses, -5, yaw=-45)
-        ) 
+            spawn_obstacle(SPAWN_DISTANCE, data.poses)
+            if not self.spawn_location[0] == "c"
+            else spawn_obstacle(SPAWN_DISTANCE, data.poses, -5, yaw=-45)
+        )
         self.requests.append(r)
 
         if self.spawn_location[-1] == "t":
-            r = spawn_obstacle(data.poses, "far_left_margin", "trafficwarning", 70.0)
+            r = spawn_obstacle(
+                SPAWN_DISTANCE, data.poses, 2, "far_left_margin", "trafficwarning", 70.0
+            )
             self.requests.append(self.spawn_actors_service.call_async(r))
 
         for actions in self.actions:

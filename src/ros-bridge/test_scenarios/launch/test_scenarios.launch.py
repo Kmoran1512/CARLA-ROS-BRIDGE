@@ -149,11 +149,11 @@ def build_pedestrian(side, n, kind):
         pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 2.0
         pedestrian["spawn"] = "far_left_margin" if n == 0 else "right"
     elif side == "l":
-        pedestrian["actions"][0]["speed"] = 1.7 if n == 0 else 2.0
+        pedestrian["actions"][0]["speed"] = 1.5 if n == 0 else 2.0
         pedestrian["spawn"] = "near_left_margin" if n == 0 else "far_right"
     elif side == "c":
-        pedestrian["actions"][0]["speed"] = 2.5 if n == 0 else 2.2
-        pedestrian["spawn"] = "far_left" if n == 0 else "far_right"
+        pedestrian["actions"][0]["speed"] = 2.7 if n == 0 else 2.2
+        pedestrian["spawn"] = "far_left" if n == 0 else "right"
 
     pedestrian["actions"][0]["mdelay"] = RT * ADJUSTED_SPEED
     pedestrian["blueprint"] = LABELS[kind]

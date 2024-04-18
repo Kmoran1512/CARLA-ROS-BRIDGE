@@ -96,7 +96,7 @@ class Agent(CompatibleNode):
         self._ped_dist_publisher = self.new_publisher(
             Float64, "/carla/{}/hazard_distance".format(role_name), 10
         )
-        self.desired_gap = 40.0
+        self.desired_gap = 30.0
 
         self.tf_pub = self.create_publisher(ObjectArray, "/transformed_pedestrians", 10)
 
