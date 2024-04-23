@@ -40,35 +40,11 @@ class BagRemap(Node):
         self.semantic_pub.publish(self.semantic_image)
         self.rgb_pub.publish(self.rgb_image)
 
-    def resize(self, image_msg: Image) -> Image:
-        img = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding="rgb8")
-        new_img = image_resize(img, self.WIDTH)
-        return self.bridge.cv2_to_imgmsg(new_img, "rgb8")
-
     def _rgb_callback(self, data: Image):
-        self.rgb_image = self.resize(data)
+        self.rgb_image = data
 
     def _semantic_callback(self, data: Image):
-        self.semantic_image = self.resize(data)
-
-
-def image_resize(image, width=None, height=None):
-    (h, w) = image.shape[:2]
-
-    if width is None and height is None:
-        return image
-
-    if width is None:
-        r = height / float(h)
-        dim = (int(w * r), height)
-
-    else:
-        r = width / float(w)
-        dim = (width, int(h * r))
-
-    resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
-
-    return resized
+        self.semantic_image = data
 
 
 def main(args=None):

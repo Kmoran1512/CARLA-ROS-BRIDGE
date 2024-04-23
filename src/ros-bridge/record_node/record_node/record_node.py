@@ -299,10 +299,6 @@ def create_bag_run():
             "record",
             "/resized_semantic",
             "/resized_rgb",
-            "--qos-profile-overrides-path",
-            os.path.join(
-                get_package_share_directory("record_node"), "config", "bag_config.yaml"
-            ),
             "--compression-mode",
             "file",
             "--compression-format",

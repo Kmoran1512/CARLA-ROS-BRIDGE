@@ -13,11 +13,7 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (
             "share/" + package_name + "/config",
-            [
-                "config/bag_config.yaml",
-                "config/column_headers.txt",
-                "config/semantic_map.json",
-            ],
+            ["config/column_headers.txt", "config/semantic_map.json"],
         ),
         (os.path.join("share", package_name), glob("launch/*.launch.py")),
     ],
