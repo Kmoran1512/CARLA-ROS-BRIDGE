@@ -18,7 +18,7 @@ def generate_launch_description():
         name="g29_force_feedback",
         namespace=LaunchConfiguration("namespace"),
         output="screen",
-        parameters=[params],
+        parameters=[params, {"threshold": LaunchConfiguration("threshold")}],
     )
 
     return LaunchDescription(
@@ -26,6 +26,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "namespace", default_value="", description="Namespace for the node"
             ),
+            DeclareLaunchArgument(name="threshold", default_value="0.0005"),
             g29_ff,
         ]
     )

@@ -45,7 +45,9 @@ private:
     double m_err = 0.0;
     double m_d_err = 0.0;
     double m_i_err = 0.0;
+    double m_threshold = 0.0005;
     float m_prev_target = 0.0;
+
 
 public:
     G29ForceFeedback();
@@ -86,6 +88,7 @@ G29ForceFeedback::G29ForceFeedback()
     declare_parameter("auto_centering_max_position", m_auto_centering_max_position);
     declare_parameter("eps", m_eps);
     declare_parameter("auto_centering", m_auto_centering);
+    declare_parameter("threshold", m_threshold);
 
     get_parameter("device_name", m_device_name);
     get_parameter("loop_rate", m_loop_rate);
@@ -97,6 +100,7 @@ G29ForceFeedback::G29ForceFeedback()
     get_parameter("auto_centering_max_position", m_auto_centering_max_position);
     get_parameter("eps", m_eps);
     get_parameter("auto_centering", m_auto_centering);
+    get_parameter("threshold", m_threshold);
 
     initDevice();
 
@@ -144,8 +148,7 @@ void G29ForceFeedback::loop() {
         double torque_compensation = fabs(prev_torque) / 1000;
         double combined = fabs(torque_compensation + prev_position);
 
-        double threshold = 0.0005;
-        bool human_ctrl = fabs(abs_position - combined) > threshold;
+        bool human_ctrl = fabs(abs_position - combined) > m_threshold;
 
         force_publisher->publish(buildMessage(false, human_ctrl, m_torque));
         
