@@ -48,7 +48,6 @@ private:
     double m_threshold = 0.0005;
     float m_prev_target = 0.0;
 
-
 public:
     G29ForceFeedback();
     ~G29ForceFeedback();
