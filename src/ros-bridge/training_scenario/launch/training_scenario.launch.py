@@ -28,6 +28,7 @@ def generate_launch_description():
                     "speeds.csv",
                 ),
             ),
+            DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
             DeclareLaunchArgument(name="sun_azimuth", default_value="60.0"),
             DeclareLaunchArgument(name="sun_elevation", default_value="5.0"),
             DeclareLaunchArgument(name="pedestrian_number", default_value="2"),
@@ -48,7 +49,18 @@ def generate_launch_description():
                     "avoid_risk": "True",
                     "synchronous_mode_wait_for_vehicle_control_command": "False",
                     "target_speed": LaunchConfiguration("target_speed"),
+                    "town": LaunchConfiguration("town"),
                 }.items(),
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(
+                        get_package_share_directory("ros_g29_force_feedback"),
+                        "launch",
+                        "g29_feedback.launch.py",
+                    )
+                ),
+                launch_arguments={"threshold": "0.0015"}.items(),
             ),
             Node(
                 package="training_scenario",
