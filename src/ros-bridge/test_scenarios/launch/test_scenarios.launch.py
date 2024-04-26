@@ -13,6 +13,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
+
 # 35 = 15.6
 # 27 = 12.0
 SPEED_MPH = 35
@@ -25,14 +26,22 @@ def generate_launch_description():
     sun_azimuth = 60.0
     sun_elevation = 15.0
 
-    config_param = next(
+    config_str = next(
         (
-            config_param[8:]
+            config_param[5]
             for config_param in sys.argv
-            if config_param.startswith("config:=")
+            if config_param.startswith("key:=")
         ),
         "",
-    ).split("-")
+    )
+
+    print(config_str)
+
+    config_param = scenario_mapper(ord(config_str.upper()) - ord("A"))
+
+    print(config_str)
+    print(config_param)
+
     location = side_map[config_param[0]]
 
     descriptions = [
@@ -142,9 +151,11 @@ def build_pedestrian(location, n, kind):
     RT = 2.5
 
     pedestrian = {
-        "actions": [{}, {"speed": 0.0, "tdelay": RT - 0.2}],
+        "actions": [
+            {"yaw": 95.0 if n == 0 else -90.0},
+            {"speed": 0.0, "tdelay": RT - 0.2},
+        ],
         "yaw": 90.0 if n == 0 else -90.0,
-        "actions[0][yaw]": 95.0 if n == 0 else -90.0,
     }
 
     if location[0] == "r":
@@ -180,6 +191,59 @@ side_map = {
     "lt": ("105.2, 30.0, 1.0, 0, 0, 105", "30.4, 64.4, 1.0, 0, 0, 180"),
     "rt": ("109.7, 30.0, 1.0, 0, 0, 105", "30.4, 67.8, 1.0, 0, 0, 180"),
 }
+
+
+import random
+
+
+def scenario_mapper(key):
+    location = "rs" if key < 3 else "ls" if key < 6 else "rt" if key < 9 else "lt"
+
+    ped_labels = get_pedestrian_labels(key % 3)
+    return [location, *ped_labels]
+
+
+def get_pedestrian_labels(delta):
+    value_arr = []
+    if delta == 2:
+        rand = random.choice([0, 2])
+        value_arr = [rand, 2 - rand]
+    elif delta == 0:
+        rand = random.choice(range(2))
+        value_arr = [rand] * 2
+    else:
+        rand = random.choice(range(2))
+        if rand == 2:
+            value_arr = [2, 1]
+        elif rand == 0:
+            value_arr = [0, 1]
+        else:
+            rand = random.choice([0, 2])
+            value_arr = [1, rand]
+
+    return [get_pedestrian(value) for value in value_arr]
+
+
+def get_pedestrian(value):
+    if value == 2:
+        return get_high_value_pedestrian()
+    elif value == 1:
+        return get_mid_value_pedestrian()
+    else:
+        return get_low_value_pedestrian()
+
+
+def get_high_value_pedestrian():
+    return "child"
+
+
+def get_low_value_pedestrian():
+    return "terrorist"
+
+
+def get_mid_value_pedestrian():
+    return "police"
+
 
 if __name__ == "__main__":
     generate_launch_description()
