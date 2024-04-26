@@ -132,28 +132,41 @@ def build_config(names):
     config = {"num": 2, "pedestrians": []}
 
     for i, name in enumerate(names[1:]):
-        config["pedestrians"].append(build_pedestrian(names[0][0], i, name))
+        config["pedestrians"].append(build_pedestrian(names[0], i, name))
 
     return config
 
 
-def build_pedestrian(side, n, kind):
+def build_pedestrian(location, n, kind):
     LABELS = {"child": 13, "police": 30, "terrorist": 38, "bike": 101}
-    RT = 2.0
+    RT = 2.5
 
-    pedestrian = {"actions": [{}]}
-    pedestrian["yaw"] = 90.0 if n == 0 else -90.0
-    pedestrian["actions"][0]["yaw"] = 95.0 if n == 0 else -90.0
+    pedestrian = {
+        "actions": [{}, {"speed": 0.0, "tdelay": RT - 0.2}],
+        "yaw": 90.0 if n == 0 else -90.0,
+        "actions[0][yaw]": 95.0 if n == 0 else -90.0,
+    }
 
-    if side == "r":
-        pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 2.0
-        pedestrian["spawn"] = "far_left_margin" if n == 0 else "right"
-    elif side == "l":
-        pedestrian["actions"][0]["speed"] = 1.5 if n == 0 else 2.0
-        pedestrian["spawn"] = "near_left_margin" if n == 0 else "far_right"
-    elif side == "c":
-        pedestrian["actions"][0]["speed"] = 2.7 if n == 0 else 2.2
-        pedestrian["spawn"] = "far_left" if n == 0 else "right"
+    if location[0] == "r":
+        pedestrian["spawn"] = "far_left_margin"
+    else:
+        pedestrian["spawn"] = "near_left_margin"
+
+    if location == "rs":
+        pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 2.2
+    if location == "rt":
+        pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 1.4
+    elif location == "ls":
+        pedestrian["actions"][0]["speed"] = 1.2 if n == 0 else 1.4
+    elif location == "lt":
+        pedestrian["actions"][0]["speed"] = 1.0
+
+    if n == 0:
+        pedestrian["spawn"] = "right"
+
+    pedestrian["actions"].append(
+        {"speed": 2.0, "yaw": -pedestrian["actions"][0]["yaw"], "tdelay": 0.1}
+    )
 
     pedestrian["actions"][0]["mdelay"] = RT * ADJUSTED_SPEED
     pedestrian["blueprint"] = LABELS[kind]
@@ -161,40 +174,9 @@ def build_pedestrian(side, n, kind):
     return pedestrian
 
 
-# def build_pedestrian(side, n, kind):
-#     LABELS = {"child": 13, "police": 30, "terrorist": 38, "bike": 101}
-#     RT = 2.5
-
-#     pedestrian = {"actions": [{}, {"speed": 0.0, "tdelay": RT - .5}]}
-#     pedestrian["yaw"] = 90.0 if n == 0 else -90.0
-#     pedestrian["actions"][0]["yaw"] = 95.0 if n == 0 else -90.0
-
-#     if side == "r":
-#         pedestrian["actions"][0]["speed"] = 1.7 if n == 0 else 1.4
-#         pedestrian["spawn"] = "far_left_margin" if n == 0 else "far_right"
-#         if n == 0:
-#             pedestrian["actions"].append({"speed": 2.0, 'yaw': -pedestrian["actions"][0]['yaw'], "tdelay": .1})
-#     elif side == "l":
-#         pedestrian["actions"][0]["speed"] = 1.5 if n == 0 else 2.0
-#         pedestrian["spawn"] = "near_left_margin" if n == 0 else "far_right"
-#         if n == 1:
-#             pedestrian["actions"].append({"speed": 2.0, 'yaw': -pedestrian["actions"][0]['yaw'], "tdelay": .1})
-
-#     elif side == "c":
-#         pedestrian["actions"][0]["speed"] = 2.7 if n == 0 else 2.2
-#         pedestrian["spawn"] = "far_left" if n == 0 else "right"
-
-#     pedestrian["actions"][0]["mdelay"] = RT * ADJUSTED_SPEED
-
-#     pedestrian["blueprint"] = LABELS[kind]
-
-#     return pedestrian
-
-
 side_map = {
     "ls": ("88.0, -16.6, 1.0, 0, 0, 180", "-5.5, -16.6, 0.0, 0, 0, 180"),
     "rs": ("88.0, -13.4, 1.0, 0, 0, 180", "-5.5, -13.2, 0.0, 0, 0, 180"),
-    "cs": ("39.9, -66.3, 1.0, 0, 0, 180", "-50.5, -66.3, 0.0, 0, 0, -90"),
     "lt": ("105.2, 30.0, 1.0, 0, 0, 105", "30.4, 64.4, 1.0, 0, 0, 180"),
     "rt": ("109.7, 30.0, 1.0, 0, 0, 105", "30.4, 67.8, 1.0, 0, 0, 180"),
 }
