@@ -219,6 +219,7 @@ class RecordingOrchestrator(Node):
             self.next_row[self.headers[f"ped{i}_v (m/s)"]] = loc[2]
             self.next_row[self.headers[f"ped{i}_yaw (degrees)"]] = loc[3]
             self.next_row[self.headers[f"ped{i}_id"]] = loc[4]
+            self.next_row[self.headers[f"ped{i}_val"]] = ID_TO_VAL[loc[4]]
 
     def _record_vehicle_status(self, data):
         self.next_row[self.headers["car_v (m/s)"]] = data.velocity
@@ -275,6 +276,7 @@ class RecordingOrchestrator(Node):
             f"ped{i}_cx",
             f"ped{i}_cy",
             f"ped{i}_id",
+            f"ped{i}_val",
         ]
 
         existing_headers = set(self.headers.keys())
@@ -289,6 +291,19 @@ def get_yaw(obj: Object):
     quaternion = (orient.w, orient.x, orient.y, orient.z)
     _, _, yaw = quat2euler(quaternion)
     return math.degrees(yaw)
+
+
+ID_TO_VAL = {
+    1: (6000.0, 15000.0, 1000000.0), # Soldier
+    12: (2000.0, 10000.0, 85000.0), # Orphan
+    15: (4000.0, 10000.0, 100000.0), # Police
+    16: (0.0, 0.0, 100.0), # Terrorist
+    20: (0.0, 0.0, 100.0), # Pedophile
+    23: (0.0, 0.0, 11.25), # Rapist
+    25: (1000.0, 5000.0, 10000.0), # Judge
+    26: (1000.0, 4000.0, 50000.0), # Billionaire
+    30: (1000.0, 3000.0, 20000.0), # Celebrity
+}
 
 
 def create_bag_run():

@@ -147,7 +147,17 @@ def build_config(names):
 
 
 def build_pedestrian(location, n, kind):
-    LABELS = {"child": 13, "police": 30, "terrorist": 38, "bike": 101}
+    LABELS = {
+        "soldier": 1,
+        "police officer": 30,
+        "orphan": 12,
+        "terrorist": 15,
+        "rapist": 16,
+        "pedophile": 26,
+        "judge": 20,
+        "billionaire": 23,
+        "celebrity": 25,
+    }
     RT = 2.5
 
     pedestrian = {
@@ -234,15 +244,15 @@ def get_pedestrian(value):
 
 
 def get_high_value_pedestrian():
-    return "child"
+    return random.choice(["soldier", "police officer", "orphan"])
 
 
 def get_low_value_pedestrian():
-    return "terrorist"
+    return random.choice(["terrorist", "rapist", "pedophile"])
 
 
 def get_mid_value_pedestrian():
-    return "police"
+    return random.choice(["judge", "billionaire", "celebrity"])
 
 
 if __name__ == "__main__":

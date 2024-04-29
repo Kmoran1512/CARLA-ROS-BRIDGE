@@ -25,3 +25,12 @@ ped0_yaw (degrees)
 ped0_cx
 ped0_cy
 ped0_id
+ped0_val
+ped1_x (m)
+ped1_y (m)
+ped1_v (m/s)
+ped1_yaw (degrees)
+ped1_cx
+ped1_cy
+ped1_id
+ped1_val
