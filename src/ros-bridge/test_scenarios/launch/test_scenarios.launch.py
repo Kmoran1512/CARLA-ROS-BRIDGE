@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import sys
 
 from ament_index_python.packages import get_package_share_directory
@@ -201,9 +202,6 @@ side_map = {
     "lt": ("105.2, 30.0, 1.0, 0, 0, 105", "30.4, 64.4, 1.0, 0, 0, 180"),
     "rt": ("109.7, 30.0, 1.0, 0, 0, 105", "30.4, 67.8, 1.0, 0, 0, 180"),
 }
-
-
-import random
 
 
 def scenario_mapper(key):
