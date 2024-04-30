@@ -50,7 +50,9 @@ class RecordingOrchestrator(Node):
         self.declare_parameter("scenario_number", "1")
 
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
-        self.scenario_number = int(self.get_parameter("scenario_number").value)
+        self.scenario_number = self.get_parameter("scenario_number").value
+
+        self._logger.info(f"scn ::: {self.scenario_number}")
 
         header_file = os.path.join(
             get_package_share_directory("record_node"), "config", "column_headers.txt"
@@ -124,9 +126,9 @@ class RecordingOrchestrator(Node):
 
         home_dir = os.path.expanduser("~")
         target_dir = ["Documents", "MATLAB", "test_data"]
-        filename = "p{:02}_n{:02}-{}.csv".format(
+        filename = "exp_{}-{}.csv".format(
             self.scenario_number,
-            datetime.datetime.now().strftime("%m_%d"),
+            datetime.datetime.now().strftime("%m_%d__%H:%M"),
         )
         filename = os.path.join(home_dir, *target_dir, filename)
 
