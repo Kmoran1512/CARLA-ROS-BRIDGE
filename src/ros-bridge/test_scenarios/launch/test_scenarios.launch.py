@@ -47,7 +47,6 @@ def generate_launch_description():
 
     descriptions = [
         # Spawn Settings
-        DeclareLaunchArgument(name="config", default_value=""),
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),
         DeclareLaunchArgument(name="spawn_point", default_value=location[0]),
         DeclareLaunchArgument(name="goal", default_value=location[1]),
@@ -55,11 +54,8 @@ def generate_launch_description():
         DeclareLaunchArgument(name="target_speed", default_value=str(ADJUSTED_SPEED)),
         DeclareLaunchArgument(name="avoid_pedestrian", default_value="False"),
         # Recorder Settings
-        DeclareLaunchArgument(name="n", default_value="1"),
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
-        DeclareLaunchArgument(name="draw_outline", default_value="False"),
-        DeclareLaunchArgument(name="labels", default_value="['']"),
         # Additional Nodes
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -94,11 +90,9 @@ def generate_launch_description():
                 )
             ),
             launch_arguments={
-                "scenario_number": LaunchConfiguration("n"),
+                "scenario_number": config_str,
                 "record_gaze": LaunchConfiguration("record_gaze"),
                 "draw_gaze": LaunchConfiguration("draw_gaze"),
-                "draw_outline": LaunchConfiguration("draw_outline"),
-                "labels": LaunchConfiguration("labels"),
             }.items(),
         ),
         # Run Node

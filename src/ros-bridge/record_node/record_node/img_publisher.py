@@ -40,16 +40,10 @@ class ImageView(Node):
         self.boxes: List[CarlaBoundingBox] = []
 
     def _init_params(self):
-        self.declare_parameter("draw_manctrl", "True")
         self.declare_parameter("draw_gaze", "False")
-        self.declare_parameter("draw_outline", "False")
-        self.declare_parameter("draw_route", "False")
-        self.declare_parameter("labels", [])
-
-        self.show_man_ctrl = bool(self.get_parameter("draw_manctrl").value)
         self.show_gaze = bool(self.get_parameter("draw_gaze").value)
-        self.show_outline = bool(self.get_parameter("draw_outline").value)
-        self.show_route = bool(self.get_parameter("draw_route").value)
+
+        self.show_outline = False
 
     def _init_pubsub(self):
         self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
@@ -74,8 +68,8 @@ class ImageView(Node):
         self._update_gaze()
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
 
-        if self.show_man_ctrl:
-            self._draw_manctrl_status(cv_image)
+        self._draw_manctrl_status(cv_image)
+
         if self.show_gaze:
             self._draw_gaze(cv_image)
         if self.show_outline and self.labels_visible:

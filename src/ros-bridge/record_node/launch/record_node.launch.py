@@ -12,13 +12,8 @@ def generate_launch_description():
 
     launch_args = [
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
-        DeclareLaunchArgument(name="participant_number", default_value="1"),
         DeclareLaunchArgument(name="scenario_number", default_value="1"),
-        DeclareLaunchArgument(name="draw_manctrl", default_value="True"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
-        DeclareLaunchArgument(name="draw_outline", default_value="False"),
-        DeclareLaunchArgument(name="draw_route", default_value="False"),
-        DeclareLaunchArgument(name="labels", default_value="[]]"),
         # Run Node
         Node(
             package="record_node",
@@ -27,11 +22,7 @@ def generate_launch_description():
             output="screen",
             name="test",
             parameters=[
-                {"draw_manctrl": LaunchConfiguration("draw_manctrl")},
                 {"draw_gaze": LaunchConfiguration("draw_gaze")},
-                {"draw_outline": LaunchConfiguration("draw_outline")},
-                {"draw_route": LaunchConfiguration("draw_route")},
-                {"labels": LaunchConfiguration("labels")},
             ],
         ),
         Node(
@@ -42,7 +33,6 @@ def generate_launch_description():
             name="test",
             parameters=[
                 {"record_gaze": LaunchConfiguration("record_gaze")},
-                {"participant_number": LaunchConfiguration("participant_number")},
                 {"scenario_number": LaunchConfiguration("scenario_number")},
             ],
         ),
