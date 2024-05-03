@@ -127,8 +127,7 @@ class RecordingOrchestrator(Node):
         home_dir = os.path.expanduser("~")
         target_dir = ["Documents", "MATLAB", "test_data"]
         filename = "exp_{}-{}.csv".format(
-            self.scenario_number,
-            datetime.datetime.now().strftime("%m_%d__%H-%M"),
+            self.scenario_number, datetime.datetime.now().strftime("%m_%d__%H-%M")
         )
         filename = os.path.join(home_dir, *target_dir, filename)
 

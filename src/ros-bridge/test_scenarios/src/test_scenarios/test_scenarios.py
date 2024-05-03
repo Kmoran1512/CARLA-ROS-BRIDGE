@@ -117,7 +117,6 @@ class TestScenarios(Node):
             request = create_request(ped.bp, i, s)
             self.requests.append(self.spawn_actors_service.call_async(request))
 
-
     def _set_params_from_config_file(self):
 
         n = self.config.get("num", 0)

@@ -42,7 +42,6 @@ def generate_launch_description():
 
     location = side_map[config_param[0]]
 
-
     descriptions = [
         # Spawn Settings
         DeclareLaunchArgument(name="town", default_value="Town10HD_Opt"),

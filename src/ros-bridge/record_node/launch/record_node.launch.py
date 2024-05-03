@@ -21,9 +21,7 @@ def generate_launch_description():
             executable="img_publisher",
             output="screen",
             name="test",
-            parameters=[
-                {"draw_gaze": LaunchConfiguration("draw_gaze")},
-            ],
+            parameters=[{"draw_gaze": LaunchConfiguration("draw_gaze")}],
         ),
         Node(
             package="record_node",
