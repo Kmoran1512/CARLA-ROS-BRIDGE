@@ -19,7 +19,7 @@ from launch_ros.actions import Node
 # 27 = 12.0
 SPEED_MPH = 35
 SPEED_MPS = SPEED_MPH / 2.237
-LAG_FACTOR = 1.2
+LAG_FACTOR = 1.5
 ADJUSTED_SPEED = SPEED_MPS * LAG_FACTOR
 
 
@@ -157,10 +157,10 @@ def build_pedestrian(location, n, kind):
 
     pedestrian = {
         "actions": [
-            {"yaw": 95.0 if n == 0 else -90.0},
+            {"yaw": -95.0 if n == 0 else 90.0},
             {"speed": 0.0, "tdelay": RT - 0.2},
         ],
-        "yaw": 90.0 if n == 0 else -90.0,
+        "yaw": -90.0 if n == 0 else 90.0,
     }
 
     if location[0] == "r":
@@ -181,7 +181,7 @@ def build_pedestrian(location, n, kind):
         pedestrian["spawn"] = "right"
 
     pedestrian["actions"].append(
-        {"speed": 2.0, "yaw": -pedestrian["actions"][0]["yaw"], "tdelay": 0.1}
+        {"speed": 1.0, "yaw": -pedestrian["actions"][0]["yaw"], "tdelay": 0.2}
     )
 
     pedestrian["actions"][0]["mdelay"] = RT * ADJUSTED_SPEED
