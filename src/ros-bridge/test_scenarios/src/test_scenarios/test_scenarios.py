@@ -117,7 +117,9 @@ class TestScenarios(Node):
             request = create_request(ped.bp, i, s)
             self.requests.append(self.spawn_actors_service.call_async(request))
 
+
     def _set_params_from_config_file(self):
+
         n = self.config.get("num", 0)
 
         self.pedestrians: List[Pedestrian] = [Pedestrian()] * n
@@ -136,6 +138,8 @@ class TestScenarios(Node):
             ]
 
             lanes[spawn] += 1
+
+        self.prop = self.config.get("prop", None)
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_s:
@@ -164,6 +168,19 @@ class TestScenarios(Node):
         self.pedestrian_x, self.center, self.point_yaw = calculate_position(
             pedestrian_pose
         )
+
+        if self.prop is not None:
+            r = spawn_obstacle(
+                SPAWN_DISTANCE,
+                data.poses,
+                0,
+                self.prop["spawn"],
+                self.prop["blueprint"],
+                -90.0,
+            )
+
+            self.requests.append(self.spawn_actors_service.call_async(r))
+            return
 
         r = self.spawn_actors_service.call_async(
             spawn_obstacle(SPAWN_DISTANCE, data.poses)

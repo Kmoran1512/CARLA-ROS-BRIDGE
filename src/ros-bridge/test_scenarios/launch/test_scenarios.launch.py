@@ -12,10 +12,7 @@ from launch.actions import (
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-from test_scenarios.spawn_helper import (
-    build_pedestrian,
-    get_pedestrian_labels,
-)
+from test_scenarios.spawn_helper import build_pedestrian, get_pedestrian_labels
 
 # 35 = 15.6
 # 27 = 12.0
@@ -31,21 +28,20 @@ def generate_launch_description():
 
     config_str = next(
         (
-            config_param[5]
+            config_param[5:]
             for config_param in sys.argv
             if config_param.startswith("key:=")
         ),
         "",
     )
 
-    print(config_str)
-
-    config_param = scenario_mapper(ord(config_str.upper()) - ord("A"))
-
-    print(config_str)
-    print(config_param)
+    if len(config_str) == 1:
+        config_param = scenario_mapper(ord(config_str.upper()) - ord("A"))
+    else:
+        config_param = training_mapper(config_str)
 
     location = side_map[config_param[0]]
+
 
     descriptions = [
         # Spawn Settings
@@ -138,6 +134,10 @@ def build_config(names):
     config = {"num": 2, "pedestrians": []}
 
     for i, name in enumerate(names[1:]):
+        if name == "train":
+            config["num"] = 0
+            config["prop"] = {"blueprint": "warningaccident", "spawn": "center"}
+            continue
         config["pedestrians"].append(
             build_pedestrian(names[0], i, name, ADJUSTED_SPEED)
         )
@@ -158,6 +158,14 @@ def scenario_mapper(key):
 
     ped_labels = get_pedestrian_labels(key % 3)
     return [location, *ped_labels]
+
+
+def training_mapper(key: str):
+    location = (
+        "rs" if key == "t0" else "ls" if key == "t1" else "rt" if key == "t2" else "lt"
+    )
+
+    return [location, "train"]
 
 
 if __name__ == "__main__":
