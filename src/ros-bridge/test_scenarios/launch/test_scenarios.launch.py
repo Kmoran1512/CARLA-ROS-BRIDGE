@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import sys
 
 from ament_index_python.packages import get_package_share_directory
@@ -13,7 +12,10 @@ from launch.actions import (
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-
+from test_scenarios.spawn_helper import (
+    build_pedestrian,
+    get_pedestrian_labels,
+)
 
 # 35 = 15.6
 # 27 = 12.0
@@ -136,58 +138,11 @@ def build_config(names):
     config = {"num": 2, "pedestrians": []}
 
     for i, name in enumerate(names[1:]):
-        config["pedestrians"].append(build_pedestrian(names[0], i, name))
+        config["pedestrians"].append(
+            build_pedestrian(names[0], i, name, ADJUSTED_SPEED)
+        )
 
     return config
-
-
-def build_pedestrian(location, n, kind):
-    LABELS = {
-        "soldier": 1,
-        "police officer": 30,
-        "orphan": 12,
-        "terrorist": 15,
-        "rapist": 16,
-        "pedophile": 26,
-        "judge": 20,
-        "billionaire": 23,
-        "celebrity": 25,
-    }
-    RT = 2.5
-
-    pedestrian = {
-        "actions": [
-            {"yaw": -95.0 if n == 0 else 90.0},
-            {"speed": 0.0, "tdelay": RT - 0.2},
-        ],
-        "yaw": -90.0 if n == 0 else 90.0,
-    }
-
-    if location[0] == "r":
-        pedestrian["spawn"] = "far_left_margin"
-    else:
-        pedestrian["spawn"] = "near_left_margin"
-
-    if location == "rs":
-        pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 2.2
-    if location == "rt":
-        pedestrian["actions"][0]["speed"] = 2.4 if n == 0 else 1.4
-    elif location == "ls":
-        pedestrian["actions"][0]["speed"] = 1.2 if n == 0 else 1.4
-    elif location == "lt":
-        pedestrian["actions"][0]["speed"] = 1.0
-
-    if n == 0:
-        pedestrian["spawn"] = "right"
-
-    pedestrian["actions"].append(
-        {"speed": 1.0, "yaw": -pedestrian["actions"][0]["yaw"], "tdelay": 0.2}
-    )
-
-    pedestrian["actions"][0]["mdelay"] = RT * ADJUSTED_SPEED
-    pedestrian["blueprint"] = LABELS[kind]
-
-    return pedestrian
 
 
 side_map = {
@@ -203,48 +158,6 @@ def scenario_mapper(key):
 
     ped_labels = get_pedestrian_labels(key % 3)
     return [location, *ped_labels]
-
-
-def get_pedestrian_labels(delta):
-    value_arr = []
-    if delta == 2:
-        rand = random.choice([0, 2])
-        value_arr = [rand, 2 - rand]
-    elif delta == 0:
-        rand = random.choice(range(2))
-        value_arr = [rand] * 2
-    else:
-        rand = random.choice(range(2))
-        if rand == 2:
-            value_arr = [2, 1]
-        elif rand == 0:
-            value_arr = [0, 1]
-        else:
-            rand = random.choice([0, 2])
-            value_arr = [1, rand]
-
-    return [get_pedestrian(value) for value in value_arr]
-
-
-def get_pedestrian(value):
-    if value == 2:
-        return get_high_value_pedestrian()
-    elif value == 1:
-        return get_mid_value_pedestrian()
-    else:
-        return get_low_value_pedestrian()
-
-
-def get_high_value_pedestrian():
-    return random.choice(["soldier", "police officer", "orphan"])
-
-
-def get_low_value_pedestrian():
-    return random.choice(["terrorist", "rapist", "pedophile"])
-
-
-def get_mid_value_pedestrian():
-    return random.choice(["judge", "billionaire", "celebrity"])
 
 
 if __name__ == "__main__":
