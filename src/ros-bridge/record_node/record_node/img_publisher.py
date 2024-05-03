@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import random
 import cv2
 import rclpy
 
@@ -38,6 +39,7 @@ class ImageView(Node):
         self.labels_visible = False
         self.gaze_x, self.gaze_y = (0, 0)
         self.boxes: List[CarlaBoundingBox] = []
+        self.offset_i = random.choice([0, 1])
 
     def _init_params(self):
         self.declare_parameter("draw_gaze", "False")
@@ -97,16 +99,23 @@ class ImageView(Node):
         font = cv2.FONT_HERSHEY_SIMPLEX
         color = (0, 0, 255)
 
-        for bbox in self.boxes:
+        has_child = any([bbox.type == 12 for bbox in self.boxes])
+
+        for i, bbox in enumerate(self.boxes):
             if not self.labels_visible:
                 continue
 
             label = self.LABELS[bbox.type]
 
+            if bbox.type == 12:
+                self.has_child = True
+
             text_size = cv2.getTextSize(label, font, 1, 1)[0]
 
+            offset = 2 * text_size[1] if not has_child and i == self.offset_i else 0
+
             cx = int(bbox.center.x - text_size[0] // 2)
-            cy = int(bbox.center.y - bbox.size.y // 2)
+            cy = int(bbox.center.y - bbox.size.y // 2) - offset
 
             cv2.rectangle(
                 img,
