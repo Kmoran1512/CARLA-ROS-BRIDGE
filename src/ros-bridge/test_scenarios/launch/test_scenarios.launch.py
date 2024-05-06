@@ -16,9 +16,9 @@ from test_scenarios.spawn_helper import build_pedestrian, get_pedestrian_labels
 
 # 35 = 15.6
 # 27 = 12.0
-SPEED_MPH = 35
+SPEED_MPH = 27
 SPEED_MPS = SPEED_MPH / 2.237
-LAG_FACTOR = 1.5
+LAG_FACTOR = 1.2
 ADJUSTED_SPEED = SPEED_MPS * LAG_FACTOR
 
 
