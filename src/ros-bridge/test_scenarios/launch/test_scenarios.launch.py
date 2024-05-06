@@ -53,6 +53,7 @@ def generate_launch_description():
         # Recorder Settings
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
+        DeclareLaunchArgument(name="n", default_value="0"),
         # Additional Nodes
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
@@ -88,6 +89,7 @@ def generate_launch_description():
             ),
             launch_arguments={
                 "scenario_number": config_str,
+                "participant_number": LaunchConfiguration("n"),
                 "record_gaze": LaunchConfiguration("record_gaze"),
                 "draw_gaze": LaunchConfiguration("draw_gaze"),
             }.items(),

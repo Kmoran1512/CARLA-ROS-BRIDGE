@@ -48,9 +48,11 @@ class RecordingOrchestrator(Node):
     def _init_params(self):
         self.declare_parameter("record_gaze", "False")
         self.declare_parameter("scenario_number", "1")
+        self.declare_parameter("participant_number", "0")
 
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
         self.scenario_number = self.get_parameter("scenario_number").value
+        self.participant_number = bool(self.get_parameter("participant_number").value)
 
         self._logger.info(f"scn ::: {self.scenario_number}")
 
@@ -126,8 +128,10 @@ class RecordingOrchestrator(Node):
 
         home_dir = os.path.expanduser("~")
         target_dir = ["Documents", "MATLAB", "test_data"]
-        filename = "exp_{}-{}.csv".format(
-            self.scenario_number, datetime.datetime.now().strftime("%m_%d__%H-%M")
+        filename = "p_{}-exp_{}-{}.csv".format(
+            self.participant_number,
+            self.scenario_number,
+            datetime.datetime.now().strftime("%m_%d__%H-%M"),
         )
         filename = os.path.join(home_dir, *target_dir, filename)
 

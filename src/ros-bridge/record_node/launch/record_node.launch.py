@@ -14,6 +14,7 @@ def generate_launch_description():
         DeclareLaunchArgument(name="record_gaze", default_value="False"),
         DeclareLaunchArgument(name="scenario_number", default_value="1"),
         DeclareLaunchArgument(name="draw_gaze", default_value="False"),
+        DeclareLaunchArgument(name="participant_number", default_value="0"),
         # Run Node
         Node(
             package="record_node",
@@ -32,6 +33,7 @@ def generate_launch_description():
             parameters=[
                 {"record_gaze": LaunchConfiguration("record_gaze")},
                 {"scenario_number": LaunchConfiguration("scenario_number")},
+                {"participant_number": LaunchConfiguration("participant_number")},
             ],
         ),
         Node(
