@@ -291,15 +291,15 @@ def get_yaw(obj: Object):
 
 
 ID_TO_VAL = {
-    "01": (6000.0, 15000.0, 1000000.0),  # Soldier
-    "12": (2000.0, 10000.0, 85000.0),  # Orphan
-    "15": (4000.0, 10000.0, 100000.0),  # Police
-    "16": (0.0, 0.0, 100.0),  # Terrorist
-    "20": (0.0, 0.0, 100.0),  # Pedophile
-    "23": (0.0, 0.0, 11.25),  # Rapist
-    "25": (1000.0, 5000.0, 10000.0),  # Judge
-    "26": (1000.0, 4000.0, 50000.0),  # Billionaire
-    "30": (1000.0, 3000.0, 20000.0),  # Celebrity
+    "01": "Soldier",
+    "12": "Orphan",
+    "15": "Terrorist",
+    "16": "Rapist",
+    "20": "Judge",
+    "23": "Billionaire",
+    "25": "Celebrity",
+    "26": "Pedophile",
+    "30": "Police",
 }
 
 

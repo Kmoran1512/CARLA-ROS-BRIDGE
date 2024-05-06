@@ -14,7 +14,7 @@ from typing import Tuple
 def build_pedestrian(location, n, kind, speed=16):
     LABELS = {
         "soldier": 1,
-        "police officer": 30,
+        "police": 30,
         "orphan": 12,
         "terrorist": 15,
         "rapist": 16,
@@ -118,7 +118,7 @@ def get_pedestrian(value):
 
 
 def get_high_value_pedestrian():
-    return random.choice(["soldier", "police officer", "orphan"])
+    return random.choice(["soldier", "police", "orphan"])
 
 
 def get_low_value_pedestrian():

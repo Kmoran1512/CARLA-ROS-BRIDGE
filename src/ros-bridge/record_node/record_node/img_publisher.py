@@ -16,7 +16,7 @@ from rclpy.node import Node
 class ImageView(Node):
     LABELS = {
         1: "Soldier",
-        30: "Police Officer",
+        30: "Police",
         12: "Orphan",
         15: "Terrorist",
         16: "Rapist",
