@@ -18,14 +18,6 @@ def generate_launch_description():
         # Run Node
         Node(
             package="record_node",
-            namespace="img_publisher1",
-            executable="img_publisher",
-            output="screen",
-            name="test",
-            parameters=[{"draw_gaze": LaunchConfiguration("draw_gaze")}],
-        ),
-        Node(
-            package="record_node",
             namespace="record_node1",
             executable="record_node",
             output="screen",
@@ -34,14 +26,8 @@ def generate_launch_description():
                 {"record_gaze": LaunchConfiguration("record_gaze")},
                 {"scenario_number": LaunchConfiguration("scenario_number")},
                 {"participant_number": LaunchConfiguration("participant_number")},
+                {"draw_gaze": LaunchConfiguration("draw_gaze")}
             ],
-        ),
-        Node(
-            package="record_node",
-            namespace="semantic_boxes1",
-            executable="semantic_boxes",
-            output="screen",
-            name="test",
         ),
         Node(
             package="record_node", executable="bag_remap", output="screen", name="test"

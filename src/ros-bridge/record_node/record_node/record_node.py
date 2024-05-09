@@ -26,7 +26,8 @@ from transforms3d.euler import quat2euler
 from typing import List, Tuple
 
 from .gaze_reader import GazeReader
-
+from .img_publisher import ImageView
+from .semantic_boxes import SemanticBoxes
 
 class RecordingOrchestrator(Node):
     def __init__(self):
@@ -35,6 +36,8 @@ class RecordingOrchestrator(Node):
         self.headers = {}
         self._init_params()
         self.gaze_reader = GazeReader() if self.record_gaze else None
+        self.img_pub = ImageView(self, self.show_gaze)
+        self.boxer = SemanticBoxes(self)
         self.gaze_x = self.gaze_y = 0.0
 
         self.all_data = []
@@ -49,10 +52,14 @@ class RecordingOrchestrator(Node):
         self.declare_parameter("record_gaze", "False")
         self.declare_parameter("scenario_number", "1")
         self.declare_parameter("participant_number", "0")
+        self.declare_parameter("draw_gaze", "False")
+
 
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
         self.scenario_number = self.get_parameter("scenario_number").value
         self.participant_number = bool(self.get_parameter("participant_number").value)
+        self.show_gaze = bool(self.get_parameter("draw_gaze").value)
+
 
         self._logger.info(f"scn ::: {self.scenario_number}")
 
@@ -230,11 +237,14 @@ class RecordingOrchestrator(Node):
         self.next_row[self.headers["throttle (%)"]] = data.control.throttle
         self.next_row[self.headers["break (%)"]] = data.control.brake
 
-    def _record_auton_status(self, data):
+    def _record_auton_status(self, data: Bool):
         self.next_row[self.headers["is_autonomous"]] = float(not data.data)
+        self.img_pub._set_manctrl_status(data)
 
     def _record_fov(self, data: CameraInfo):
         # FOCAL_LENGTH = IMAGE_WIDTH / (2.0 * np.tan(FIELD_OF_VIEW * np.pi / 360.0))
+
+        self.boxer._set_matrices(data)
 
         self.next_row[self.headers["cam_flx"]] = data.k[0]
         self.next_row[self.headers["cam_fly"]] = data.k[4]
@@ -258,6 +268,8 @@ class RecordingOrchestrator(Node):
         ] = data.data  # true steer
 
     def _record_ped_2d_transform(self, data: CarlaBoundingBoxArray):
+        self.img_pub._update_outlines(data)
+
         sorted_objects: List[CarlaBoundingBox] = sorted(
             data.boxes, key=lambda bbox: bbox.center.x
         )

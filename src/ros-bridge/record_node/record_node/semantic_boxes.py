@@ -10,11 +10,11 @@ from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo
 
 
-class SemanticBoxes(Node):
+class SemanticBoxes():
     err = 0
 
-    def __init__(self):
-        super().__init__("semantic_boxes")
+    def __init__(self, node: Node):
+        self.node = node
         self.default_camera_info()
 
         self.bridge = CvBridge()
@@ -27,19 +27,12 @@ class SemanticBoxes(Node):
         self.world = client.get_world()
 
     def _init_pubsub(self):
-        self.box_pub = self.create_publisher(
+        self.box_pub = self.node.create_publisher(
             CarlaBoundingBoxArray, "/carla/bounding_boxes", 10
         )
 
-        self.create_subscription(
+        self.node.create_subscription(
             ObjectArray, "/transformed_pedestrians", self._tf_callback, 10
-        )
-
-        self.create_subscription(
-            CameraInfo,
-            f"/carla/ego_vehicle/rgb_front/camera_info",
-            self._set_matrices,
-            1,
         )
 
     def _set_matrices(self, data: CameraInfo):
@@ -93,20 +86,3 @@ class SemanticBoxes(Node):
         )
         self.R = np.zeros(3)
         self.T = np.zeros((1, 3))
-
-
-def main(args=None):
-    rclpy.init(args=args)
-    semantic_boxes = SemanticBoxes()
-
-    try:
-        rclpy.spin(semantic_boxes)
-    except KeyboardInterrupt:
-        pass
-
-    semantic_boxes.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == "__main__":
-    main()

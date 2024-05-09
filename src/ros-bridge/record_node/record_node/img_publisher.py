@@ -26,11 +26,11 @@ class ImageView(Node):
         25: "Celebrity",
     }
 
-    def __init__(self):
-        super().__init__("image_view")
-
+    def __init__(self, node: Node, show_gaze):
+        self.node = node
         self._init_params()
-        self.gaze_reader = GazeReader() if self.show_gaze else None
+        self.show_gaze = show_gaze
+        self.gaze_reader: GazeReader = node.gaze_reader if self.show_gaze else None
 
         self._init_pubsub()
 
@@ -42,27 +42,16 @@ class ImageView(Node):
         self.offset_i = random.choice([0, 1])
 
     def _init_params(self):
-        self.declare_parameter("draw_gaze", "False")
-        self.show_gaze = bool(self.get_parameter("draw_gaze").value)
 
         self.show_outline = False
 
     def _init_pubsub(self):
-        self.img_pub = self.create_publisher(Image, "/driver_img_view", 10)
+        self.img_pub = self.node.create_publisher(Image, "/driver_img_view", 10)
 
-        self.create_subscription(
+        self.node.create_subscription(
             Image, "/carla/ego_vehicle/rgb_front/image", self.on_view_img, 10
         )
-        self.create_subscription(
-            Bool,
-            "/carla/ego_vehicle/vehicle_control_manual_override",
-            self._set_manctrl_status,
-            10,
-        )
-        self.create_subscription(
-            CarlaBoundingBoxArray, "/carla/bounding_boxes", self._update_outlines, 10
-        )
-        self.create_subscription(
+        self.node.create_subscription(
             Bool, "/pedestrians_moving", self._update_ped_status, 1
         )
 
@@ -179,20 +168,3 @@ class ImageView(Node):
 
         for bbox in data.boxes:
             self.boxes.append(bbox)
-
-
-def main(args=None):
-    rclpy.init(args=args)
-    img_view = ImageView()
-
-    try:
-        rclpy.spin(img_view)
-    except KeyboardInterrupt:
-        pass
-
-    img_view.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == "__main__":
-    main()
