@@ -142,7 +142,6 @@ class TestScenarios(Node):
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_s:
-            self.get_logger().info("\n Playing Scenario \n")
             self.start = time.time()
 
             for actions in self.actions:
