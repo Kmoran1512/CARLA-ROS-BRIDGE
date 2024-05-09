@@ -137,7 +137,18 @@ def build_config(names):
     for i, name in enumerate(names[1:]):
         if name == "train":
             config["num"] = 0
-            config["prop"] = {"blueprint": "warningaccident", "spawn": "center"}
+            config["props"] = [{"blueprint": "warningaccident"}]
+
+            if names[0][0] == "l":
+                config["props"]["spawn"] = "center_right"
+                config["props"]["spawn"] = "far_right"
+                config["props"]["spawn"] = "center"
+                config["props"]["spawn"] = "right"
+            elif names[0][0] == "r":
+                config["props"]["spawn"] = "near_left_margin"
+                config["props"]["spawn"] = "center_right"
+                config["props"]["spawn"] = "left"
+                config["props"]["spawn"] = "center_right"
             continue
         config["pedestrians"].append(
             build_pedestrian(names[0], i, name, ADJUSTED_SPEED)

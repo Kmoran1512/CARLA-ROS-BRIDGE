@@ -138,7 +138,7 @@ class TestScenarios(Node):
 
             lanes[spawn] += 1
 
-        self.prop = self.config.get("prop", None)
+        self.props = self.config.get("props", [])
 
     def _on_key_press(self, data: Int8):
         if self.start is None and data.data == K_s:
@@ -168,17 +168,19 @@ class TestScenarios(Node):
             pedestrian_pose
         )
 
-        if self.prop is not None:
+        for i, prop in enumerate(self.props):
+            self._logger.info(f"\n\n\n prop ::: {prop} \n\n\n")
             r = spawn_obstacle(
                 SPAWN_DISTANCE,
                 data.poses,
-                0,
-                self.prop["spawn"],
-                self.prop["blueprint"],
+                10 * i,
+                prop["spawn"],
+                prop["blueprint"],
                 -90.0,
             )
 
             self.requests.append(self.spawn_actors_service.call_async(r))
+        if self.props:
             return
 
         r = self.spawn_actors_service.call_async(
@@ -203,12 +205,12 @@ class TestScenarios(Node):
 
 lanes = {
     "center": 0,
+    "center_right": 1.0,
     "right": 0,
     "left": 0,
     "far_right": 0,
     "far_left": 0,
     "near_left_margin": 0,
-    "near_left_bike": 0,
     "far_left_margin": 0,
     "far_right_margin": 0,
     "near_right_margin": 0,
