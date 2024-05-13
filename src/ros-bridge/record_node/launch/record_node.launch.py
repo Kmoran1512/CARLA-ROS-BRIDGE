@@ -26,7 +26,7 @@ def generate_launch_description():
                 {"record_gaze": LaunchConfiguration("record_gaze")},
                 {"scenario_number": LaunchConfiguration("scenario_number")},
                 {"participant_number": LaunchConfiguration("participant_number")},
-                {"draw_gaze": LaunchConfiguration("draw_gaze")}
+                {"draw_gaze": LaunchConfiguration("draw_gaze")},
             ],
         ),
         Node(

@@ -29,6 +29,7 @@ from .gaze_reader import GazeReader
 from .img_publisher import ImageView
 from .semantic_boxes import SemanticBoxes
 
+
 class RecordingOrchestrator(Node):
     def __init__(self):
         super().__init__("recording_orchestrator")
@@ -54,12 +55,10 @@ class RecordingOrchestrator(Node):
         self.declare_parameter("participant_number", "0")
         self.declare_parameter("draw_gaze", "False")
 
-
         self.record_gaze = bool(self.get_parameter("record_gaze").value)
         self.scenario_number = self.get_parameter("scenario_number").value
-        self.participant_number = bool(self.get_parameter("participant_number").value)
+        self.participant = self.get_parameter("participant_number").value
         self.show_gaze = bool(self.get_parameter("draw_gaze").value)
-
 
         self._logger.info(f"scn ::: {self.scenario_number}")
 
@@ -136,7 +135,7 @@ class RecordingOrchestrator(Node):
         home_dir = os.path.expanduser("~")
         target_dir = ["Documents", "MATLAB", "test_data"]
         filename = "p_{}-exp_{}-{}.csv".format(
-            self.participant_number,
+            self.participant,
             self.scenario_number,
             datetime.datetime.now().strftime("%m_%d__%H-%M"),
         )

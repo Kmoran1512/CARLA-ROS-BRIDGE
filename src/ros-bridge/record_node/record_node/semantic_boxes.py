@@ -10,7 +10,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo
 
 
-class SemanticBoxes():
+class SemanticBoxes:
     err = 0
 
     def __init__(self, node: Node):
