@@ -151,7 +151,7 @@ def build_config(names):
                 config["props"]["spawn"] = "center_right"
             continue
         config["pedestrians"].append(
-            build_pedestrian(names[0], i, name, ADJUSTED_SPEED)
+            build_pedestrian(names[0], i, name, SPEED_MPS)
         )
 
     return config
