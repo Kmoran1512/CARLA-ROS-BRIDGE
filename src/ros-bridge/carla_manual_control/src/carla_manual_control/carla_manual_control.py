@@ -388,7 +388,7 @@ class JoystickControl(object):
 
         self._parse_joystick_control()
 
-        if self.m_ctrl.brake > 0.1:
+        if self.m_ctrl.brake > 0.01:
             self.manual_override = True
             self.set_manual_override(self.manual_override)
 
