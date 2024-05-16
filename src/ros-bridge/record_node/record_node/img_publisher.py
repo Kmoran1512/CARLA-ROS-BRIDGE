@@ -34,16 +34,16 @@ class ImageView(Node):
 
         self._init_pubsub()
 
+    def _init_params(self):
+        self.show_outline = False
+        self.is_ready = False
+
         self.bridge = CvBridge()
         self.manctrl_status = "enabled"
         self.labels_visible = False
         self.gaze_x, self.gaze_y = (0, 0)
         self.boxes: List[CarlaBoundingBox] = []
         self.offset_i = random.choice([0, 1])
-
-    def _init_params(self):
-
-        self.show_outline = False
 
     def _init_pubsub(self):
         self.img_pub = self.node.create_publisher(Image, "/driver_img_view", 10)
@@ -55,11 +55,15 @@ class ImageView(Node):
             Bool, "/pedestrians_moving", self._update_ped_status, 1
         )
 
+    def ready(self, data: bool):
+        self.is_ready = data
+
     def on_view_img(self, data):
         self._update_gaze()
         cv_image = self.bridge.imgmsg_to_cv2(data, desired_encoding="rgb8")
 
         self._draw_manctrl_status(cv_image)
+        self._draw_ready(cv_image)
 
         if self.show_gaze:
             self._draw_gaze(cv_image)
@@ -136,6 +140,29 @@ class ImageView(Node):
             2,
             lineType=cv2.LINE_AA,
         )
+
+    def _draw_ready(self, image):
+        height, width = image.shape[:2]
+        height -= 10
+        width -= 10
+        size = 20
+
+        if self.node.start is None:
+            cv2.line(
+                image, (width - size, height - size), (width, height), (0, 0, 255), 2
+            )
+            cv2.line(
+                image, (width, height - size), (width - size, height), (0, 0, 255), 2
+            )
+        else:
+            radius = size // 2
+            cv2.circle(
+                image,
+                (width - radius, height - radius),
+                radius,
+                (0, 255, 0),
+                thickness=2,
+            )
 
     def _draw_outlines(self, img):
         for bbox in self.boxes:
