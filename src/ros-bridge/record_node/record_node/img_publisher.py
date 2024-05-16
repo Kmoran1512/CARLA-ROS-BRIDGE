@@ -143,8 +143,8 @@ class ImageView(Node):
 
     def _draw_ready(self, image):
         height, width = image.shape[:2]
-        height -= 10
-        width -= 10
+        height -= 40
+        width -= 30
         size = 20
 
         if self.node.start is None:
