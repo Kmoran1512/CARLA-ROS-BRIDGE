@@ -137,14 +137,14 @@ def build_config(names):
     for i, name in enumerate(names[1:]):
         if name == "train":
             config["num"] = 0
-            if names[0][0] == "l":
+            if (names[0][0] == "l" or names[0] == 'rw') and not names[0] == 'lw':
                 config["props"] = [
                     {"blueprint": "warningaccident", "spawn": "center_right"},
                     {"blueprint": "warningaccident", "spawn": "far_right"},
                     {"blueprint": "warningaccident", "spawn": "center"},
                     {"blueprint": "warningaccident", "spawn": "right"},
                 ]
-            elif names[0][0] == "r":
+            elif (names[0][0] == "r"  or names[0] == 'lw'):
                 config["props"] = [
                     {"blueprint": "warningaccident", "spawn": "near_left_margin"},
                     {"blueprint": "warningaccident", "spawn": "center_right"},
@@ -162,6 +162,10 @@ side_map = {
     "rs": ("88.0, -13.4, 1.0, 0, 0, 180", "-5.5, -13.2, 0.0, 0, 0, 180"),
     "lt": ("105.2, 30.0, 1.0, 0, 0, 105", "30.4, 64.4, 1.0, 0, 0, 180"),
     "rt": ("109.7, 30.0, 1.0, 0, 0, 105", "30.4, 67.8, 1.0, 0, 0, 180"),
+    "lc": ("66.5, -134.1, 1.0, 0, 0, 180", "-27.0, -134.1, 0.0, 0, 0, 180"),
+    "rc": ("66.5, -130.6, 1.0, 0, 0, 180", "-27.0, -130.6, 0.0, 0, 0, 180"),
+    "lw": ("-95.9, -120.9, 1.0, 0, 0, 315", "-3.0, -137.3, 0.0, 0, 0, 0.0"),
+    "rw": ("-98.6, -123.4, 1.0, 0, 0, 315", "-3.0, -140.6, 0.0, 0, 0, 180"),
 }
 
 
@@ -174,7 +178,7 @@ def scenario_mapper(key):
 
 def training_mapper(key: str):
     location = (
-        "rs" if key == "t0" else "ls" if key == "t1" else "rt" if key == "t2" else "lt"
+        "rc" if key == "t0" else "lc" if key == "t1" else "rw" if key == "t2" else "lw"
     )
 
     return [location, "train"]
