@@ -60,8 +60,6 @@ class RecordingOrchestrator(Node):
         self.participant = self.get_parameter("participant_number").value
         self.show_gaze = bool(self.get_parameter("draw_gaze").value)
 
-        self._logger.info(f"scn ::: {self.scenario_number}")
-
         header_file = os.path.join(
             get_package_share_directory("record_node"), "config", "column_headers.txt"
         )

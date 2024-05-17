@@ -168,7 +168,6 @@ class TestScenarios(Node):
         )
 
         for i, prop in enumerate(self.props):
-            self._logger.info(f"\n\n\n prop ::: {prop} \n\n\n")
             r = spawn_obstacle(
                 SPAWN_DISTANCE,
                 data.poses,
