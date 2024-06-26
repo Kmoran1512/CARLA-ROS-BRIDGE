@@ -1,27 +1,26 @@
-#!/usr/bin/env python3
 import numpy as np
 import socket
 import re
-
 
 IP_ADDRESS = "192.168.56.30"
 TARGET_PORT = 4242
 
 
-class GazePublisher:
+class GazeReader:
     def __init__(self):
         self._server_connection()
         self.data = []
 
+    def close(self):
+        self._server.close()
+
     def get_gaze(self):
         self._request_gaze_data()
-
         self._ignore_x_msgs(2)
-
         self._receive_gaze_data()
 
         if len(self.data) < 5:
-            return
+            return (-1.0, -1.0)
 
         return separate_data(self.data)
 
@@ -31,29 +30,20 @@ class GazePublisher:
         self._server.send(str.encode('<SET ID="ENABLE_SEND_DATA" STATE="1" />\r\n'))
 
     def _receive_gaze_data(self):
-        rxdat = self._server.recv(1024)
-        rxdat = bytes.decode(rxdat)
+        raw_data = self._server.recv(1024)
+        raw_data = bytes.decode(raw_data)
 
-        rxdat = rxdat.split()
+        raw_data = raw_data.split()[1:-1]
 
-        rxdat = rxdat[1:-1]
-
-        rxdat = np.asarray(rxdat)
-        rxdat = rxdat.reshape(-1, 1)
+        raw_data = np.asarray(raw_data)
+        raw_data = raw_data.reshape(-1, 1)
 
         numbers = re.compile(r"\d+(?:\.\d+)?")
 
-        self.data = []
         try:
-            for i in range(len(rxdat)):
-                temp = numbers.findall(rxdat[i][0])
-                temp = float(temp[0])
-                self.data.append(temp)
+            self.data = [float(numbers.findall(item[0])[0]) for item in raw_data]
         except IndexError:
             pass
-            # print(
-            #     "Gazepoint Server fell behind | Data will be repeated until it catches up"
-            # )
 
     def _server_connection(self):
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -66,4 +56,4 @@ class GazePublisher:
 
 def separate_data(data):
     """return x, y, v, d"""
-    return data[0], data[1], data[4], data[3]
+    return (data[0], data[1])

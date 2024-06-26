@@ -13,8 +13,13 @@ import os
 import threading
 
 from python_qt_binding import loadUi  # pylint: disable=import-error
-from python_qt_binding.QtGui import QPixmap, QIcon  # pylint: disable=no-name-in-module, import-error
-from python_qt_binding.QtWidgets import QWidget  # pylint: disable=no-name-in-module, import-error
+from python_qt_binding.QtGui import (
+    QPixmap,
+    QIcon,
+)  # pylint: disable=no-name-in-module, import-error
+from python_qt_binding.QtWidgets import (
+    QWidget,
+)  # pylint: disable=no-name-in-module, import-error
 from qt_gui.plugin import Plugin  # pylint: disable=import-error
 
 import ros_compatibility as roscomp
@@ -34,42 +39,40 @@ class CarlaControlPlugin(Plugin):
         Constructor
         """
         super(CarlaControlPlugin, self).__init__(context)
-        self.setObjectName('CARLA Control')
+        self.setObjectName("CARLA Control")
 
         self._widget = QWidget()
 
-        self._node = CompatibleNode('rqt_carla_control_node')
+        self._node = CompatibleNode("rqt_carla_control_node")
 
-        package_share_dir = roscomp.get_package_share_directory('rqt_carla_control')
-        ui_file = os.path.join(package_share_dir, 'resource', 'CarlaControl.ui')
+        package_share_dir = roscomp.get_package_share_directory("rqt_carla_control")
+        ui_file = os.path.join(package_share_dir, "resource", "CarlaControl.ui")
 
         loadUi(ui_file, self._widget)
-        self._widget.setObjectName('CarlaControl')
+        self._widget.setObjectName("CarlaControl")
         if context.serial_number() > 1:
             self._widget.setWindowTitle(
-                self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+                self._widget.windowTitle() + (" (%d)" % context.serial_number())
+            )
 
         self.pause_icon = QIcon(
-            QPixmap(os.path.join(
-                package_share_dir, 'resource', 'pause.png')))
+            QPixmap(os.path.join(package_share_dir, "resource", "pause.png"))
+        )
         self.play_icon = QIcon(
-            QPixmap(os.path.join(
-                package_share_dir, 'resource', 'play.png')))
+            QPixmap(os.path.join(package_share_dir, "resource", "play.png"))
+        )
         self._widget.pushButtonStepOnce.setIcon(
-            QIcon(QPixmap(os.path.join(
-                package_share_dir, 'resource', 'step_once.png'))))
+            QIcon(QPixmap(os.path.join(package_share_dir, "resource", "step_once.png")))
+        )
 
         self.carla_status = None
         self.carla_status_subscriber = self._node.new_subscription(
-            CarlaStatus,
-            "/carla/status",
-            self.carla_status_changed,
-            qos_profile=10)
+            CarlaStatus, "/carla/status", self.carla_status_changed, qos_profile=10
+        )
 
         self.carla_control_publisher = self._node.new_publisher(
-            CarlaControl,
-            "/carla/control",
-            qos_profile=10)
+            CarlaControl, "/carla/control", qos_profile=10
+        )
 
         self._widget.pushButtonPlayPause.setDisabled(True)
         self._widget.pushButtonStepOnce.setDisabled(True)
@@ -89,15 +92,21 @@ class CarlaControlPlugin(Plugin):
         """
         if self.carla_status.synchronous_mode:
             if self.carla_status.synchronous_mode_running:
-                self.carla_control_publisher.publish(CarlaControl(command=CarlaControl.PAUSE))
+                self.carla_control_publisher.publish(
+                    CarlaControl(command=CarlaControl.PAUSE)
+                )
             else:
-                self.carla_control_publisher.publish(CarlaControl(command=CarlaControl.PLAY))
+                self.carla_control_publisher.publish(
+                    CarlaControl(command=CarlaControl.PLAY)
+                )
 
     def step_once(self):
         """
         execute one step
         """
-        self.carla_control_publisher.publish(CarlaControl(command=CarlaControl.STEP_ONCE))
+        self.carla_control_publisher.publish(
+            CarlaControl(command=CarlaControl.STEP_ONCE)
+        )
 
     def carla_status_changed(self, status):
         """

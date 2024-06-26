@@ -91,10 +91,9 @@ def get_vehicle_driving_impedance_acceleration(vehicle_info, vehicle_status, rev
     slope_force = get_slope_force(vehicle_info, vehicle_status)
     if reverse:
         slope_force = -slope_force
-    deceleration = -(rolling_resistance_force +
-                     aerodynamic_drag_force +
-                     slope_force) /  \
-        get_vehicle_mass(vehicle_info)
+    deceleration = -(
+        rolling_resistance_force + aerodynamic_drag_force + slope_force
+    ) / get_vehicle_mass(vehicle_info)
 
     return deceleration
 
@@ -129,8 +128,7 @@ def get_weight_force(vehicle_info):
     :return: weight of the vehicle [N]
     :rtype: float64
     """
-    weight = get_vehicle_mass(vehicle_info) * \
-        get_acceleration_of_gravity(vehicle_info)
+    weight = get_vehicle_mass(vehicle_info) * get_acceleration_of_gravity(vehicle_info)
 
     return weight
 
@@ -183,10 +181,18 @@ def get_slope_force(vehicle_info, vehicle_status):
     :rtype: float64
     """
     dummy_roll, pitch, dummy_yaw = quat2euler(
-        [vehicle_status.orientation.w, vehicle_status.orientation.x,
-         vehicle_status.orientation.y, vehicle_status.orientation.z])
-    slope_force = get_acceleration_of_gravity(
-        vehicle_info) * get_vehicle_mass(vehicle_info) * math.sin(-pitch)
+        [
+            vehicle_status.orientation.w,
+            vehicle_status.orientation.x,
+            vehicle_status.orientation.y,
+            vehicle_status.orientation.z,
+        ]
+    )
+    slope_force = (
+        get_acceleration_of_gravity(vehicle_info)
+        * get_vehicle_mass(vehicle_info)
+        * math.sin(-pitch)
+    )
     return slope_force
 
 

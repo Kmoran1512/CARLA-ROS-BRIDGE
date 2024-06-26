@@ -38,7 +38,10 @@ class WorldInfo(object):
         self.world_info_publisher = node.new_publisher(
             CarlaWorldInfo,
             "/carla/world_info",
-            qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            qos_profile=QoSProfile(
+                depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
+        )
 
     def destroy(self):
         """

@@ -2,12 +2,22 @@
 <OpenSCENARIO>
   <FileHeader revMajor="1" revMinor="0" date="2019-06-25T00:00:00" description="CARLA:PedCrash" author=""/>
   <ParameterDeclarations>
-    <ParameterDeclaration name="vehicleSpeed" parameterType="double" value="12.0"/>
+    <ParameterDeclaration name="initialSpeed" parameterType="double" value="12.0"/>
+
+    <ParameterDeclaration name="stoppingSpeed" parameterType="double" value="8.0"/>
     <ParameterDeclaration name="stoppingDistance" parameterType="double" value="40.0"/>
     <!-- 12 will stop just before the pedestrian -->
+    <ParameterDeclaration name="stoppingSpeed2" parameterType="double" value="4.0"/>
     <ParameterDeclaration name="stoppingDistance2" parameterType="double" value="25.0"/>
     <!-- 12 will stop just before the pedestrian -->
+    <ParameterDeclaration name="stoppingSpeed3" parameterType="double" value="0.0"/>
     <ParameterDeclaration name="stoppingDistance3" parameterType="double" value="11.0"/>
+
+    <!-- 195 is the right side of the road. 199 is the left -->
+    <ParameterDeclaration name="laneSide" parameterType="integer" value="195"/>
+
+    <!-- Pedestrian blueprint - 49 different versions -->
+    <ParameterDeclaration name="pedestrianBlueprint" parameterType="string" value="walker.pedestrian.0001"/>
 
   </ParameterDeclarations>
   <CatalogLocations />
@@ -35,7 +45,7 @@
       </Vehicle>
     </ScenarioObject>
     <ScenarioObject name="adversary">
-      <Pedestrian model="walker.pedestrian.0001" mass="90.0" name="walker.pedestrian.0001" pedestrianCategory="pedestrian">
+      <Pedestrian model="$pedestrianBlueprint" mass="90.0" name="$pedestrianBlueprint" pedestrianCategory="pedestrian">
         <ParameterDeclarations/>
         <BoundingBox>
           <Center x="1.5" y="0.0" z="0.9"/>
@@ -46,42 +56,6 @@
         </Properties>
       </Pedestrian>
     </ScenarioObject>
-    <ScenarioObject name="pedestrian1">
-      <Pedestrian mass="100" model="walker.pedestrian.0001" name="Pedestrian1" pedestrianCategory="pedestrian">
-        <ParameterDeclarations/>
-        <BoundingBox>
-          <Center x="0.5" y="0.5" z="0.9"/>
-          <Dimensions width="1.0" length="1.0" height="1.8"/>
-        </BoundingBox>
-        <Properties>
-          <Property name="type" value="simulation"/>
-        </Properties>
-      </Pedestrian>
-    </ScenarioObject>
-    <ScenarioObject name="pedestrian2">
-      <Pedestrian mass="100" model="walker.pedestrian.0002" name="Pedestrian2" pedestrianCategory="pedestrian">
-        <ParameterDeclarations/>
-        <BoundingBox>
-          <Center x="0.5" y="0.5" z="0.9"/>
-          <Dimensions width="1.0" length="1.0" height="1.8"/>
-        </BoundingBox>
-        <Properties>
-          <Property name="type" value="simulation"/>
-        </Properties>
-      </Pedestrian>
-    </ScenarioObject>
-    <ScenarioObject name="pedestrian3">
-      <Pedestrian mass="100" model="walker.pedestrian.0003" name="Pedestrian3" pedestrianCategory="pedestrian">
-        <ParameterDeclarations/>
-        <BoundingBox>
-          <Center x="0.5" y="0.5" z="0.9"/>
-          <Dimensions width="1.0" length="1.0" height="1.8"/>
-        </BoundingBox>
-        <Properties>
-          <Property name="type" value="simulation"/>
-        </Properties>
-      </Pedestrian>
-    </ScenarioObject>    
   </Entities>
   <Storyboard>
     <Init>
@@ -103,7 +77,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="312" y="195.155" z="0" h="3.12"/>
+                <WorldPosition x="312" y="$laneSide" z="0" h="3.12"/>
               </Position>
             </TeleportAction>
           </PrivateAction>          
@@ -133,7 +107,7 @@
                   <SpeedAction>
                       <SpeedActionDynamics dynamicsShape="step" value="10" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                          <AbsoluteTargetSpeed value="$vehicleSpeed"/>
+                          <AbsoluteTargetSpeed value="$initialSpeed"/>
                       </SpeedActionTarget>
                   </SpeedAction>
               </LongitudinalAction>
@@ -143,34 +117,7 @@
           <PrivateAction>
             <TeleportAction>
               <Position>
-                <WorldPosition x="222" y="195" z="0.3" h="2"/>
-              </Position>
-            </TeleportAction>
-          </PrivateAction>
-        </Private>
-        <Private entityRef="pedestrian1">
-          <PrivateAction>
-            <TeleportAction>
-              <Position>
-                <WorldPosition x="218" y="199" z="0.3" h="2.4"/>
-              </Position>
-            </TeleportAction>
-          </PrivateAction>
-        </Private>
-        <Private entityRef="pedestrian2">
-          <PrivateAction>
-            <TeleportAction>
-              <Position>
-                <WorldPosition x="219" y="200" z="0.3" h="0"/>
-              </Position>
-            </TeleportAction>
-          </PrivateAction>
-        </Private>
-        <Private entityRef="pedestrian3">
-          <PrivateAction>
-            <TeleportAction>
-              <Position>
-                <WorldPosition x="220" y="201" z="0.3" h="5.24"/>
+                <WorldPosition x="222" y="$laneSide" z="0.3" h="2"/>
               </Position>
             </TeleportAction>
           </PrivateAction>
@@ -191,7 +138,7 @@
                     <SpeedAction>
                       <SpeedActionDynamics dynamicsShape="linear" value="15" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                        <AbsoluteTargetSpeed value="8.0"/>
+                        <AbsoluteTargetSpeed value="$stoppingSpeed"/>
                       </SpeedActionTarget>
                     </SpeedAction>
                   </LongitudinalAction>
@@ -226,7 +173,7 @@
                     <SpeedAction>
                       <SpeedActionDynamics dynamicsShape="linear" value="25" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                        <AbsoluteTargetSpeed value="4.0"/>
+                        <AbsoluteTargetSpeed value="$stoppingSpeed2"/>
                       </SpeedActionTarget>
                     </SpeedAction>
                   </LongitudinalAction>
@@ -252,7 +199,7 @@
         <ManeuverGroup maximumExecutionCount="1" name="ManeuverSequence3">
           <Actors selectTriggeringEntities="false">
             <EntityRef entityRef="ego_vehicle"/>
-          </Actors>
+          </Actors>        
           <Maneuver name="StoppingManeuver3">
             <Event name="VehicleBrakes3" priority="overwrite">
               <Action name="VehicleBrakes3">
@@ -261,7 +208,7 @@
                     <SpeedAction>
                       <SpeedActionDynamics dynamicsShape="linear" value="25" dynamicsDimension="distance"/>
                       <SpeedActionTarget>
-                        <AbsoluteTargetSpeed value="0.0"/>
+                        <AbsoluteTargetSpeed value="$stoppingSpeed3"/>
                       </SpeedActionTarget>
                     </SpeedAction>
                   </LongitudinalAction>

@@ -8,7 +8,10 @@ __pycache__/
 .vscode
 .idea
 
-#colcon
+# Colcon
 build/
 install/
 log/
+
+# Recordings 
+bag_log/

@@ -26,6 +26,7 @@ class CarlaWalkerAgent(CompatibleNode):
     """
     walker agent
     """
+
     # minimum distance to target waypoint before switching to next
     MIN_DISTANCE = 0.5
 
@@ -33,7 +34,7 @@ class CarlaWalkerAgent(CompatibleNode):
         """
         Constructor
         """
-        super(CarlaWalkerAgent, self).__init__('carla_walker_agent')
+        super(CarlaWalkerAgent, self).__init__("carla_walker_agent")
 
         role_name = self.get_param("role_name", "ego_vehicle")
         self._target_speed = self.get_param("target_speed", 2.0)
@@ -44,7 +45,9 @@ class CarlaWalkerAgent(CompatibleNode):
 
         # wait for ros bridge to create relevant topics
         try:
-            self.wait_for_message("/carla/{}/odometry".format(role_name), Odometry, qos_profile=10)
+            self.wait_for_message(
+                "/carla/{}/odometry".format(role_name), Odometry, qos_profile=10
+            )
         except ROSInterruptException as e:
             if not roscomp.ok:
                 raise e
@@ -53,24 +56,30 @@ class CarlaWalkerAgent(CompatibleNode):
             Odometry,
             "/carla/{}/odometry".format(role_name),
             self.odometry_updated,
-            qos_profile=10)
+            qos_profile=10,
+        )
 
         self.control_publisher = self.new_publisher(
             CarlaWalkerControl,
             "/carla/{}/walker_control_cmd".format(role_name),
-            qos_profile=1)
+            qos_profile=1,
+        )
 
         self._route_subscriber = self.new_subscription(
             Path,
             "/carla/{}/waypoints".format(role_name),
             self.path_updated,
-            qos_profile=QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            qos_profile=QoSProfile(
+                depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
+        )
 
         self._target_speed_subscriber = self.new_subscription(
-            Float64, 
+            Float64,
             "/carla/{}/target_speed".format(role_name),
             self.target_speed_updated,
-            qos_profile=10)
+            qos_profile=10,
+        )
 
     def _on_shutdown(self):
         """
@@ -90,8 +99,11 @@ class CarlaWalkerAgent(CompatibleNode):
         """
         callback on new route
         """
-        self.loginfo("New plan with {} waypoints received. Assigning plan...".format(
-            len(path.poses)))
+        self.loginfo(
+            "New plan with {} waypoints received. Assigning plan...".format(
+                len(path.poses)
+            )
+        )
         self.control_publisher.publish(CarlaWalkerControl())  # stop
         self._waypoints = []
         for elem in path.poses:
@@ -109,7 +121,7 @@ class CarlaWalkerAgent(CompatibleNode):
             direction = Vector3()
             direction.x = self._waypoints[0].position.x - self._current_pose.position.x
             direction.y = self._waypoints[0].position.y - self._current_pose.position.y
-            direction_norm = math.sqrt(direction.x**2 + direction.y**2)
+            direction_norm = math.sqrt(direction.x ** 2 + direction.y ** 2)
             if direction_norm > CarlaWalkerAgent.MIN_DISTANCE:
                 control.speed = self._target_speed
                 control.direction.x = direction.x / direction_norm
@@ -117,8 +129,11 @@ class CarlaWalkerAgent(CompatibleNode):
             else:
                 self._waypoints = self._waypoints[1:]
                 if self._waypoints:
-                    self.loginfo("next waypoint: {} {}".format(
-                        self._waypoints[0].position.x, self._waypoints[0].position.y))
+                    self.loginfo(
+                        "next waypoint: {} {}".format(
+                            self._waypoints[0].position.x, self._waypoints[0].position.y
+                        )
+                    )
                 else:
                     self.loginfo("Route finished.")
             self.control_publisher.publish(control)
@@ -140,7 +155,8 @@ def main(args=None):
         roscomp.on_shutdown(controller._on_shutdown)
 
         update_timer = controller.new_timer(
-            0.05, lambda timer_event=None: controller.run_step())
+            0.05, lambda timer_event=None: controller.run_step()
+        )
 
         controller.spin()
     except KeyboardInterrupt:

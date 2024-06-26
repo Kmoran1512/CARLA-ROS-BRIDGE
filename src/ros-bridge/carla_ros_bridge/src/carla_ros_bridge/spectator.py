@@ -34,8 +34,6 @@ class Spectator(Actor):
         :param carla_actor: carla actor object
         :type carla_actor: carla.Actor
         """
-        super(Spectator, self).__init__(uid=uid,
-                                        name=name,
-                                        parent=parent,
-                                        node=node,
-                                        carla_actor=carla_actor)
+        super(Spectator, self).__init__(
+            uid=uid, name=name, parent=parent, node=node, carla_actor=carla_actor
+        )

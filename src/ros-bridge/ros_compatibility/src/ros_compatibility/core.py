@@ -11,7 +11,6 @@ import os
 
 
 def get_ros_version():
-
     ros_version = int(os.environ.get("ROS_VERSION", 0))
 
     if ros_version not in (1, 2):

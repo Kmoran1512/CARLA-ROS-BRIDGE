@@ -16,6 +16,7 @@ class ApplicationStatus(Enum):
     """
     States of an application
     """
+
     STOPPED = 0
     STARTING = 1
     RUNNING = 2
@@ -48,26 +49,45 @@ class ApplicationRunner(object):
             return False
 
         self._shutdown_requested_event.clear()
-        self._app_thread = Thread(target=self.start_and_run, args=(cmdline,
-                                                                   env,
-                                                                   cwd,
-                                                                   self._shutdown_requested_event,
-                                                                   self._ready_string,
-                                                                   self._status_updated_fct,
-                                                                   self._log_fct,))
+        self._app_thread = Thread(
+            target=self.start_and_run,
+            args=(
+                cmdline,
+                env,
+                cwd,
+                self._shutdown_requested_event,
+                self._ready_string,
+                self._status_updated_fct,
+                self._log_fct,
+            ),
+        )
         self._app_thread.start()
 
         return True
 
-    def start_and_run(self, cmdline, env, cwd, shutdown_requested_event, ready_string,  # pylint: disable=too-many-arguments
-                      status_updated_fct, log_fct):
+    def start_and_run(
+        self,
+        cmdline,
+        env,
+        cwd,
+        shutdown_requested_event,
+        ready_string,  # pylint: disable=too-many-arguments
+        status_updated_fct,
+        log_fct,
+    ):
         """
         thread function
         """
         status_updated_fct(ApplicationStatus.STARTING)
         try:
             process = self.start_process(cmdline, log_fct, env=env, cwd=cwd)
-            self.run(process, shutdown_requested_event, ready_string, status_updated_fct, log_fct)
+            self.run(
+                process,
+                shutdown_requested_event,
+                ready_string,
+                status_updated_fct,
+                log_fct,
+            )
         except (KeyError, pexpect.ExceptionPexpect) as e:
             self._log_fct("Error while starting process: {}".format(e))
             status_updated_fct(ApplicationStatus.ERROR)
@@ -94,7 +114,9 @@ class ApplicationRunner(object):
             self._app_thread.join()
         self._log_fct("Shutdown finished.")
 
-    def start_process(self, argument_list, log_fct, env=None, cwd=None):  # pylint: disable=no-self-use
+    def start_process(
+        self, argument_list, log_fct, env=None, cwd=None
+    ):  # pylint: disable=no-self-use
         """
         Starts a process.
         """
@@ -106,12 +128,19 @@ class ApplicationRunner(object):
             executable = argument_list
 
         log_fct("Executing: " + executable)
-        process = pexpect.spawn(executable, env=env, cwd=cwd, encoding='utf-8')
-        #process.logfile_read = sys.stdout
+        process = pexpect.spawn(executable, env=env, cwd=cwd, encoding="utf-8")
+        # process.logfile_read = sys.stdout
 
         return process
 
-    def run(self, process, shutdown_requested_event, ready_string, status_updated_fct, log_fct):  # pylint: disable=no-self-use,too-many-arguments
+    def run(
+        self,
+        process,
+        shutdown_requested_event,
+        ready_string,
+        status_updated_fct,
+        log_fct,
+    ):  # pylint: disable=no-self-use,too-many-arguments
         """
         Threaded application execution
 
@@ -123,16 +152,22 @@ class ApplicationRunner(object):
             if shutdown_requested_event.is_set():
                 if shutting_down_trigger_time is None:
                     shutting_down_trigger_time = datetime.now()
-                    log_fct("Shutdown requested while process is still \
-                        running. Sending SIGHUP/SIGINT...")
+                    log_fct(
+                        "Shutdown requested while process is still \
+                        running. Sending SIGHUP/SIGINT..."
+                    )
                     process.terminate(force=False)
                 else:
-                    if (datetime.now() - shutting_down_trigger_time) > timedelta(seconds=8):
-                        log_fct("Waited 8s for application to exit. Forcing Shutdown. \
-                            Sending SIGKILL")
+                    if (datetime.now() - shutting_down_trigger_time) > timedelta(
+                        seconds=8
+                    ):
+                        log_fct(
+                            "Waited 8s for application to exit. Forcing Shutdown. \
+                            Sending SIGKILL"
+                        )
                         process.terminate(force=True)
             try:
-                process.expect(u".*\n", timeout=0.1)
+                process.expect(".*\n", timeout=0.1)
                 log_fct(process.after.strip())
                 if not signaled_running:
                     if str(process.after).find(ready_string) != -1:

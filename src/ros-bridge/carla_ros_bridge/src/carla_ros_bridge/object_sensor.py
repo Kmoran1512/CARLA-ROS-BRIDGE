@@ -38,14 +38,11 @@ class ObjectSensor(PseudoActor):
         :type actor_list: map(carla-actor-id -> python-actor-object)
         """
 
-        super(ObjectSensor, self).__init__(uid=uid,
-                                           name=name,
-                                           parent=parent,
-                                           node=node)
+        super(ObjectSensor, self).__init__(uid=uid, name=name, parent=parent, node=node)
         self.actor_list = actor_list
-        self.object_publisher = node.new_publisher(ObjectArray,
-                                                   self.get_topic_prefix(),
-                                                   qos_profile=10)
+        self.object_publisher = node.new_publisher(
+            ObjectArray, self.get_topic_prefix(), qos_profile=10
+        )
 
     def destroy(self):
         """

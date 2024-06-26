@@ -40,9 +40,11 @@ class RssSensor(Actor):
         :type carla_actor: carla.Actor
         """
 
-        super(RssSensor, self).__init__(uid=uid,
-                                        name=name,
-                                        parent=parent,
-                                        relative_spawn_pose=relative_spawn_pose,
-                                        node=node,
-                                        carla_actor=carla_actor)
+        super(RssSensor, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+        )

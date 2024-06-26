@@ -38,12 +38,13 @@ class ActorListSensor(PseudoActor):
         :type actor_list: map(carla-actor-id -> python-actor-object)
         """
 
-        super(ActorListSensor, self).__init__(uid=uid,
-                                              name=name,
-                                              parent=parent,
-                                              node=node)
+        super(ActorListSensor, self).__init__(
+            uid=uid, name=name, parent=parent, node=node
+        )
         self.actor_list = actor_list
-        self.actor_list_publisher = node.new_publisher(CarlaActorList, self.get_topic_prefix(), qos_profile=10)
+        self.actor_list_publisher = node.new_publisher(
+            CarlaActorList, self.get_topic_prefix(), qos_profile=10
+        )
 
     def destroy(self):
         """
@@ -77,7 +78,7 @@ class ActorListSensor(PseudoActor):
             ros_actor.id = actor.id
             ros_actor.type = actor.type_id
             try:
-                ros_actor.rolename = str(actor.attributes.get('role_name'))
+                ros_actor.rolename = str(actor.attributes.get("role_name"))
             except ValueError:
                 pass
 

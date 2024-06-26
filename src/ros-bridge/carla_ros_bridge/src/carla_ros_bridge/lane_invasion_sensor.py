@@ -21,7 +21,16 @@ class LaneInvasionSensor(Sensor):
     Actor implementation details for a lane invasion sensor
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -40,18 +49,20 @@ class LaneInvasionSensor(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(LaneInvasionSensor, self).__init__(uid=uid,
-                                                 name=name,
-                                                 parent=parent,
-                                                 relative_spawn_pose=relative_spawn_pose,
-                                                 node=node,
-                                                 carla_actor=carla_actor,
-                                                 synchronous_mode=synchronous_mode,
-                                                 is_event_sensor=True)
+        super(LaneInvasionSensor, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+            is_event_sensor=True,
+        )
 
-        self.lane_invasion_publisher = node.new_publisher(CarlaLaneInvasionEvent,
-                                                          self.get_topic_prefix(),
-                                                          qos_profile=10)
+        self.lane_invasion_publisher = node.new_publisher(
+            CarlaLaneInvasionEvent, self.get_topic_prefix(), qos_profile=10
+        )
         self.listen()
 
     def destroy(self):
@@ -67,7 +78,9 @@ class LaneInvasionSensor(Sensor):
         :type lane_invasion_event: carla.LaneInvasionEvent
         """
         lane_invasion_msg = CarlaLaneInvasionEvent()
-        lane_invasion_msg.header = self.get_msg_header(timestamp=lane_invasion_event.timestamp)
+        lane_invasion_msg.header = self.get_msg_header(
+            timestamp=lane_invasion_event.timestamp
+        )
         for marking in lane_invasion_event.crossed_lane_markings:
             lane_invasion_msg.crossed_lane_markings.append(marking.type)
         self.lane_invasion_publisher.publish(lane_invasion_msg)

@@ -38,10 +38,7 @@ class Actor(PseudoActor):
         :param carla_actor: carla actor object
         :type carla_actor: carla.Actor
         """
-        super(Actor, self).__init__(uid=uid,
-                                    name=name,
-                                    parent=parent,
-                                    node=node)
+        super(Actor, self).__init__(uid=uid, name=name, parent=parent, node=node)
         self.carla_actor = carla_actor
         self.carla_actor_id = carla_actor.id
 
@@ -61,8 +58,7 @@ class Actor(PseudoActor):
         :return: the ROS pose of this actor
         :rtype: geometry_msgs.msg.Pose
         """
-        return trans.carla_transform_to_ros_pose(
-            self.carla_actor.get_transform())
+        return trans.carla_transform_to_ros_pose(self.carla_actor.get_transform())
 
     def get_current_ros_transform(self):
         """
@@ -71,8 +67,7 @@ class Actor(PseudoActor):
         :return: the ROS pose of this actor
         :rtype: geometry_msgs.msg.Pose
         """
-        return trans.carla_transform_to_ros_transform(
-            self.carla_actor.get_transform())
+        return trans.carla_transform_to_ros_transform(self.carla_actor.get_transform())
 
     def get_current_ros_twist_rotated(self):
         """
@@ -84,7 +79,8 @@ class Actor(PseudoActor):
         return trans.carla_velocity_to_ros_twist(
             self.carla_actor.get_velocity(),
             self.carla_actor.get_angular_velocity(),
-            self.carla_actor.get_transform().rotation)
+            self.carla_actor.get_transform().rotation,
+        )
 
     def get_current_ros_twist(self):
         """
@@ -94,8 +90,8 @@ class Actor(PseudoActor):
         :rtype: geometry_msgs.msg.Twist
         """
         return trans.carla_velocity_to_ros_twist(
-            self.carla_actor.get_velocity(),
-            self.carla_actor.get_angular_velocity())
+            self.carla_actor.get_velocity(), self.carla_actor.get_angular_velocity()
+        )
 
     def get_current_ros_accel(self):
         """
@@ -105,7 +101,8 @@ class Actor(PseudoActor):
         :rtype: geometry_msgs.msg.Twist
         """
         return trans.carla_acceleration_to_ros_accel(
-            self.carla_actor.get_acceleration())
+            self.carla_actor.get_acceleration()
+        )
 
     def get_id(self):
         """

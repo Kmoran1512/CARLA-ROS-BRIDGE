@@ -24,7 +24,6 @@ from geometry_msgs.msg import PoseWithCovarianceStamped, Pose
 
 
 class SetInitialPose(CompatibleNode):
-
     def __init__(self):
         super(SetInitialPose, self).__init__("set_initial_pose")
 
@@ -36,13 +35,15 @@ class SetInitialPose(CompatibleNode):
         self.transform_publisher = self.new_publisher(
             Pose,
             "/carla/{}/{}/set_transform".format(self.role_name, self.control_id),
-            qos_profile=10)
+            qos_profile=10,
+        )
 
         self.initial_pose_subscriber = self.new_subscription(
             PoseWithCovarianceStamped,
             "/initialpose",
             self.intial_pose_callback,
-            qos_profile=10)
+            qos_profile=10,
+        )
 
     def intial_pose_callback(self, initial_pose):
         pose_to_publish = initial_pose.pose.pose
@@ -64,5 +65,6 @@ def main():
     finally:
         roscomp.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

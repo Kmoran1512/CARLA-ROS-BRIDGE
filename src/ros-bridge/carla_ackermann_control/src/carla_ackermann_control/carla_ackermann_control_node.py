@@ -20,18 +20,32 @@ from ros_compatibility.node import CompatibleNode
 
 from carla_ackermann_control import carla_control_physics as phys
 
-from ackermann_msgs.msg import AckermannDrive  # pylint: disable=import-error,wrong-import-order
-from std_msgs.msg import Header # pylint: disable=wrong-import-order
-from carla_msgs.msg import CarlaEgoVehicleStatus  # pylint: disable=no-name-in-module,import-error
-from carla_msgs.msg import CarlaEgoVehicleControl  # pylint: disable=no-name-in-module,import-error
-from carla_msgs.msg import CarlaEgoVehicleInfo  # pylint: disable=no-name-in-module,import-error
-from carla_ackermann_msgs.msg import EgoVehicleControlInfo  # pylint: disable=no-name-in-module,import-error
+from ackermann_msgs.msg import (
+    AckermannDrive,
+)  # pylint: disable=import-error,wrong-import-order
+from std_msgs.msg import Header  # pylint: disable=wrong-import-order
+from carla_msgs.msg import (
+    CarlaEgoVehicleStatus,
+)  # pylint: disable=no-name-in-module,import-error
+from carla_msgs.msg import (
+    CarlaEgoVehicleControl,
+)  # pylint: disable=no-name-in-module,import-error
+from carla_msgs.msg import (
+    CarlaEgoVehicleInfo,
+)  # pylint: disable=no-name-in-module,import-error
+from carla_ackermann_msgs.msg import (
+    EgoVehicleControlInfo,
+)  # pylint: disable=no-name-in-module,import-error
 
 ROS_VERSION = roscomp.get_ros_version()
 
 if ROS_VERSION == 1:
-    from carla_ackermann_control.cfg import EgoVehicleControlParameterConfig # pylint: disable=no-name-in-module,import-error,ungrouped-imports
-    from dynamic_reconfigure.server import Server # pylint: disable=no-name-in-module,import-error
+    from carla_ackermann_control.cfg import (
+        EgoVehicleControlParameterConfig,
+    )  # pylint: disable=no-name-in-module,import-error,ungrouped-imports
+    from dynamic_reconfigure.server import (
+        Server,
+    )  # pylint: disable=no-name-in-module,import-error
 if ROS_VERSION == 2:
     from rcl_interfaces.msg import SetParametersResult
 
@@ -55,24 +69,32 @@ class CarlaAckermannControl(CompatibleNode):
         # To prevent "float division by zero" within PID controller initialize it with
         # a previous point in time (the error happens because the time doesn't
         # change between initialization and first call, therefore dt is 0)
-        sys.modules['simple_pid.PID']._current_time = (       # pylint: disable=protected-access
-            lambda: self.get_time() - 0.1)
+        sys.modules[
+            "simple_pid.PID"
+        ]._current_time = (  # pylint: disable=protected-access
+            lambda: self.get_time() - 0.1
+        )
 
         # we might want to use a PID controller to reach the final target speed
-        self.speed_controller = PID(Kp=self.get_param("speed_Kp", alternative_value=0.05),
-                                    Ki=self.get_param("speed_Ki", alternative_value=0.),
-                                    Kd=self.get_param("speed_Kd", alternative_value=0.5),
-                                    sample_time=0.05,
-                                    output_limits=(-1., 1.))
-        self.accel_controller = PID(Kp=self.get_param("accel_Kp", alternative_value=0.05),
-                                    Ki=self.get_param("accel_Ki", alternative_value=0.),
-                                    Kd=self.get_param("accel_Kd", alternative_value=0.05),
-                                    sample_time=0.05,
-                                    output_limits=(-1, 1))
+        self.speed_controller = PID(
+            Kp=self.get_param("speed_Kp", alternative_value=0.05),
+            Ki=self.get_param("speed_Ki", alternative_value=0.0),
+            Kd=self.get_param("speed_Kd", alternative_value=0.5),
+            sample_time=0.05,
+            output_limits=(-1.0, 1.0),
+        )
+        self.accel_controller = PID(
+            Kp=self.get_param("accel_Kp", alternative_value=0.05),
+            Ki=self.get_param("accel_Ki", alternative_value=0.0),
+            Kd=self.get_param("accel_Kd", alternative_value=0.05),
+            sample_time=0.05,
+            output_limits=(-1, 1),
+        )
 
         # use the correct time for further calculations
-        sys.modules['simple_pid.PID']._current_time = (       # pylint: disable=protected-access
-            lambda: self.get_time())
+        sys.modules[
+            "simple_pid.PID"
+        ]._current_time = lambda: self.get_time()  # pylint: disable=protected-access
 
         if ROS_VERSION == 1:
             self.reconfigure_server = Server(
@@ -81,13 +103,13 @@ class CarlaAckermannControl(CompatibleNode):
                 callback=self.reconfigure_pid_parameters,
             )
         if ROS_VERSION == 2:
-            self. add_on_set_parameters_callback(self.reconfigure_pid_parameters)
+            self.add_on_set_parameters_callback(self.reconfigure_pid_parameters)
 
         self.control_loop_rate = self.get_param("control_loop_rate", 0.05)
-        self.last_ackermann_msg_received_sec =  self.get_time()
+        self.last_ackermann_msg_received_sec = self.get_time()
         self.vehicle_status = CarlaEgoVehicleStatus()
         self.vehicle_info = CarlaEgoVehicleInfo()
-        self.role_name = self.get_param('role_name', 'ego_vehicle')
+        self.role_name = self.get_param("role_name", "ego_vehicle")
         # control info
         self.info = EgoVehicleControlInfo()
 
@@ -95,32 +117,32 @@ class CarlaAckermannControl(CompatibleNode):
         self.vehicle_info_updated(self.vehicle_info)
 
         # target values
-        self.info.target.steering_angle = 0.
-        self.info.target.speed = 0.
-        self.info.target.speed_abs = 0.
-        self.info.target.accel = 0.
-        self.info.target.jerk = 0.
+        self.info.target.steering_angle = 0.0
+        self.info.target.speed = 0.0
+        self.info.target.speed_abs = 0.0
+        self.info.target.accel = 0.0
+        self.info.target.jerk = 0.0
 
         # current values
         self.info.current.time_sec = self.get_time()
-        self.info.current.speed = 0.
-        self.info.current.speed_abs = 0.
-        self.info.current.accel = 0.
+        self.info.current.speed = 0.0
+        self.info.current.speed_abs = 0.0
+        self.info.current.accel = 0.0
 
         # control values
-        self.info.status.status = 'n/a'
+        self.info.status.status = "n/a"
         self.info.status.speed_control_activation_count = 0
-        self.info.status.speed_control_accel_delta = 0.
-        self.info.status.speed_control_accel_target = 0.
-        self.info.status.accel_control_pedal_delta = 0.
-        self.info.status.accel_control_pedal_target = 0.
-        self.info.status.brake_upper_border = 0.
-        self.info.status.throttle_lower_border = 0.
+        self.info.status.speed_control_accel_delta = 0.0
+        self.info.status.speed_control_accel_target = 0.0
+        self.info.status.accel_control_pedal_delta = 0.0
+        self.info.status.accel_control_pedal_target = 0.0
+        self.info.status.brake_upper_border = 0.0
+        self.info.status.throttle_lower_border = 0.0
 
         # control output
-        self.info.output.throttle = 0.
+        self.info.output.throttle = 0.0
         self.info.output.brake = 1.0
-        self.info.output.steer = 0.
+        self.info.output.steer = 0.0
         self.info.output.reverse = False
         self.info.output.hand_brake = True
 
@@ -129,7 +151,7 @@ class CarlaAckermannControl(CompatibleNode):
             AckermannDrive,
             "/carla/" + self.role_name + "/ackermann_cmd",
             self.ackermann_command_updated,
-            qos_profile=10
+            qos_profile=10,
         )
 
         # current status of the vehicle
@@ -137,7 +159,7 @@ class CarlaAckermannControl(CompatibleNode):
             CarlaEgoVehicleStatus,
             "/carla/" + self.role_name + "/vehicle_status",
             self.vehicle_status_updated,
-            qos_profile=10
+            qos_profile=10,
         )
 
         # vehicle info
@@ -145,20 +167,22 @@ class CarlaAckermannControl(CompatibleNode):
             CarlaEgoVehicleInfo,
             "/carla/" + self.role_name + "/vehicle_info",
             self.vehicle_info_updated,
-            qos_profile=10
+            qos_profile=10,
         )
 
         # to send command to carla
         self.carla_control_publisher = self.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/" + self.role_name + "/vehicle_control_cmd",
-            qos_profile=1)
+            qos_profile=1,
+        )
 
         # report controller info
         self.control_info_publisher = self.new_publisher(
             EgoVehicleControlInfo,
             "/carla/" + self.role_name + "/ackermann_control/control_info",
-            qos_profile=1)
+            qos_profile=1,
+        )
 
     if ROS_VERSION == 1:
 
@@ -171,25 +195,29 @@ class CarlaAckermannControl(CompatibleNode):
                 carla_ackermann_control.cfg.EgoVehicleControlParameterConfig
 
             """
-            self.loginfo("Reconfigure Request:  "
-                         "speed ({speed_Kp}, {speed_Ki}, {speed_Kd}), "
-                         "accel ({accel_Kp}, {accel_Ki}, {accel_Kd})"
-                         "".format(**ego_vehicle_control_parameter))
+            self.loginfo(
+                "Reconfigure Request:  "
+                "speed ({speed_Kp}, {speed_Ki}, {speed_Kd}), "
+                "accel ({accel_Kp}, {accel_Ki}, {accel_Kd})"
+                "".format(**ego_vehicle_control_parameter)
+            )
             self.speed_controller.tunings = (
-                ego_vehicle_control_parameter['speed_Kp'],
-                ego_vehicle_control_parameter['speed_Ki'],
-                ego_vehicle_control_parameter['speed_Kd'],
+                ego_vehicle_control_parameter["speed_Kp"],
+                ego_vehicle_control_parameter["speed_Ki"],
+                ego_vehicle_control_parameter["speed_Kd"],
             )
             self.accel_controller.tunings = (
-                ego_vehicle_control_parameter['accel_Kp'],
-                ego_vehicle_control_parameter['accel_Ki'],
-                ego_vehicle_control_parameter['accel_Kd'],
+                ego_vehicle_control_parameter["accel_Kp"],
+                ego_vehicle_control_parameter["accel_Ki"],
+                ego_vehicle_control_parameter["accel_Kd"],
             )
             return ego_vehicle_control_parameter
 
     if ROS_VERSION == 2:
 
-        def reconfigure_pid_parameters(self, params):  # pylint: disable=function-redefined
+        def reconfigure_pid_parameters(
+            self, params
+        ):  # pylint: disable=function-redefined
             """Check and update the node's parameters."""
             param_values = {p.name: p.value for p in params}
 
@@ -229,7 +257,7 @@ class CarlaAckermannControl(CompatibleNode):
                     self.speed_controller.tunings[2],
                     self.accel_controller.tunings[0],
                     self.accel_controller.tunings[1],
-                    self.accel_controller.tunings[2]
+                    self.accel_controller.tunings[2],
                 )
             )
 
@@ -271,18 +299,21 @@ class CarlaAckermannControl(CompatibleNode):
 
         # calculate restrictions
         self.info.restrictions.max_steering_angle = phys.get_vehicle_max_steering_angle(
-            self.vehicle_info)
-        self.info.restrictions.max_speed = phys.get_vehicle_max_speed(
-            self.vehicle_info)
+            self.vehicle_info
+        )
+        self.info.restrictions.max_speed = phys.get_vehicle_max_speed(self.vehicle_info)
         self.info.restrictions.max_accel = phys.get_vehicle_max_acceleration(
-            self.vehicle_info)
+            self.vehicle_info
+        )
         self.info.restrictions.max_decel = phys.get_vehicle_max_deceleration(
-            self.vehicle_info)
-        self.info.restrictions.min_accel = self.get_param('min_accel', 1.)
+            self.vehicle_info
+        )
+        self.info.restrictions.min_accel = self.get_param("min_accel", 1.0)
         # clipping the pedal in both directions to the same range using the usual lower
         # border: the max_accel to ensure the the pedal target is in symmetry to zero
         self.info.restrictions.max_pedal = min(
-            self.info.restrictions.max_accel, self.info.restrictions.max_decel)
+            self.info.restrictions.max_accel, self.info.restrictions.max_decel
+        )
 
     def ackermann_command_updated(self, ros_ackermann_drive):
         """
@@ -304,12 +335,16 @@ class CarlaAckermannControl(CompatibleNode):
         set target sterring angle
         """
         self.info.target.steering_angle = -target_steering_angle
-        if abs(self.info.target.steering_angle) > self.info.restrictions.max_steering_angle:
+        if (
+            abs(self.info.target.steering_angle)
+            > self.info.restrictions.max_steering_angle
+        ):
             self.logerr("Max steering angle reached, clipping value")
             self.info.target.steering_angle = numpy.clip(
                 self.info.target.steering_angle,
                 -self.info.restrictions.max_steering_angle,
-                self.info.restrictions.max_steering_angle)
+                self.info.restrictions.max_steering_angle,
+            )
 
     def set_target_speed(self, target_speed):
         """
@@ -318,7 +353,10 @@ class CarlaAckermannControl(CompatibleNode):
         if abs(target_speed) > self.info.restrictions.max_speed:
             self.logerr("Max speed reached, clipping value")
             self.info.target.speed = numpy.clip(
-                target_speed, -self.info.restrictions.max_speed, self.info.restrictions.max_speed)
+                target_speed,
+                -self.info.restrictions.max_speed,
+                self.info.restrictions.max_speed,
+            )
         else:
             self.info.target.speed = target_speed
         self.info.target.speed_abs = abs(self.info.target.speed)
@@ -333,7 +371,10 @@ class CarlaAckermannControl(CompatibleNode):
             self.info.target.accel = -self.info.restrictions.max_decel
         else:
             self.info.target.accel = numpy.clip(
-                target_accel, -self.info.restrictions.max_decel, self.info.restrictions.max_accel)
+                target_accel,
+                -self.info.restrictions.max_decel,
+                self.info.restrictions.max_accel,
+            )
 
     def set_target_jerk(self, target_jerk):
         """
@@ -355,8 +396,7 @@ class CarlaAckermannControl(CompatibleNode):
 
             # only send out the Carla Control Command if AckermannDrive messages are
             # received in the last second (e.g. to allows manually controlling the vehicle)
-            if (self.last_ackermann_msg_received_sec + 1.0) > \
-                    self.get_time():
+            if (self.last_ackermann_msg_received_sec + 1.0) > self.get_time():
                 self.info.output.header = self.get_msg_header()
                 self.carla_control_publisher.publish(self.info.output)
 
@@ -364,8 +404,9 @@ class CarlaAckermannControl(CompatibleNode):
         """
         Basic steering control
         """
-        self.info.output.steer = self.info.target.steering_angle / \
-            self.info.restrictions.max_steering_angle
+        self.info.output.steer = (
+            self.info.target.steering_angle / self.info.restrictions.max_steering_angle
+        )
 
     def control_stop_and_reverse(self):
         """
@@ -384,34 +425,42 @@ class CarlaAckermannControl(CompatibleNode):
             if self.info.target.speed < 0:
                 if not self.info.output.reverse:
                     self.loginfo(
-                        "VehicleControl: Change of driving direction to reverse")
+                        "VehicleControl: Change of driving direction to reverse"
+                    )
                     self.info.output.reverse = True
             elif self.info.target.speed > 0:
                 if self.info.output.reverse:
                     self.loginfo(
-                        "VehicleControl: Change of driving direction to forward")
+                        "VehicleControl: Change of driving direction to forward"
+                    )
                     self.info.output.reverse = False
             if self.info.target.speed_abs < full_stop_epsilon:
                 self.info.status.status = "full stop"
-                self.info.status.speed_control_accel_target = 0.
-                self.info.status.accel_control_pedal_target = 0.
-                self.set_target_speed(0.)
-                self.info.current.speed = 0.
-                self.info.current.speed_abs = 0.
-                self.info.current.accel = 0.
+                self.info.status.speed_control_accel_target = 0.0
+                self.info.status.accel_control_pedal_target = 0.0
+                self.set_target_speed(0.0)
+                self.info.current.speed = 0.0
+                self.info.current.speed_abs = 0.0
+                self.info.current.accel = 0.0
                 self.info.output.hand_brake = True
                 self.info.output.brake = 1.0
                 self.info.output.throttle = 0.0
 
-        elif numpy.sign(self.info.current.speed) * numpy.sign(self.info.target.speed) == -1:
+        elif (
+            numpy.sign(self.info.current.speed) * numpy.sign(self.info.target.speed)
+            == -1
+        ):
             # requrest for change of driving direction
             # first we have to come to full stop before changing driving
             # direction
-            self.loginfo("VehicleControl: Request change of driving direction."
-                         " v_current={} v_desired={}"
-                         " Set desired speed to 0".format(self.info.current.speed,
-                                                          self.info.target.speed))
-            self.set_target_speed(0.)
+            self.loginfo(
+                "VehicleControl: Request change of driving direction."
+                " v_current={} v_desired={}"
+                " Set desired speed to 0".format(
+                    self.info.current.speed, self.info.target.speed
+                )
+            )
+            self.set_target_speed(0.0)
 
     def run_speed_control_loop(self):
         """
@@ -441,12 +490,15 @@ class CarlaAckermannControl(CompatibleNode):
             if self.info.status.speed_control_activation_count > 0:
                 self.info.status.speed_control_activation_count -= 1
         # set the auto_mode of the controller accordingly
-        self.speed_controller.auto_mode = self.info.status.speed_control_activation_count >= 5
+        self.speed_controller.auto_mode = (
+            self.info.status.speed_control_activation_count >= 5
+        )
 
         if self.speed_controller.auto_mode:
             self.speed_controller.setpoint = self.info.target.speed_abs
-            self.info.status.speed_control_accel_delta = float(self.speed_controller(
-                self.info.current.speed_abs))
+            self.info.status.speed_control_accel_delta = float(
+                self.speed_controller(self.info.current.speed_abs)
+            )
 
             # clipping borders
             clipping_lower_border = -target_accel_abs
@@ -456,11 +508,13 @@ class CarlaAckermannControl(CompatibleNode):
                 clipping_lower_border = -self.info.restrictions.max_decel
                 clipping_upper_border = self.info.restrictions.max_accel
             self.info.status.speed_control_accel_target = numpy.clip(
-                self.info.status.speed_control_accel_target +
-                self.info.status.speed_control_accel_delta,
-                clipping_lower_border, clipping_upper_border)
+                self.info.status.speed_control_accel_target
+                + self.info.status.speed_control_accel_delta,
+                clipping_lower_border,
+                clipping_upper_border,
+            )
         else:
-            self.info.status.speed_control_accel_delta = 0.
+            self.info.status.speed_control_accel_delta = 0.0
             self.info.status.speed_control_accel_target = self.info.target.accel
 
     def run_accel_control_loop(self):
@@ -469,15 +523,18 @@ class CarlaAckermannControl(CompatibleNode):
         """
         # setpoint of the acceleration controller is the output of the speed controller
         self.accel_controller.setpoint = self.info.status.speed_control_accel_target
-        self.info.status.accel_control_pedal_delta = float(self.accel_controller(
-            self.info.current.accel))
+        self.info.status.accel_control_pedal_delta = float(
+            self.accel_controller(self.info.current.accel)
+        )
         # @todo: we might want to scale by making use of the the abs-jerk value
         # If the jerk input is big, then the trajectory input expects already quick changes
         # in the acceleration; to respect this we put an additional proportional factor on top
         self.info.status.accel_control_pedal_target = numpy.clip(
-            self.info.status.accel_control_pedal_target +
-            self.info.status.accel_control_pedal_delta,
-            -self.info.restrictions.max_pedal, self.info.restrictions.max_pedal)
+            self.info.status.accel_control_pedal_target
+            + self.info.status.accel_control_pedal_delta,
+            -self.info.restrictions.max_pedal,
+            self.info.restrictions.max_pedal,
+        )
 
     def update_drive_vehicle_control_command(self):
         """
@@ -488,15 +545,21 @@ class CarlaAckermannControl(CompatibleNode):
         # Interpretation: To reach a zero acceleration the throttle has to pushed
         # down for a certain amount
         self.info.status.throttle_lower_border = phys.get_vehicle_driving_impedance_acceleration(
-            self.vehicle_info, self.vehicle_status, self.info.output.reverse)
+            self.vehicle_info, self.vehicle_status, self.info.output.reverse
+        )
 
         # the engine lay off acceleration defines the size of the coasting area
         # Interpretation: The engine already prforms braking on its own;
         #  therefore pushing the brake is not required for small decelerations
-        self.info.status.brake_upper_border = self.info.status.throttle_lower_border + \
-            phys.get_vehicle_lay_off_engine_acceleration(self.vehicle_info)
+        self.info.status.brake_upper_border = (
+            self.info.status.throttle_lower_border
+            + phys.get_vehicle_lay_off_engine_acceleration(self.vehicle_info)
+        )
 
-        if self.info.status.accel_control_pedal_target > self.info.status.throttle_lower_border:
+        if (
+            self.info.status.accel_control_pedal_target
+            > self.info.status.throttle_lower_border
+        ):
             self.info.status.status = "accelerating"
             self.info.output.brake = 0.0
             # the value has to be normed to max_pedal
@@ -505,10 +568,13 @@ class CarlaAckermannControl(CompatibleNode):
             # the global maximum acceleration can practically not be reached anymore because of
             # driving impedance
             self.info.output.throttle = (
-                (self.info.status.accel_control_pedal_target -
-                 self.info.status.throttle_lower_border) /
-                abs(self.info.restrictions.max_pedal))
-        elif self.info.status.accel_control_pedal_target > self.info.status.brake_upper_border:
+                self.info.status.accel_control_pedal_target
+                - self.info.status.throttle_lower_border
+            ) / abs(self.info.restrictions.max_pedal)
+        elif (
+            self.info.status.accel_control_pedal_target
+            > self.info.status.brake_upper_border
+        ):
             self.info.status.status = "coasting"
             # no control required
             self.info.output.brake = 0.0
@@ -517,16 +583,14 @@ class CarlaAckermannControl(CompatibleNode):
             self.info.status.status = "braking"
             # braking required
             self.info.output.brake = (
-                (self.info.status.brake_upper_border -
-                 self.info.status.accel_control_pedal_target) /
-                abs(self.info.restrictions.max_pedal))
+                self.info.status.brake_upper_border
+                - self.info.status.accel_control_pedal_target
+            ) / abs(self.info.restrictions.max_pedal)
             self.info.output.throttle = 0.0
 
         # finally clip the final control output (should actually never happen)
-        self.info.output.brake = numpy.clip(
-            self.info.output.brake, 0., 1.)
-        self.info.output.throttle = numpy.clip(
-            self.info.output.throttle, 0., 1.)
+        self.info.output.brake = numpy.clip(self.info.output.brake, 0.0, 1.0)
+        self.info.output.throttle = numpy.clip(self.info.output.throttle, 0.0, 1.0)
 
     # from ego vehicle
     def send_ego_vehicle_control_info_msg(self):
@@ -593,6 +657,7 @@ def main(args=None):
         pass
     finally:
         roscomp.shutdown()
+
 
 if __name__ == "__main__":
     main()

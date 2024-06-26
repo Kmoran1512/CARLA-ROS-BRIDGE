@@ -42,10 +42,7 @@ class TFSensor(PseudoActor):
         :type node: carla_ros_bridge.CarlaRosBridge
         """
 
-        super(TFSensor, self).__init__(uid=uid,
-                                       name=name,
-                                       parent=parent,
-                                       node=node)
+        super(TFSensor, self).__init__(uid=uid, name=name, parent=parent, node=node)
 
         if ROS_VERSION == 1:
             self._tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -72,10 +69,16 @@ class TFSensor(PseudoActor):
         except AttributeError:
             # parent actor disappeared, do not send tf
             self.node.logwarn(
-                "TFSensor could not publish transform. Actor {} not found".format(self.parent.uid))
+                "TFSensor could not publish transform. Actor {} not found".format(
+                    self.parent.uid
+                )
+            )
             return
 
-        self._tf_broadcaster.sendTransform(TransformStamped(
-            header=self.get_msg_header("map", timestamp=timestamp),
-            child_frame_id=self.parent.get_prefix(),
-            transform=transform))
+        self._tf_broadcaster.sendTransform(
+            TransformStamped(
+                header=self.get_msg_header("map", timestamp=timestamp),
+                child_frame_id=self.parent.get_prefix(),
+                transform=transform,
+            )
+        )

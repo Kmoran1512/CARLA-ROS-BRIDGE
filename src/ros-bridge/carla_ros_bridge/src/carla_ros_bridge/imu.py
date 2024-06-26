@@ -22,7 +22,16 @@ class ImuSensor(Sensor):
     Actor implementation details for imu sensor
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -41,15 +50,19 @@ class ImuSensor(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(ImuSensor, self).__init__(uid=uid,
-                                        name=name,
-                                        parent=parent,
-                                        relative_spawn_pose=relative_spawn_pose,
-                                        node=node,
-                                        carla_actor=carla_actor,
-                                        synchronous_mode=synchronous_mode)
+        super(ImuSensor, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+        )
 
-        self.imu_publisher = node.new_publisher(Imu, self.get_topic_prefix(), qos_profile=10)
+        self.imu_publisher = node.new_publisher(
+            Imu, self.get_topic_prefix(), qos_profile=10
+        )
         self.listen()
 
     def destroy(self):
@@ -78,7 +91,9 @@ class ImuSensor(Sensor):
         imu_msg.linear_acceleration.y = -carla_imu_measurement.accelerometer.y
         imu_msg.linear_acceleration.z = carla_imu_measurement.accelerometer.z
 
-        roll, pitch, yaw = trans.carla_rotation_to_RPY(carla_imu_measurement.transform.rotation)
+        roll, pitch, yaw = trans.carla_rotation_to_RPY(
+            carla_imu_measurement.transform.rotation
+        )
         quat = euler2quat(roll, pitch, yaw)
         imu_msg.orientation.w = quat[0]
         imu_msg.orientation.x = quat[1]

@@ -46,7 +46,9 @@ class PseudoActor(object):
             raise TypeError("Actor ID is not set")
 
         if self.uid > np.iinfo(np.uint32).max:
-            raise ValueError("Actor ID exceeds maximum supported value '{}'".format(self.uid))
+            raise ValueError(
+                "Actor ID exceeds maximum supported value '{}'".format(self.uid)
+            )
 
     def destroy(self):
         """
@@ -61,8 +63,7 @@ class PseudoActor(object):
         Get the blueprint identifier for the pseudo sensor
         :return: name
         """
-        raise NotImplementedError(
-            "The pseudo actor is missing a blueprint name")
+        raise NotImplementedError("The pseudo actor is missing a blueprint name")
 
     def get_msg_header(self, frame_id=None, timestamp=None):
         """

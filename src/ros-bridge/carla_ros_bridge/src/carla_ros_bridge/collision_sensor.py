@@ -21,7 +21,16 @@ class CollisionSensor(Sensor):
     Actor implementation details for a collision sensor
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -40,18 +49,20 @@ class CollisionSensor(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(CollisionSensor, self).__init__(uid=uid,
-                                              name=name,
-                                              parent=parent,
-                                              relative_spawn_pose=relative_spawn_pose,
-                                              node=node,
-                                              carla_actor=carla_actor,
-                                              synchronous_mode=synchronous_mode,
-                                              is_event_sensor=True)
+        super(CollisionSensor, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+            is_event_sensor=True,
+        )
 
-        self.collision_publisher = node.new_publisher(CarlaCollisionEvent,
-                                                      self.get_topic_prefix(),
-                                                      qos_profile=10)
+        self.collision_publisher = node.new_publisher(
+            CarlaCollisionEvent, self.get_topic_prefix(), qos_profile=10
+        )
         self.listen()
 
     def destroy(self):

@@ -21,7 +21,16 @@ class Gnss(Sensor):
     Actor implementation details for gnss sensor
     """
 
-    def __init__(self, uid, name, parent, relative_spawn_pose, node, carla_actor, synchronous_mode):
+    def __init__(
+        self,
+        uid,
+        name,
+        parent,
+        relative_spawn_pose,
+        node,
+        carla_actor,
+        synchronous_mode,
+    ):
         """
         Constructor
 
@@ -40,17 +49,19 @@ class Gnss(Sensor):
         :param synchronous_mode: use in synchronous mode?
         :type synchronous_mode: bool
         """
-        super(Gnss, self).__init__(uid=uid,
-                                   name=name,
-                                   parent=parent,
-                                   relative_spawn_pose=relative_spawn_pose,
-                                   node=node,
-                                   carla_actor=carla_actor,
-                                   synchronous_mode=synchronous_mode)
+        super(Gnss, self).__init__(
+            uid=uid,
+            name=name,
+            parent=parent,
+            relative_spawn_pose=relative_spawn_pose,
+            node=node,
+            carla_actor=carla_actor,
+            synchronous_mode=synchronous_mode,
+        )
 
-        self.gnss_publisher = node.new_publisher(NavSatFix,
-                                                 self.get_topic_prefix(),
-                                                 qos_profile=10)
+        self.gnss_publisher = node.new_publisher(
+            NavSatFix, self.get_topic_prefix(), qos_profile=10
+        )
         self.listen()
 
     def destroy(self):
@@ -66,7 +77,9 @@ class Gnss(Sensor):
         :type carla_gnss_measurement: carla.GnssMeasurement
         """
         navsatfix_msg = NavSatFix()
-        navsatfix_msg.header = self.get_msg_header(timestamp=carla_gnss_measurement.timestamp)
+        navsatfix_msg.header = self.get_msg_header(
+            timestamp=carla_gnss_measurement.timestamp
+        )
         navsatfix_msg.latitude = carla_gnss_measurement.latitude
         navsatfix_msg.longitude = carla_gnss_measurement.longitude
         navsatfix_msg.altitude = carla_gnss_measurement.altitude

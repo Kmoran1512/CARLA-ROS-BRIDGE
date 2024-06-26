@@ -8,6 +8,8 @@
   <license>TODO: License declaration</license>
 
   <exec_depend>carla_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>ros_g29_force_feedback_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>derived_object_msgs</exec_depend>

@@ -72,12 +72,11 @@ from carla_msgs.msg import CarlaEgoVehicleStatus
 from carla_msgs.msg import CarlaEgoVehicleControl
 from carla_msgs.msg import CarlaLaneInvasionEvent
 from carla_msgs.msg import CarlaCollisionEvent
-from ros_g29_force_feedback.msg import ForceFeedback
-from ros_g29_force_feedback.msg import ForceControl
+from ros_g29_force_feedback.msg import ForceControl, ForceFeedback
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import NavSatFix
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32, Int8
 
 # ==============================================================================
 # -- World ---------------------------------------------------------------------
@@ -123,9 +122,9 @@ class ManualControl(CompatibleNode):
         Callback on collision event
         """
         intensity = math.sqrt(
-            data.normal_impulse.x**2
-            + data.normal_impulse.y**2
-            + data.normal_impulse.z**2
+            data.normal_impulse.x ** 2
+            + data.normal_impulse.y ** 2
+            + data.normal_impulse.z ** 2
         )
         self.hud.notification(
             "Collision with {} (impulse {})".format(data.other_actor_id, intensity)
@@ -334,23 +333,28 @@ class JoystickControl(object):
     Handle input events
     """
 
-    def __init__(self, role_name, hud, node):
+    def __init__(self, role_name, hud, node: CompatibleNode):
         self.role_name = role_name
         self.hud = hud
         self.node = node
 
         self.m_ctrl = CarlaEgoVehicleControl()
         self.a_ctrl = CarlaEgoVehicleControl()
+
+        self._a_steer_cache = 0.0
+
         self._steer_cache = 0.0
+        self._wheel_value = 0.0
         self._key_cache = False
 
         pygame.joystick.init()
         self._set_joystick_dimensions()
 
-        self.pubsub = PubSub(self.node, self)
+        self.pubsub = PubSub(self)
 
-        self.manual_override = False
-        self.set_manual_override(self.manual_override) 
+        # Spawn in manual
+        self.manual_override = True
+        self.set_manual_override(self.manual_override)
 
     def set_manual_override(self, enable):
         """
@@ -360,9 +364,7 @@ class JoystickControl(object):
             self.m_ctrl.reverse = False
             self._adjust_force_feedback(0.0, 0.0)
 
-        self.hud.notification(
-            "Set ADAS to: {}".format(not enable)
-        )
+        self.hud.notification("Set ADAS to: {}".format(not enable))
         self.pubsub.manual_override_publisher.publish((Bool(data=enable)))
 
     def parse_events(self, _):
@@ -374,13 +376,21 @@ class JoystickControl(object):
             if event.type == pygame.QUIT:
                 return True
             elif event.type == pygame.KEYUP:
+                key_message = Int8()
+                key_message.data = event.key
+                self.pubsub.key_press_pub.publish(key_message)
+
                 if event.key == K_b:
                     self.manual_override = not self.manual_override
                     self.set_manual_override(self.manual_override)
-        
+
         self._handle_joystick_buttons()
 
         self._parse_joystick_control()
+
+        if self.m_ctrl.brake > 0.01:
+            self.manual_override = True
+            self.set_manual_override(self.manual_override)
 
     def on_new_carla_frame(self, _):
         """
@@ -405,7 +415,10 @@ class JoystickControl(object):
 
     def _handle_joystick_buttons(self):
         if not self._key_cache:
-            if any(self._joystick.get_button(button) for button in (self._manual_control_1, self._manual_control_2)):
+            if any(
+                self._joystick.get_button(button)
+                for button in (self._manual_control_1, self._manual_control_2)
+            ):
                 self._key_cache = True
                 self.manual_override = not self.manual_override
                 self.set_manual_override(self.manual_override)
@@ -415,16 +428,47 @@ class JoystickControl(object):
                 self.m_ctrl.reverse = self.m_ctrl.gear < 0
 
         else:
-            if not any(self._joystick.get_button(button) for button in (self._reverse_idx, self._manual_control_1, self._manual_control_2)):
+            if not any(
+                self._joystick.get_button(button)
+                for button in (
+                    self._reverse_idx,
+                    self._manual_control_1,
+                    self._manual_control_2,
+                )
+            ):
                 self._key_cache = False
 
     def _parse_joystick_control(self):
-        jsInputs = [float(self._joystick.get_axis(i)) for i in range(self._joystick.get_numaxes())]
-        jsButtons = [float(self._joystick.get_button(i)) for i in range(self._joystick.get_numbuttons())]
+        jsInputs = [
+            float(self._joystick.get_axis(i))
+            for i in range(self._joystick.get_numaxes())
+        ]
+        jsButtons = [
+            float(self._joystick.get_button(i))
+            for i in range(self._joystick.get_numbuttons())
+        ]
 
-        self._steer_cache = 1.0 * math.tan(1.1 * jsInputs[self._steer_idx]) ## 1.0 -> 0.55
-        self.m_ctrl.throttle = max(0.0, min(1.0, 1.6 + (2.05 * math.log10(-0.7 * jsInputs[self._throttle_idx] + 1.4) - 1.2) / 0.92))
-        self.m_ctrl.brake = max(0.0, min(1.0, 1.6 + (2.05 * math.log10(-0.7 * jsInputs[self._brake_idx] + 1.4) - 1.2) / 0.92))
+        self._wheel_value = jsInputs[self._steer_idx]
+        self._steer_cache = 0.55 * math.tan(1.1 * self._wheel_value)  ## 1.0 -> 0.55
+
+        self.m_ctrl.throttle = max(
+            0.0,
+            min(
+                1.0,
+                1.6
+                + (2.05 * math.log10(-0.7 * jsInputs[self._throttle_idx] + 1.4) - 1.2)
+                / 0.92,
+            ),
+        )
+        self.m_ctrl.brake = 0.1 * max(
+            0.0,
+            min(
+                1.0,
+                1.6
+                + (2.05 * math.log10(-0.7 * jsInputs[self._brake_idx] + 1.4) - 1.2)
+                / 0.92,
+            ),
+        )
         self.m_ctrl.hand_brake = bool(jsButtons[self._handbrake_idx])
 
     def _adjust_force_feedback(self, position=0.0, torque=1.0):
@@ -434,73 +478,76 @@ class JoystickControl(object):
         feedback_msg.torque = torque
 
         self._feedback_center = feedback_msg.position
-        #self.pubsub.force_feedback_publisher.publish(feedback_msg)
+        self.pubsub.force_feedback_publisher.publish(feedback_msg)
 
     # TODO: Create and Change subscriber
-    def auton_ctrl(self, data):
-        if (self.manual_override):
+    def auton_ctrl(self, data: CarlaEgoVehicleControl):
+        if self.manual_override:
             return
-        
-        self.a_ctrl = data
 
+        self.pubsub.a_vc.publish(data)
+        self.pubsub.scaled_steer_publisher.publish(Float32(data=data.steer))
         self._adjust_force_feedback(data.steer)
 
-    def force_ctrl(self, data):
-        if not data.is_centering and data.torque == 9999:
+    def force_ctrl(self, data: ForceControl):
+        if data.human_control:
             self.manual_override = True
             self.set_manual_override(self.manual_override)
 
     def _publish_control(self):
-        if self.manual_override:
-            self.m_ctrl.steer = self._steer_cache
-            self.pubsub.m_vc.publish(self.m_ctrl)
-        else:
-            #self.a_ctrl.steer = self._steer_cache
-            self.pubsub.a_vc.publish(self.a_ctrl) 
+        self.pubsub.wheel_value_publisher.publish(Float32(data=self._wheel_value))
+
+        if not self.manual_override:
+            return
+
+        self.m_ctrl.steer = self._steer_cache
+        self.pubsub.scaled_steer_publisher.publish(Float32(data=self._steer_cache))
+        self.pubsub.m_vc.publish(self.m_ctrl)
 
 
 class PubSub(object):
-    def __init__(self, node, parent: JoystickControl):
-        self.node = node
+    def __init__(self, parent: JoystickControl):
+        node = parent.node
 
         fast_qos = QoSProfile(depth=10)
         fast_latched_qos = QoSProfile(
             depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
         )
 
-        self.manual_override_publisher = self.node.new_publisher(
+        self.manual_override_publisher = node.new_publisher(
             Bool,
             "/carla/{}/vehicle_control_manual_override".format(parent.role_name),
             qos_profile=fast_latched_qos,
         )
-
-        self.m_vc = self.node.new_publisher(
+        self.m_vc = node.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/{}/vehicle_control_cmd_manual".format(parent.role_name),
             qos_profile=fast_qos,
         )
-
-        self.a_vc = self.node.new_publisher(
+        self.a_vc = node.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/{}/vehicle_control_cmd".format(parent.role_name),
             qos_profile=fast_qos,
         )
-
-        self.force_feedback_publisher = self.node.new_publisher(
+        self.force_feedback_publisher = node.new_publisher(
             ForceFeedback, "/ff_target", qos_profile=fast_qos
         )
+        self.wheel_value_publisher = node.new_publisher(Float32, "/wheel_value", 10)
+        self.scaled_steer_publisher = node.new_publisher(
+            Float32, "/to_simulator_steer", 10
+        )
+        self.key_press_pub = node.new_publisher(Int8, "/key_press", 10)
 
-        self.carla_status_subscriber = self.node.new_subscription(
+        node.new_subscription(
             CarlaStatus, "/carla/status", parent.on_new_carla_frame, qos_profile=10
         )
-
-        self.carla_steer_control_subscriber = self.node.new_subscription(
-            CarlaEgoVehicleControl, "/carla/{}/transfer_ctrl".format(parent.role_name), parent.auton_ctrl, qos_profile=10
+        node.new_subscription(
+            CarlaEgoVehicleControl,
+            "/carla/{}/transfer_ctrl".format(parent.role_name),
+            parent.auton_ctrl,
+            qos_profile=10,
         )
-
-        self.force_sub = self.node.new_subscription(
-            ForceControl, "/force_control", parent.force_ctrl, 10
-        )
+        node.new_subscription(ForceControl, "/force_control", parent.force_ctrl, 10)
 
 
 # ==============================================================================

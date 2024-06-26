@@ -31,12 +31,13 @@ class CarlaStatusPublisher(object):
         self.fixed_delta_seconds = fixed_delta_seconds
         self.node = node
         if self.fixed_delta_seconds is None:
-            self.fixed_delta_seconds = 0.
+            self.fixed_delta_seconds = 0.0
         self.frame = 0
 
         callback_group = roscomp.callback_groups.ReentrantCallbackGroup()
-        self.carla_status_publisher = self.node.new_publisher(CarlaStatus, "/carla/status", qos_profile=10,
-                                                              callback_group=callback_group)
+        self.carla_status_publisher = self.node.new_publisher(
+            CarlaStatus, "/carla/status", qos_profile=10, callback_group=callback_group
+        )
         self.publish()
 
     def destroy(self):

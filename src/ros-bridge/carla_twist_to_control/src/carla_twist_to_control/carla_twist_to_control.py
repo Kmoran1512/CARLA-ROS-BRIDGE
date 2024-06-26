@@ -17,7 +17,10 @@ from ros_compatibility.exceptions import ROSException
 from ros_compatibility.node import CompatibleNode
 from ros_compatibility.qos import QoSProfile, DurabilityPolicy
 
-from carla_msgs.msg import CarlaEgoVehicleControl, CarlaEgoVehicleInfo  # pylint: disable=import-error
+from carla_msgs.msg import (
+    CarlaEgoVehicleControl,
+    CarlaEgoVehicleInfo,
+)  # pylint: disable=import-error
 from geometry_msgs.msg import Twist  # pylint: disable=import-error
 
 
@@ -43,18 +46,23 @@ class TwistToVehicleControl(CompatibleNode):  # pylint: disable=too-few-public-m
             CarlaEgoVehicleInfo,
             "/carla/{}/vehicle_info".format(self.role_name),
             self.update_vehicle_info,
-            qos_profile=QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            qos_profile=QoSProfile(
+                depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
+        )
 
         self.new_subscription(
             Twist,
             "/carla/{}/twist".format(self.role_name),
             self.twist_received,
-            qos_profile=10)
+            qos_profile=10,
+        )
 
         self.pub = self.new_publisher(
             CarlaEgoVehicleControl,
             "/carla/{}/vehicle_control_cmd".format(self.role_name),
-            qos_profile=10)
+            qos_profile=10,
+        )
 
     def update_vehicle_info(self, vehicle_info):
         """
@@ -64,12 +72,20 @@ class TwistToVehicleControl(CompatibleNode):  # pylint: disable=too-few-public-m
             self.logerr("Cannot determine max steering angle: Vehicle has no wheels.")
             sys.exit(1)
 
-        self.max_steering_angle = vehicle_info.wheels[0].max_steer_angle  # pylint: disable=no-member
+        self.max_steering_angle = vehicle_info.wheels[
+            0
+        ].max_steer_angle  # pylint: disable=no-member
         if not self.max_steering_angle:
-            self.logerr("Cannot determine max steering angle: Value is %s",
-                        self.max_steering_angle)
+            self.logerr(
+                "Cannot determine max steering angle: Value is %s",
+                self.max_steering_angle,
+            )
             sys.exit(1)
-        self.loginfo("Vehicle info received. Max steering angle={}".format(self.max_steering_angle))
+        self.loginfo(
+            "Vehicle info received. Max steering angle={}".format(
+                self.max_steering_angle
+            )
+        )
 
     def twist_received(self, twist):
         """
@@ -82,24 +98,32 @@ class TwistToVehicleControl(CompatibleNode):  # pylint: disable=too-few-public-m
         control = CarlaEgoVehicleControl()
         if twist == Twist():
             # stop
-            control.throttle = 0.
-            control.brake = 1.
-            control.steer = 0.
+            control.throttle = 0.0
+            control.brake = 1.0
+            control.steer = 0.0
         else:
             if twist.linear.x > 0:
-                control.throttle = min(TwistToVehicleControl.MAX_LON_ACCELERATION,
-                                       twist.linear.x) / TwistToVehicleControl.MAX_LON_ACCELERATION
+                control.throttle = (
+                    min(TwistToVehicleControl.MAX_LON_ACCELERATION, twist.linear.x)
+                    / TwistToVehicleControl.MAX_LON_ACCELERATION
+                )
             else:
                 control.reverse = True
-                control.throttle = max(-TwistToVehicleControl.MAX_LON_ACCELERATION,
-                                       twist.linear.x) / -TwistToVehicleControl.MAX_LON_ACCELERATION
+                control.throttle = (
+                    max(-TwistToVehicleControl.MAX_LON_ACCELERATION, twist.linear.x)
+                    / -TwistToVehicleControl.MAX_LON_ACCELERATION
+                )
 
             if twist.angular.z > 0:
-                control.steer = -min(self.max_steering_angle, twist.angular.z) / \
-                    self.max_steering_angle
+                control.steer = (
+                    -min(self.max_steering_angle, twist.angular.z)
+                    / self.max_steering_angle
+                )
             else:
-                control.steer = -max(-self.max_steering_angle, twist.angular.z) / \
-                    self.max_steering_angle
+                control.steer = (
+                    -max(-self.max_steering_angle, twist.angular.z)
+                    / self.max_steering_angle
+                )
         try:
             self.pub.publish(control)
         except ROSException as e:

@@ -1,0 +1,40 @@
+time (s)
+car_x (m)
+car_y (m)
+car_yaw (degrees)
+car_v (m/s)
+car_w (m/s)
+throttle (%)
+break (%)
+torque (N)
+response_theta (±turn % max 200)
+controller_value_theta (±turn % max 100)
+command_theta  (±turn % max 100)
+to_sim_theta  (±turn % max 200)
+is_autonomous
+cam_flx
+cam_fly
+gaze_x
+gaze_y
+next_waypoint_x (m)
+next_waypoint_y (m)
+ped0_x (m)
+ped0_y (m)
+ped0_v (m/s)
+ped0_yaw (degrees)
+ped0_cx
+ped0_cy
+ped0_bbox_w
+ped0_bbox_h
+ped0_id
+ped0_val
+ped1_x (m)
+ped1_y (m)
+ped1_v (m/s)
+ped1_yaw (degrees)
+ped1_cx
+ped1_cy
+ped1_bbox_w
+ped1_bbox_h
+ped1_id
+ped1_val

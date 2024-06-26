@@ -37,16 +37,18 @@ class OpenDriveSensor(PseudoActor):
         :param carla_map: carla map object
         :type carla_map: carla.Map
         """
-        super(OpenDriveSensor, self).__init__(uid=uid,
-                                              name=name,
-                                              parent=parent,
-                                              node=node)
+        super(OpenDriveSensor, self).__init__(
+            uid=uid, name=name, parent=parent, node=node
+        )
         self.carla_map = carla_map
         self._map_published = False
         self.map_publisher = node.new_publisher(
             String,
             self.get_topic_prefix(),
-            qos_profile=QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            qos_profile=QoSProfile(
+                depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL
+            ),
+        )
 
     def destroy(self):
         super(OpenDriveSensor, self).destroy()

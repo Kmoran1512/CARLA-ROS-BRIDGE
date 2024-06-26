@@ -8,11 +8,19 @@
 #
 
 __all__ = [
-    'get_ros_version',
-    'init', 'ok', 'shutdown', 'on_shutdown',
-    'ros_timestamp',
-    'get_service_request', 'get_service_response',
-    'logdebug', 'loginfo', 'logwarn', 'logerr', 'logfatal'
+    "get_ros_version",
+    "init",
+    "ok",
+    "shutdown",
+    "on_shutdown",
+    "ros_timestamp",
+    "get_service_request",
+    "get_service_response",
+    "logdebug",
+    "loginfo",
+    "logwarn",
+    "logerr",
+    "logfatal",
 ]
 
 import ros_compatibility.callback_groups
@@ -27,7 +35,6 @@ from ros_compatibility.logging import logdebug, loginfo, logwarn, logerr, logfat
 ROS_VERSION = get_ros_version()
 
 if ROS_VERSION == 1:
-
     import rospy
     import rospkg
 
@@ -63,8 +70,8 @@ if ROS_VERSION == 1:
     def get_package_share_directory(package_name):
         return rospkg.RosPack().get_path(package_name)
 
-elif ROS_VERSION == 2:
 
+elif ROS_VERSION == 2:
     import ament_index_python.packages
     import rclpy
     from builtin_interfaces.msg import Time
@@ -85,7 +92,10 @@ elif ROS_VERSION == 2:
 
     def _add_shutdown_hook(hook):
         if not callable(hook):
-            raise TypeError("shutdown hook [%s] must be a function or callable object: %s"%(hook, type(hook)))
+            raise TypeError(
+                "shutdown hook [%s] must be a function or callable object: %s"
+                % (hook, type(hook))
+            )
         _shutdown_hooks.append(hook)
 
     def on_shutdown(hook):

@@ -8,10 +8,10 @@
 #
 
 from ros_compatibility.core import get_ros_version
-ROS_VERSION  = get_ros_version()
+
+ROS_VERSION = get_ros_version()
 
 if ROS_VERSION == 1:
-
     import rospy
 
     def logdebug(msg):
@@ -29,8 +29,8 @@ if ROS_VERSION == 1:
     def logfatal(msg):
         rospy.logfatal(msg)
 
-elif ROS_VERSION == 2:
 
+elif ROS_VERSION == 2:
     import rclpy
 
     def logdebug(msg):
